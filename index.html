@@ -1,0 +1,2359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Never Get Bored — Nii Okai's Journal Through Scripture</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#9a6b3f">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Nii Okai's Bible Journal">
+<style>
+:root{
+  --bg:#faf9f7; --panel:#ffffff; --ink:#1f2328; --soft:#6b7280; --line:#e7e3dc;
+  --accent:#9a6b3f; --accent-rgb:154,107,63; --accent-soft:#f1e7da; --note-bg:#fff8ef; --note-line:#e9c89a;
+  --scripture:#2a2c30; --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+  --serif:Georgia,'Iowan Old Style','Times New Roman',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html[data-theme="dark"]{
+  --bg:#15171a; --panel:#1d2024; --ink:#e7e9ec; --soft:#9aa3ad; --line:#2c3036;
+  --accent:#d8a36a; --accent-rgb:216,163,106; --accent-soft:#332a20; --note-bg:#211c14; --note-line:#5c4a2e;
+  --scripture:#dfe2e6; --shadow:0 1px 3px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;line-height:1.5}
+button{font-family:inherit;cursor:pointer}
+a{color:var(--accent)}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:280px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;transition:margin-left .25s ease}
+.brand{padding:14px 18px 12px;border-bottom:1px solid var(--line)}
+.brand-top{display:flex;margin-bottom:8px}
+.brand-top .copytrig.menu-3{padding:6px 10px;font-size:15px}
+.brand h1{font-family:var(--serif);font-size:27px;margin:0;font-weight:800;letter-spacing:.2px;line-height:1.1}
+/* Library section (reference works) */
+.lib-section{padding:10px 14px;border-bottom:1px solid var(--line)}
+.lib-head{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--soft);font-weight:700;margin-bottom:7px}
+.lib-head span{text-transform:none;letter-spacing:0;font-weight:500;opacity:.85}
+.lib-item{display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;
+  padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--ink);
+  font-family:var(--sans);font-size:13px;cursor:pointer}
+.lib-item:hover{background:var(--accent-soft)}
+.lib-item.on{background:rgba(107,122,168,.10);border-color:#6b7aa8;color:#4a5680;font-weight:600}
+.lib-name{text-align:left}
+.lib-state{font-size:11px;font-weight:700;color:var(--soft);border:1px solid var(--line);border-radius:20px;padding:1px 9px}
+.lib-item.on .lib-state{color:#4a5680;border-color:#6b7aa8}
+.brand p{margin:5px 0 0;font-size:12px;color:var(--soft)}
+.brand .ver{margin-top:6px;font-size:10.5px;color:var(--soft);opacity:.7;letter-spacing:.3px}
+.side-actions{display:flex;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.side-actions button{font-size:12.5px;padding:7px 10px;border:1px solid var(--line);background:transparent;
+  color:var(--ink);border-radius:8px;flex:1;min-width:0;white-space:nowrap}
+.side-actions button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.side-actions.tabs button{flex:1 1 40%}  /* 2-per-row so "Read Bible" never gets clipped */
+.resizer{flex:0 0 6px;cursor:col-resize;background:var(--line)}
+.resizer:hover,.resizer.dragging{background:var(--accent)}
+.jmrow{padding:6px 14px 10px;border-bottom:1px solid var(--line)}
+.jmlbl{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--soft);font-weight:700;margin-bottom:6px}
+.jmlbl em{font-style:normal;color:var(--accent);text-transform:none;letter-spacing:0}
+.jmtoggle{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.jmtoggle button{flex:1;font-size:12.5px;padding:7px 8px;border:none;background:transparent;color:var(--ink);cursor:pointer;font-family:var(--sans);font-weight:600}
+.jmtoggle button.on{background:var(--accent);color:#fff}
+body.as-public .owner-only{display:none!important}
+body.is-reader .owner-only{display:none!important}
+body.is-reader .cdot{display:none!important}
+body.is-reader #previewRow{display:none!important}
+body.is-reader .brand .copymenu{display:none!important}
+body.is-reader #uiSwitch{display:none!important}
+/* track-changes inside a modern note */
+.note .trk{margin-top:9px;border-top:1px dashed var(--note-line);padding-top:8px}
+.note .trk summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--soft);list-style:none}
+.note .trk summary::-webkit-details-marker{display:none}
+.note .trk .sub{display:flex;gap:6px;margin:8px 0}
+.note .trk .sub button{font-size:11px;font-weight:600;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:6px;padding:3px 9px;cursor:pointer;font-family:var(--sans)}
+.note .trk .sub button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.note .draft2{font-size:13px;color:var(--soft);white-space:pre-wrap;border-left:2px solid var(--line);padding-left:10px;margin:6px 0}
+.note .draft2 .dl{display:block;font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:2px}
+.note .chg2{font-size:12px;font-style:italic;color:var(--soft);margin-top:6px}
+.note .dl{display:block;font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:3px}
+.note .trk[data-m="stack"] .tk-side{display:none}
+.note .trk[data-m="side"] .tk-stack{display:none}
+.note .sxs2{display:flex;gap:12px}.note .sxs2>div{flex:1;min-width:0}
+.note .modtag{font-size:10px;background:var(--accent);color:#fff;border-radius:20px;padding:1px 7px;font-weight:700}
+@media(max-width:860px){.note .sxs2{flex-direction:column}}
+@media(pointer:coarse){#reader .verse{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}}
+.booklist{overflow-y:auto;flex:1 1 auto;min-height:0;padding:8px 8px 40px}
+.sidebar{overflow:hidden}
+.book-group{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--soft);
+  padding:14px 12px 6px;font-weight:600}
+.book{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;
+  font-size:14px;cursor:pointer;color:var(--ink)}
+.book:hover{background:var(--accent-soft)}
+.book.active{background:var(--accent);color:#fff}
+.book .cdot{font-size:11px;min-width:18px;height:18px;line-height:18px;padding:0 6px;text-align:center;border-radius:999px;
+  background:var(--note-line);color:#3a2c14;font-weight:600}
+.book.active .cdot{background:rgba(255,255,255,.3);color:#fff}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);
+  background:var(--panel);flex-shrink:0}
+.menu-btn{display:none;background:transparent;border:none;font-size:22px;color:var(--ink);padding:0 4px}
+.crumb{font-family:var(--serif);font-size:18px;font-weight:600;flex-shrink:0}
+.chapsel{display:flex;align-items:center;gap:6px}
+.chapsel select,.versel{background:var(--bg);border:1px solid var(--line);color:var(--ink);
+  border-radius:8px;padding:7px 9px;font-size:13.5px;font-family:inherit;max-width:220px}
+.spacer{flex:1}
+.icon-btn{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:8px;
+  width:38px;height:38px;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon-btn.active{background:var(--accent-soft);border-color:var(--accent)}
+body.as-public::before{content:"👁 Previewing as a public reader — your owner-only tools are hidden. Click “Exit reader preview” to return.";
+  display:block;background:var(--accent);color:#fff;font-family:var(--sans);font-size:12.5px;font-weight:600;
+  text-align:center;padding:7px 12px;position:sticky;top:0;z-index:60}
+.searchwrap{position:relative}
+.searchwrap input{background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:8px;
+  padding:8px 10px 8px 32px;font-size:13.5px;width:180px;font-family:inherit}
+.searchwrap::before{content:"⌕";position:absolute;left:10px;top:7px;color:var(--soft);font-size:16px}
+
+.reader{overflow-y:auto;flex:1;min-height:0;padding:30px 16px 40px}
+.page{max-width:760px;margin:0 auto}
+.chap-title{font-family:var(--serif);font-size:30px;text-align:center;margin:0 0 4px;font-weight:600}
+.chap-sub{text-align:center;color:var(--soft);font-size:13px;margin-bottom:28px}
+
+.chapnote{background:var(--note-bg);border:1px solid var(--note-line);border-radius:12px;
+  padding:16px 18px;margin:0 0 26px}
+.chapnote .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent);font-weight:700;margin-bottom:6px}
+
+.verse{padding:3px 8px;border-radius:8px;position:relative;font-family:var(--serif);
+  font-size:calc(18.5px*var(--fs,1));line-height:1.72;color:var(--scripture);scroll-margin-top:80px}
+.verse .vn{font-size:11px;font-weight:700;color:var(--accent);vertical-align:super;margin-right:5px;
+  font-family:var(--sans);cursor:pointer;user-select:none}
+.verse:hover{background:var(--accent-soft)}
+.verse.has-note{background:var(--note-bg);border-left:3px solid var(--accent);padding-left:12px}
+.verse.has-note:hover{background:var(--accent-soft)}
+/* hover-only tone deepens with the number of notes on the verse */
+.verse.nc1:hover{background:rgba(var(--accent-rgb),.10)}
+.verse.nc2:hover{background:rgba(var(--accent-rgb),.20);border-left-width:5px}
+.verse.nc3:hover{background:rgba(var(--accent-rgb),.32);border-left-width:7px}
+/* floating verse action menu */
+.vmenu{position:fixed;z-index:210;min-width:180px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.2);padding:5px}
+.vmenu button{display:block;width:100%;text-align:left;font-family:var(--sans);font-size:13.5px;
+  background:none;border:none;color:var(--scripture);border-radius:8px;padding:9px 11px;cursor:pointer}
+.vmenu button:hover{background:var(--accent-soft);color:var(--accent)}
+.verse .vmenu-btn{background:transparent;color:var(--soft);border:1px solid var(--line);font-weight:700;line-height:1;padding:2px 8px}
+.verse .vmenu-btn:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.verse .cmark{display:none}
+.verse.has-note .cmark{display:inline-block;font-family:var(--sans);font-size:11px;font-weight:700;
+  background:var(--accent);color:#fff;border-radius:20px;padding:1px 9px;margin-left:8px;vertical-align:middle;
+  cursor:pointer;user-select:none}
+.verse.collapsed + .notewrap{display:none}
+.verse.has-note{cursor:pointer}
+.verse .add{opacity:0;font-size:11px;font-family:var(--sans);vertical-align:middle;
+  background:var(--accent);color:#fff;border:none;border-radius:6px;padding:2px 8px;margin-left:8px;
+  cursor:pointer;transition:opacity .15s}
+.verse:hover .add{opacity:.9}
+.notetools{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.copymenu{position:relative}
+.copytrig{font-family:var(--sans);font-size:11.5px;background:var(--panel);border:1px solid var(--line);
+  color:var(--soft);border-radius:20px;padding:3px 12px;cursor:pointer}
+.copytrig:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.copypop{position:absolute;top:calc(100% + 6px);left:0;z-index:40;min-width:172px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.16);padding:5px;display:none}
+.copypop.show{display:block}
+.copypop button{display:block;width:100%;text-align:left;font-family:var(--sans);font-size:13px;
+  background:none;border:none;color:var(--scripture);border-radius:8px;padding:8px 10px;cursor:pointer}
+.copypop button:hover{background:var(--accent-soft);color:var(--accent)}
+.cp-sep{height:1px;background:var(--line);margin:4px 6px}
+.copytrig.menu-3{width:auto;padding:7px 11px;font-size:15px;line-height:1}
+.copypop-right{left:auto;right:0}
+.inline-ed{width:100%;min-height:70px;font-family:var(--sans);font-size:15px;line-height:1.55;color:var(--ink);
+  background:var(--panel);border:2px solid var(--accent);border-radius:10px;padding:10px 12px;resize:vertical;outline:none}
+.inline-bar{display:flex;align-items:center;gap:8px;margin-top:8px}
+.inline-bar .btn{padding:5px 14px;font-size:13px}
+.inline-hint{font-family:var(--sans);font-size:11px;color:var(--soft)}
+/* reference commentary (Matthew Henry) — visually distinct from Nii's journal */
+.refcomm{margin:14px 0 6px;border:1px solid var(--line);border-left:4px solid #6b7aa8;border-radius:10px;background:rgba(107,122,168,.05)}
+.refcomm summary{cursor:pointer;padding:11px 14px;font-family:var(--sans);font-size:13.5px;font-weight:700;color:#4a5680;list-style:none}
+.refcomm summary::-webkit-details-marker{display:none}
+.refcomm summary::before{content:'▸ ';color:#6b7aa8}
+.refcomm[open] summary::before{content:'▾ '}
+.refcomm .rc-pd{font-weight:500;font-size:11px;color:var(--soft);margin-left:8px}
+.refcomm-body{padding:2px 16px 14px;font-family:var(--serif);font-size:15.5px;line-height:1.6;color:var(--scripture)}
+.refcomm-body .rc-p{margin:8px 0}
+.refcomm-body .rc-p b{color:#4a5680;font-family:var(--sans);font-size:12px}
+.verse .vcopy{background:transparent;color:var(--soft);border:1px solid var(--line)}
+.verse:hover .vcopy{opacity:.9}
+.verse .vcopy:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.missed{cursor:pointer}
+.missed:hover{filter:brightness(.95)}
+.missedpanel{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:0 0 14px;overflow:hidden}
+.missedpanel .mp-h{font-family:var(--sans);font-size:12px;font-weight:700;color:#c0392b;padding:10px 14px;border-bottom:1px solid var(--line);background:rgba(192,57,43,.06)}
+.missedrow{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.missedrow:last-child{border-bottom:none}
+.missedrow:hover{background:var(--accent-soft)}
+.missedrow .md-day{font-family:var(--sans);font-weight:700;font-size:13px;min-width:66px;color:var(--accent)}
+.missedrow .md-ref{font-size:14px;color:var(--scripture)}
+.missedrow .md-chev{margin-left:auto;color:var(--soft)}
+.catchbtn{font-family:var(--sans);font-size:12px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:20px;padding:5px 13px;cursor:pointer}
+.catchbtn:hover{filter:brightness(1.05)}
+.anchorreset{font-family:var(--sans);font-size:11.5px;color:var(--soft);background:none;border:none;text-decoration:underline;cursor:pointer}
+.ed-opts{display:flex;align-items:center;gap:12px;margin-top:8px;font-family:var(--sans);font-size:12px;color:var(--soft);flex-wrap:wrap}
+.ed-opts label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.ed-hint{font-size:11px;opacity:.8}
+.ed-spell{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;max-height:88px;overflow-y:auto}
+.ed-spell .es-lbl{font-family:var(--sans);font-size:11px;font-weight:700;color:#c0392b}
+.ed-spell .es-chip{font-family:var(--sans);font-size:12.5px;color:#c0392b;background:rgba(192,57,43,.08);
+  border:1px solid rgba(192,57,43,.35);border-radius:20px;padding:2px 10px;cursor:pointer;
+  text-decoration:underline;text-decoration-style:wavy;text-decoration-color:#c0392b}
+.ed-spell .es-chip:hover{background:rgba(192,57,43,.16)}
+.chapindex{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 22px}
+.chapindex .lbl-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.chapindex .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent);font-weight:700}
+.chapindex .ci-toggle{margin-left:auto;font-family:var(--sans);font-size:12px;font-weight:600;
+  border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:20px;padding:4px 12px;cursor:pointer;white-space:nowrap}
+.chapindex .ci-toggle:hover{background:var(--accent);color:#fff}
+.chapindex .chips{display:flex;flex-wrap:wrap;gap:6px}
+.chapindex .chip{font-size:12.5px;font-family:var(--sans);background:var(--accent-soft);color:var(--accent);
+  border:1px solid var(--note-line);border-radius:20px;padding:3px 11px;cursor:pointer;font-weight:600}
+.chapindex .chip:hover{background:var(--accent);color:#fff}
+
+.note{background:var(--note-bg);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;
+  margin:10px 0 16px;padding:14px 16px;box-shadow:var(--shadow);font-family:var(--sans);font-size:calc(1em*var(--fs,1))}
+.note .meta{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.note .vref{font-size:12px;font-weight:700;color:var(--accent);font-family:var(--sans)}
+.note .badge{font-size:10px;background:var(--accent-soft);color:var(--accent);padding:2px 7px;border-radius:20px;font-weight:600}
+.note .date{font-size:11px;color:var(--soft);margin-left:auto}
+.note .body{font-size:15px;line-height:1.62;white-space:pre-wrap;word-wrap:break-word}
+.note .tools{display:flex;gap:10px;margin-top:9px}
+.note .tools button{background:transparent;border:none;color:var(--soft);font-size:12px;padding:0}
+.note .tools button:hover{color:var(--accent)}
+
+.navbtns{display:flex;justify-content:space-between;margin:36px auto 0;max-width:760px;gap:10px}
+.navbtns button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;
+  padding:12px 18px;font-size:14px;flex:1;transition:.15s}
+.navbtns button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.navbtns button:disabled{opacity:.35;cursor:default}
+
+/* My Commentary view */
+.mc-head{display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.mc-head h2{font-family:var(--serif);font-size:26px;margin:0}
+.mc-count{color:var(--soft);font-size:13px;flex-basis:100%}
+.mine-seg{max-width:320px;margin-left:auto}
+.mc-ed{font-family:var(--sans);font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--accent);
+  background:var(--accent-soft);border-radius:20px;padding:1px 8px;margin-left:8px;vertical-align:middle}
+.mc-book{margin-bottom:8px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+.mc-book>summary{padding:14px 16px;font-family:var(--serif);font-size:17px;font-weight:600;cursor:pointer;
+  list-style:none;display:flex;justify-content:space-between;align-items:center}
+.mc-book>summary::-webkit-details-marker{display:none}
+.mc-book>summary .n{font-size:12px;color:var(--soft);font-family:var(--sans);font-weight:400}
+.mc-item{padding:12px 16px;border-top:1px solid var(--line);cursor:pointer}
+.mc-item:hover{background:var(--accent-soft)}
+.mc-item .r{font-size:12.5px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px}
+.mc-item .mc-date{font-weight:400;color:var(--soft);font-size:11px}
+.mc-item .mc-open{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--soft);
+  font-size:11px;border-radius:6px;padding:3px 8px;font-weight:600}
+.mc-item .mc-open:hover{border-color:var(--accent);color:var(--accent)}
+.mc-item .t{font-size:13.5px;color:var(--soft);margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
+.mc-item.open .t{-webkit-line-clamp:unset;display:block;color:var(--ink);font-size:14.5px;line-height:1.6}
+/* scripture-only reading mode (hide all commentary) — but keep the chapter jump bar visible */
+html.hide-notes .note, html.hide-notes .notewrap{display:none}
+html.hide-notes .verse.revealed + .notewrap,
+html.hide-notes .verse.revealed + .notewrap .note{display:block}   /* tap a verse to reveal its notes even when globally hidden */
+/* date visibility toggle */
+.note .date{display:none}
+html.show-dates .note .date{display:inline}
+.mc-item .mc-date{display:none}
+html.show-dates .mc-item .mc-date{display:inline}
+
+/* Chronological plan */
+.planpage{max-width:680px}
+.planbanner{background:linear-gradient(135deg,#2f6fb0,#5aa9e6);color:#fff;border-radius:16px;padding:26px 22px;margin:0 0 18px;text-align:center;box-shadow:var(--shadow)}
+.planbanner .pb-kick{font-size:12px;font-weight:800;letter-spacing:4px;opacity:.9}
+.planbanner .pb-title{font-family:var(--serif);font-size:32px;font-weight:800;margin:4px 0 6px;line-height:1}
+.planbanner .pb-sub{font-size:13.5px;opacity:.95}
+.planprog{margin:0 0 14px}
+.planbar{height:10px;background:var(--line);border-radius:20px;overflow:hidden}
+.planfill{height:100%;background:var(--accent);transition:width .3s}
+.planprogtxt{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--soft);margin-top:8px;flex-wrap:wrap}
+.placebar{font-size:13px;color:var(--ink);background:var(--accent-soft);border:1px solid var(--note-line);border-radius:10px;padding:10px 14px;margin:0 0 12px}
+/* horizontal day strip */
+.daystrip{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 12px;scrollbar-width:thin;scroll-snap-type:x proximity}
+.daystrip::-webkit-scrollbar{height:8px}
+.daystrip::-webkit-scrollbar-thumb{background:var(--line);border-radius:20px}
+.daychip{flex:0 0 auto;width:62px;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:9px 4px;text-align:center;cursor:pointer;scroll-snap-align:center}
+.daychip .dn{font-size:16px;font-weight:800;color:var(--ink)}
+.daychip .dl{font-size:9.5px;color:var(--soft);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.daychip.done .dn{color:var(--accent)}
+.daychip.done{background:var(--accent-soft);border-color:var(--note-line)}
+.daychip.sel{border:2px solid var(--accent);background:var(--accent-soft)}
+.daychip.today{border:2px solid var(--ink)}
+.daychip.today .dl{background:var(--ink);color:var(--bg);border-radius:20px;padding:1px 6px;font-weight:700}
+.daychip{width:66px}
+.missed{font-size:11.5px;font-weight:700;color:#c0392b;background:rgba(192,57,43,.1);border-radius:20px;padding:2px 9px}
+.todaypill{font-size:11px;background:var(--ink);color:var(--bg);border-radius:20px;padding:1px 9px;font-weight:700;vertical-align:middle}
+/* selected reading */
+.plandayhead{font-family:var(--serif);font-size:20px;margin:18px 0 12px}
+.planend{font-family:var(--sans);font-size:12.5px;color:var(--soft);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.planend b{color:var(--accent)}
+/* Day-complete celebration card */
+.complete-ov{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  background:rgba(20,16,10,.5);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .3s}
+.complete-ov.show{opacity:1;pointer-events:auto}
+.complete-card{background:var(--panel);border:1px solid var(--line);border-radius:22px;max-width:440px;width:88%;
+  padding:34px 30px 30px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.35);
+  transform:scale(.9) translateY(12px);transition:transform .35s cubic-bezier(.2,.9,.3,1.2)}
+.complete-ov.show .complete-card{transform:none}
+.complete-seal{width:64px;height:64px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;
+  font-size:32px;color:#fff;background:linear-gradient(135deg,#c79256,#9a6b3f);
+  box-shadow:0 8px 22px rgba(154,107,63,.45);animation:sealPop .5s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes sealPop{0%{transform:scale(0) rotate(-25deg)}100%{transform:scale(1) rotate(0)}}
+.complete-kick{font-family:var(--sans);font-size:11px;font-weight:800;letter-spacing:.16em;color:var(--accent);margin-bottom:4px}
+.complete-title{font-family:var(--serif);font-size:30px;font-weight:700;color:var(--ink);margin-bottom:16px}
+.complete-verse{font-family:var(--serif);font-size:17px;font-style:italic;line-height:1.6;color:var(--scripture);margin:0 auto 8px;max-width:360px}
+.complete-ref{font-family:var(--sans);font-size:12.5px;font-weight:700;color:var(--soft);margin-bottom:22px}
+.complete-actions{display:flex;flex-direction:column;gap:9px;align-items:center}
+.complete-go{padding:11px 26px;font-size:15px}
+.complete-done{padding:9px 20px;font-size:13.5px;color:var(--soft)}
+.complete-fin{font-family:var(--serif);font-size:15px;color:var(--accent);margin-bottom:6px}
+/* compare-one-verse modal */
+.cvcard{background:var(--panel);border:1px solid var(--line);border-radius:18px;max-width:620px;width:92%;
+  max-height:82vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.35);
+  transform:scale(.94);transition:transform .28s}
+.complete-ov.show .cvcard{transform:none}
+.cvhead{font-family:var(--serif);font-size:18px;padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.cvhead b{color:var(--accent)}
+.cvclose{margin-left:auto;background:none;border:none;font-size:18px;color:var(--soft);cursor:pointer}
+.cvbody{overflow-y:auto;padding:6px 20px}
+.cvrow{padding:12px 0;border-bottom:1px solid var(--line)}
+.cvrow:last-child{border-bottom:none}
+.cvver{font-family:var(--sans);font-size:12px;font-weight:800;color:var(--accent)}
+.cvver span{font-weight:500;color:var(--soft);margin-left:8px}
+.cvtxt{font-family:var(--serif);font-size:16.5px;line-height:1.6;color:var(--scripture);margin-top:4px}
+.cvfoot{display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--line)}
+.passlist{margin:0 0 18px}
+.passrow{display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.passchk{font-size:18px;cursor:pointer;user-select:none}
+.passmain{flex:1;min-width:0;cursor:pointer}
+.passref{font-family:var(--serif);font-size:17px;color:var(--ink)}
+.passrow.done .passref{color:var(--soft);text-decoration:line-through}
+.passchev{color:var(--soft);font-size:22px;cursor:pointer}
+.planstart{width:100%;padding:15px;font-size:16px;border-radius:30px}
+.plannext{width:100%;margin-top:8px}
+.planjump{display:flex;gap:8px;margin-top:10px}
+.planjump .btn{flex:1}
+.restday{background:var(--note-bg);border:1px solid var(--note-line);border-radius:12px;padding:16px 18px;font-size:15px;color:var(--ink)}
+.donepill{font-size:11px;background:var(--accent);color:#fff;border-radius:20px;padding:1px 9px;font-weight:700;vertical-align:middle}
+/* plan context bar in the reader */
+.planctx{background:var(--accent-soft);border:1px solid var(--note-line);border-radius:10px;padding:10px 14px;margin:0 0 16px;font-size:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.planctx .btn{margin-left:auto;padding:5px 12px;font-size:12.5px}
+/* reader footer navigation — a real bottom bar that never covers text */
+.readfoot{flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+.readnav{display:flex;gap:10px;align-items:center;padding:12px 20px;max-width:792px;margin:0 auto}
+.readnav button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:11px 16px;font-size:14px;font-weight:600;flex:1;cursor:pointer}
+.readnav button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.readnav button:disabled{opacity:.35;cursor:default}
+.readnav .rn-mid{flex:0 0 auto;font-size:12.5px;color:var(--soft);font-weight:700}
+.readnav .rn-next{background:var(--accent);border-color:var(--accent);color:#fff}
+.readnav.planmode button.rn-next:hover{color:#fff;opacity:.92}
+/* compare two versions */
+.cmpwrap{max-width:820px}
+.cmprow{display:grid;grid-template-columns:28px 1fr 1fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-family:var(--serif);font-size:16px;line-height:1.6}
+.cmprow .cmpv{font-family:var(--sans);font-size:11px;font-weight:700;color:var(--accent);padding-top:4px}
+.cmpcol.cmpb{color:var(--soft)}
+@media(max-width:700px){.cmprow{grid-template-columns:24px 1fr}.cmprow .cmpb{grid-column:2;border-top:1px dashed var(--line);padding-top:6px}}
+/* Search results */
+.sr-item{padding:12px 16px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer;background:var(--panel)}
+.sr-item:hover{border-color:var(--accent)}
+.sr-item .r{font-size:12.5px;font-weight:700;color:var(--accent)}
+.sr-item .t{font-size:14px;margin-top:3px}
+.sr-item mark{background:var(--note-line);color:inherit;padding:0 2px;border-radius:3px}
+.sr-tag{font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--soft);margin-left:6px}
+
+/* Welcome / About */
+.about{max-width:680px}
+.about-hero{text-align:center;padding:18px 0 26px;border-bottom:1px solid var(--line);margin-bottom:26px}
+.about-kicker{font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--accent)}
+.about-title{font-family:var(--serif);font-size:32px;font-weight:600;margin:10px 0 16px;line-height:1.2}
+.about-slogan{font-family:var(--serif);font-style:italic;font-size:18px;line-height:1.6;color:var(--soft);max-width:560px;margin:0 auto}
+.about-listen{margin:16px auto 0}
+.about-listen .btn{border-color:var(--accent);color:var(--accent)}
+.about-lead{font-family:var(--serif);font-size:22px;line-height:1.5;font-weight:600;margin:0 0 18px}
+.about-p{font-family:var(--serif);font-size:17.5px;line-height:1.75;margin:0 0 18px;color:var(--scripture)}
+.about-sign{font-family:var(--serif);font-size:19px;font-weight:600;margin:26px 0 0}
+.about-cta{margin:28px 0 10px;display:flex;gap:10px;flex-wrap:wrap}
+.about-firsttime{background:var(--accent-soft);border:1px solid var(--note-line);border-radius:10px;
+  padding:12px 15px;font-family:var(--sans);font-size:14px;color:var(--accent);font-weight:600;margin:0 0 22px}
+.about-reward{background:var(--note-bg);border:1px dashed var(--note-line);border-radius:12px;
+  padding:14px 16px;font-family:var(--sans);font-size:14.5px;color:var(--ink);margin:18px 0 4px}
+.about-reward b{color:var(--accent)}
+.howto{margin:34px 0 0;border-top:1px solid var(--line);padding-top:22px}
+.howto h3{font-family:var(--serif);font-size:20px;margin:0 0 12px}
+.howto ul{margin:0;padding-left:20px;font-family:var(--sans)}
+.howto li{font-size:15px;line-height:1.65;margin-bottom:10px;color:var(--ink)}
+.howto b{color:var(--accent)}
+
+/* Editor modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;
+  justify-content:center;padding:20px;z-index:50}
+.overlay.show{display:flex}
+.modal{background:var(--panel);border-radius:16px;box-shadow:var(--shadow);width:100%;max-width:600px;
+  max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
+.modal h3{font-family:var(--serif);margin:0;font-size:20px}
+.modal .mh{padding:18px 20px 8px}
+.modal .mh .vtext{font-family:var(--serif);font-size:15px;color:var(--soft);margin-top:8px;
+  background:var(--bg);padding:10px 12px;border-radius:8px;line-height:1.5;max-height:120px;overflow:auto}
+.modal .mb{padding:6px 20px 0;flex:1;overflow:auto}
+.modal textarea{width:100%;min-height:170px;border:1px solid var(--line);border-radius:10px;padding:13px;
+  font-size:15px;font-family:var(--sans);line-height:1.6;color:var(--ink);background:var(--bg);resize:vertical}
+.modal .mf{padding:16px 20px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--line);margin-top:14px}
+.btn{border-radius:9px;padding:10px 18px;font-size:14px;border:1px solid var(--line);background:transparent;color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.danger{color:#c0392b;border-color:transparent}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);
+  padding:11px 20px;border-radius:30px;font-size:13.5px;opacity:0;transition:.3s;z-index:80;pointer-events:none}
+.toast.show{opacity:1}
+.unsaved-dot{display:inline-block;width:8px;height:8px;background:#e0a020;border-radius:50%;margin-left:5px;vertical-align:middle}
+
+.updbar{position:fixed;left:12px;right:12px;bottom:14px;z-index:200;background:var(--accent);color:#fff;
+  border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;
+  box-shadow:0 6px 24px rgba(0,0,0,.3);font-family:var(--sans);font-size:14px;font-weight:600}
+.updbar button{background:#fff;color:var(--accent);border:none;border-radius:20px;padding:6px 14px;font-weight:700;cursor:pointer;font-family:inherit}
+.updbar .upd-btn{margin-left:auto}
+.updbar .upd-x{background:transparent;color:#fff;font-size:16px;padding:2px 6px}
+.empty{text-align:center;color:var(--soft);padding:60px 20px}
+.empty .big{font-size:40px;margin-bottom:10px}
+
+/* ---------- New UI: bottom nav, home feed, discourse, menu ---------- */
+.bottomnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--panel);
+  border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(0,0,0,.08);
+  padding:4px 2px calc(4px + env(safe-area-inset-bottom))}
+.bottomnav button{flex:1;background:transparent;border:none;color:var(--soft);font-family:var(--sans);
+  font-size:10.5px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;cursor:pointer}
+.bottomnav button span{font-size:19px;line-height:1}
+.bottomnav button.active{color:var(--accent)}
+#tabsLegacy{display:none}
+body.legacy #tabsNew{display:none}
+body.legacy #tabsLegacy{display:flex}
+body.legacy .bottomnav{display:none!important}
+/* New UI hides the sidebar on every screen — navigation lives in the bottom bar (mobile-style) */
+body:not(.legacy) .sidebar,body:not(.legacy) .resizer,body:not(.legacy) .backdrop,body:not(.legacy) .menu-btn{display:none!important}
+body:not(.legacy) .bottomnav{display:flex;justify-content:center}
+body:not(.legacy) .bottomnav button{max-width:120px}
+body:not(.legacy) .main{padding-bottom:54px}
+.uiswitch{width:100%;font-size:11.5px;padding:6px;border:1px dashed var(--line);background:transparent;color:var(--soft);border-radius:8px;cursor:pointer;font-family:var(--sans)}
+.uiswitch:hover{color:var(--accent);border-color:var(--accent)}
+.homefeed{max-width:720px;margin:0 auto}
+.hcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow);font-family:var(--sans)}
+.hcard.hero{background:linear-gradient(135deg,var(--accent) 0%,#6f4a28 100%);color:#fff;border:none}
+.hcard.hero h2{font-family:var(--serif);margin:6px 0 8px;font-size:22px}
+.hcard.hero .hq{font-style:italic;opacity:.92;margin:0 0 12px}
+.hcard.hero .btn{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.5);color:#fff}
+.hcard .hk{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;font-weight:700;color:var(--accent);margin-bottom:6px}
+.hcard.hero .hk{color:#fff;opacity:.85}
+.hcard h3{font-family:var(--serif);margin:0 0 6px;font-size:18px}
+.hcard .soft{color:var(--soft);font-size:13px;margin:0 0 10px}
+.hcard .hrow{display:flex;gap:8px;flex-wrap:wrap}
+.hverse{font-family:var(--serif);font-size:17px;line-height:1.55;margin:6px 0 8px}
+.hnote{background:var(--note-bg);border-left:3px solid var(--accent);padding:8px 10px;border-radius:0 8px 8px 0;font-size:13.5px;margin:0 0 12px}
+.href{font-weight:700;color:var(--accent);font-size:13px}
+.coming{text-align:center;padding:40px 16px;font-family:var(--sans)}
+.coming .big{font-size:52px}
+.coming h2{font-family:var(--serif);font-size:28px;margin:10px 0 6px}
+.soon-badge{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);border-radius:20px;padding:3px 14px;font-size:12px;font-weight:700;margin-bottom:14px}
+.coming p{max-width:520px;margin:0 auto 12px;line-height:1.6}
+.menulist{max-width:640px;margin:0 auto;font-family:var(--sans)}
+.mitem{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);
+  border-radius:14px;padding:15px 16px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow)}
+.mitem:hover{border-color:var(--accent)}
+.mitem .mi{font-size:22px;color:var(--accent);display:inline-flex}
+.mitem .mi svg{width:22px;height:22px}
+.mitem .mt{font-weight:700}
+.mitem .md{font-size:12.5px;color:var(--soft)}
+.mitem .chev{margin-left:auto;color:var(--soft)}
+.mitem .soon{margin-left:auto;font-size:10.5px;font-weight:700;background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:2px 8px;white-space:nowrap}
+.about-skiptop{font-size:12.5px}
+.kw.on{color:var(--accent)}
+.kw.cur{background:var(--accent);color:#fff;border-radius:4px;padding:0 3px}
+.skipov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:90;display:flex;align-items:center;justify-content:center;padding:20px}
+.skipcard{background:var(--panel);border-radius:18px;padding:26px 22px;max-width:380px;text-align:center;font-family:var(--sans);box-shadow:var(--shadow)}
+.skipcard h3{font-family:var(--serif);font-size:22px;margin:8px 0 8px}
+.skipcard p{color:var(--soft);font-size:14px;line-height:1.55;margin:0 0 16px}
+.skipcard .btn{display:block;width:100%;margin-bottom:8px}
+.skipcard .skipdim{border:none;color:var(--soft);font-size:12.5px}
+/* verse highlights */
+.verse.hl-y{background:rgba(250,204,21,.28)}
+.verse.hl-g{background:rgba(74,222,128,.26)}
+.verse.hl-b{background:rgba(96,165,250,.26)}
+.verse.hl-p{background:rgba(244,114,182,.26)}
+.verse.reading{outline:2px solid var(--accent);outline-offset:2px;background:var(--accent-soft)}
+.hlrow{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line)}
+.hlbl{font-size:11px;color:var(--soft);font-family:var(--sans);font-weight:600}
+.hld{width:20px;height:20px;border-radius:50%;cursor:pointer;border:1.5px solid rgba(0,0,0,.15);display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--soft)}
+.hd-y{background:#facc15}.hd-g{background:#4ade80}.hd-b{background:#60a5fa}.hd-p{background:#f472b6}
+.hd-x{background:var(--bg);border:1.5px dashed var(--line)}
+/* reader toolbar + text size */
+.rtools{display:flex;gap:8px;justify-content:center;align-items:center;margin:10px 0 16px;flex-wrap:wrap}
+.rtools .btn{padding:6px 14px;font-size:13px}
+.rtools .vsel{padding:6px 8px;font-size:13px;max-width:170px;cursor:pointer}
+.seasontag{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;
+  background:var(--note-line,rgba(140,110,60,.18));color:var(--soft);font-size:10.5px;
+  font-family:var(--sans);letter-spacing:.02em;text-transform:none;vertical-align:middle}
+/* weekly topical plans */
+.topsec{margin-top:26px;font-family:var(--sans)}
+.topsec-h{font-family:var(--serif);font-size:20px;margin:0 0 12px}
+.topgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.topcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;box-shadow:var(--shadow)}
+.topcard:hover{border-color:var(--accent)}
+.tc-t{font-family:var(--serif);font-size:19px;font-weight:700}
+.tc-d{font-size:11.5px;color:var(--soft);margin:3px 0 10px;min-height:28px}
+.tc-p{height:5px;background:var(--accent-soft);border-radius:3px;overflow:hidden}
+.tc-p div{height:100%;background:var(--accent)}
+.tc-n{font-size:11px;color:var(--soft);margin-top:5px}
+.toprow{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-family:var(--sans)}
+.topchk{width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-weight:700;flex-shrink:0}
+.topchk.on{background:var(--accent)}
+.toprow-main{flex:1;cursor:pointer}
+.tr-day{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--soft);font-weight:700}
+.tr-ref{font-family:var(--serif);font-size:17px}
+.crumb{cursor:pointer}
+.crumb .caret{font-size:11px;color:var(--soft)}
+.bp-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80}
+.bp-ov.show{display:flex}
+.bp-sheet{background:var(--panel);width:min(480px,100%);margin:auto auto 0;max-height:86vh;display:flex;flex-direction:column;
+  border-radius:18px 18px 0 0;padding:14px 16px calc(10px + env(safe-area-inset-bottom));box-shadow:var(--shadow)}
+@media(min-width:861px){.bp-sheet{margin:auto;border-radius:18px;max-height:80vh}}
+.bp-head{display:flex;align-items:center;margin-bottom:8px;font-weight:700;font-family:var(--sans)}
+.bp-head span{flex:1;text-align:center}
+.bp-x{background:var(--bg);border:1px solid var(--line);border-radius:50%;width:32px;height:32px;color:var(--ink);cursor:pointer}
+.bp-list{overflow:auto;flex:1;min-height:200px}
+.bp-book{padding:11px 6px;font-family:var(--serif);font-size:18px;cursor:pointer;border-bottom:1px solid var(--line)}
+.bp-book.cur{color:var(--accent);font-weight:700}
+.bp-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;padding:10px 2px 14px;border-bottom:1px solid var(--line)}
+.bp-grid button{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 0;font-size:15px;color:var(--ink);cursor:pointer;font-family:var(--sans)}
+.bp-grid button.cur{background:var(--accent);color:#fff;border-color:var(--accent)}
+.bp-foot{display:flex;border:1px solid var(--line);border-radius:20px;overflow:hidden;margin-top:10px;font-family:var(--sans)}
+.bp-foot button{flex:1;padding:8px;border:none;background:transparent;color:var(--ink);cursor:pointer;font-weight:600}
+.bp-foot button.on{background:var(--accent-soft);color:var(--accent)}
+#chapselWrap{display:none!important}
+/* reading controls appear only in Bible reading & search */
+body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:none!important}
+#searchBtn,#tbMore{display:none}
+@media(max-width:860px){
+  body.legacy .menu-btn{display:block}
+  .searchwrap{display:none}
+  .topbar.searching .searchwrap{display:flex;flex:1 1 100%;order:10}
+  body[data-view="search"] .searchwrap{display:flex;flex:1 1 100%;order:10}
+  #cmpBtn,#refBtn,#themeBtn{display:none}
+  body[data-view="read"] #searchBtn,body[data-view="search"] #searchBtn,
+  body[data-view="read"] #tbMore,body[data-view="search"] #tbMore{display:flex}
+  .versel{max-width:84px}
+}
+.disc-input{width:100%;min-height:84px;border:1px solid var(--line);border-radius:10px;background:var(--bg);
+  color:var(--ink);font-family:var(--sans);font-size:14px;padding:10px 12px;margin-bottom:10px;resize:vertical}
+.qotd-empty{border:1px dashed var(--line);border-radius:10px;padding:16px;text-align:center;color:var(--soft);font-size:13px}
+.streakrow{display:flex;gap:10px;text-align:center}
+.streakrow>div{flex:1;background:var(--accent-soft);border-radius:12px;padding:10px 6px}
+.streakrow b{display:block;font-size:22px;color:var(--accent)}
+.streakrow span{font-size:11px;color:var(--soft)}
+.nico{display:inline-flex;align-items:center;justify-content:center}
+.nico svg{width:22px;height:22px}
+.hk .nico{vertical-align:-4px;margin-right:5px}
+.hk .nico svg{width:15px;height:15px}
+.cmark .nico{vertical-align:-2px;margin-right:3px}
+.cmark .nico svg{width:13px;height:13px}
+.icon-btn .nico svg{width:18px;height:18px}
+
+/* Mobile */
+.backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:30}
+@media(max-width:860px){
+  .sidebar{position:fixed;z-index:40;height:100%;margin-left:-300px;box-shadow:var(--shadow)}
+  .sidebar.open{margin-left:0}
+  .backdrop.show{display:block}
+  .topbar{flex-wrap:wrap;gap:8px;padding:10px 12px}
+  .searchwrap{flex:1;min-width:0}
+  .searchwrap input{width:100%;min-width:70px}
+  .versel{max-width:110px}
+  .icon-btn{width:34px;height:34px;font-size:15px}
+  .chapindex{padding:10px 12px;margin-bottom:16px}
+  .chapindex .lbl-row{flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .chapindex .lbl{font-size:10px;letter-spacing:.5px}
+  .chapindex .ci-toggle{font-size:11px;padding:3px 9px}
+  .chapindex .chips{gap:5px}
+  .chapindex .chip{font-size:12px;padding:2px 9px}
+  .bottomnav{display:flex}
+  .main{padding-bottom:54px}
+  .crumb{font-size:16px}
+  .reader{padding:22px 12px 120px}
+  .chap-title{font-size:25px}
+  .verse{font-size:calc(18px*var(--fs,1))}
+  .resizer{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-top">
+        <div class="copymenu">
+          <button class="copytrig menu-3" onclick="toggleCopyMenu(event,this)" title="Menu — backup / restore your notes">☰</button>
+          <div class="copypop">
+            <button onclick="closeCopyMenus();exportCommentary()">⬆ Export a backup</button>
+            <button onclick="closeCopyMenus();document.getElementById('importFile').click()">⬇ Import a backup</button>
+          </div>
+        </div>
+      </div>
+      <h1>Never Get Bored</h1>
+      <p>Nii Okai's Journal Through Scripture</p>
+      <div class="ver" id="ver"></div>
+    </div>
+    <div class="side-actions tabs" id="tabsNew">
+      <button data-view="home" onclick="setView('home')">Home</button>
+      <button data-view="read" onclick="setView('read')">Bible</button>
+      <button data-view="plan" onclick="setView('plan')">Plan</button>
+      <button data-view="discourse" onclick="setView('discourse')">Discourse</button>
+      <button data-view="menu" onclick="setView('menu')">Menu</button>
+    </div>
+    <div class="side-actions tabs" id="tabsLegacy">
+      <button data-view="about" onclick="setView('about')">Welcome</button>
+      <button data-view="read" onclick="setView('read')">Read Bible</button>
+      <button data-view="mine" onclick="setView('mine')">Journal</button>
+      <button data-view="plan" onclick="setView('plan')">Plan</button>
+    </div>
+    <div class="side-actions">
+      <button class="uiswitch" id="uiSwitch" onclick="toggleLegacy()">🖥 Legacy UI</button>
+    </div>
+    <div class="side-actions" id="previewRow" style="border-top:none;padding-top:0">
+      <button id="previewBtn" onclick="togglePreview()" title="See the app the way a public reader sees it" style="flex:1 1 100%">👁 Preview as a reader</button>
+    </div>
+    <div class="lib-section">
+      <div class="lib-head">Library <span>reference works · shown while you read</span></div>
+      <button id="refToggleBtn" class="lib-item" onclick="toggleRefComm()">
+        <span class="lib-name">📖 Matthew Henry’s Commentary</span>
+        <span class="lib-state" id="refState">Off</span>
+      </button>
+    </div>
+    <div class="booklist" id="booklist"></div>
+  </aside>
+  <div class="resizer" id="resizer" title="Drag to resize the sidebar"></div>
+  <div class="backdrop" id="backdrop" onclick="toggleSidebar(false)"></div>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar(true)">☰</button>
+      <button class="icon-btn" id="planBackBtn" onclick="exitPlanRead()" title="Back to the plan" style="display:none">←</button>
+      <span class="crumb" id="crumb" onclick="if(state.view==='read')openBookPicker()">Genesis 1</span>
+      <div class="chapsel" id="chapselWrap">
+        <select id="chapSelect" onchange="goChapter(+this.value)"></select>
+      </div>
+      <div class="spacer"></div>
+      <div class="searchwrap rc">
+        <input id="search" placeholder="Search…" oninput="onSearch(this.value)" autocomplete="off">
+      </div>
+      <button class="icon-btn rc" id="searchBtn" data-ico="search" onclick="tbSearch()" title="Search"></button>
+      <select class="versel rc" id="verSelect" onchange="setVersion(this.value)" title="Translation"></select>
+      <select class="versel rc" id="cmpSelect" onchange="setCompare(this.value)" title="Compare with…" style="display:none"></select>
+      <button class="icon-btn rc" id="cmpBtn" onclick="toggleCompare()" title="Compare two translations side by side">⇄</button>
+      <button class="icon-btn rc" id="notesBtn" onclick="toggleNotes()" title="Show ALL of Nii Okai’s commentary / hide all (scripture only)">💬</button>
+      <button class="icon-btn rc" id="refBtn" onclick="toggleRefComm()" title="Show / hide Matthew Henry's classic commentary (public domain)">📚</button>
+      <button class="icon-btn rc" id="dateBtn" onclick="toggleDates()" title="Show / hide the dates notes were written" style="display:none">📅</button>
+      <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">☾</button>
+      <button class="icon-btn rc" id="tbMore" data-ico="dots" onclick="tbMoreMenu(event)" title="More"></button>
+    </div>
+    <div class="reader" id="reader"></div>
+    <div class="readfoot" id="readfoot" style="display:none"></div>
+  </main>
+</div>
+
+<div class="bp-ov" id="bpOv" onclick="if(event.target===this)closeBookPicker()">
+  <div class="bp-sheet">
+    <div class="bp-head"><button class="bp-x" onclick="closeBookPicker()">✕</button><span>Books</span><span style="width:32px"></span></div>
+    <div class="bp-list" id="bpList"></div>
+    <div class="bp-foot"><button id="bpTrad" class="on" onclick="bpOrder('trad')">Traditional</button><button id="bpAlpha" onclick="bpOrder('alpha')">Alphabetical</button></div>
+  </div>
+</div>
+
+<nav class="bottomnav" id="bottomnav">
+  <button data-view="home" data-ico="home" onclick="setView('home')">Home</button>
+  <button data-view="read" data-ico="book" onclick="setView('read')">Bible</button>
+  <button data-view="plan" data-ico="cal" onclick="setView('plan')">Plans</button>
+  <button data-view="discourse" data-ico="chat" onclick="setView('discourse')">Discourse</button>
+  <button data-view="menu" data-ico="menu" onclick="setView('menu')">Menu</button>
+</nav>
+
+<input type="file" id="importFile" accept=".json,.js" style="display:none" onchange="importCommentary(event)">
+
+<!-- EDITOR -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="mh">
+      <h3 id="edTitle">Add commentary</h3>
+      <div class="vtext" id="edVerse"></div>
+    </div>
+    <div class="mb">
+      <textarea id="edText" placeholder="Share your thoughts on this verse…" spellcheck="true" autocapitalize="sentences" autocorrect="on" oninput="noteAutocorrect(event)"></textarea>
+      <div class="ed-opts"><label title="Fixes obvious typos & capitalisation as you type — leaves your spelling & style alone"><input type="checkbox" id="edAuto" checked> Auto-correct</label>
+        <span class="ed-hint">Flagged words show below — click one to fix, ignore, or add to your dictionary</span></div>
+      <div class="ed-spell" id="edSpell" style="display:none"></div>
+    </div>
+    <div class="mf">
+      <button class="btn danger" id="edDelete" onclick="deleteCurrent()" style="margin-right:auto;display:none">Delete</button>
+      <button class="btn" onclick="closeEditor()">Cancel</button>
+      <button class="btn primary" onclick="saveEditor()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- DATA -->
+<script src="data/books.js"></script>
+<script src="data/versions.js"></script>
+<script src="data/commentary.js"></script>
+<script src="data/refined.js"></script>
+<script src="data/chronological.js"></script>
+
+<script>
+/* ---------- State ---------- */
+const LS_KEY='henry_bible_commentary_v1';
+const LS_PREFS='henry_bible_prefs_v1';
+const BUILD={v:'0.32.0', date:'30 Jul 2026'};
+const BLOG_URL='https://www.getwordwisdom.com/';
+const OWNER_KEY='niiokai';
+function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
+let state={version:'KJV',book:0,chapter:1,view:'home',dirty:false,journal:'modern',plan:null,compare:null,refcomm:false};
+let _refTried={};
+let DATA={};            // working commentary
+let editing=null;       // {book,ch,v,id}
+
+/* ---------- Init ---------- */
+function init(){
+  // owner unlock via secret link (?owner=<key>); everyone else sees the reader view
+  try{ const q=new URLSearchParams(location.search);
+    if(q.get('owner')===OWNER_KEY){ localStorage.setItem('nok_owner','1'); history.replaceState(null,'',location.pathname); toast('Owner mode unlocked on this device'); }
+    else if(q.get('owner')==='off'){ localStorage.removeItem('nok_owner'); history.replaceState(null,'',location.pathname); }
+  }catch(e){}
+  document.body.classList.toggle('is-reader',!isOwner());
+  // first-time readers: the year plan begins at Day 1 TODAY (not the calendar), so no "missed days" on arrival
+  try{ if(!localStorage.getItem('nok_plan_anchor') && !Object.keys(chDone()).length){
+    const n=new Date(); const iso=new Date(n.getFullYear(),n.getMonth(),n.getDate()).toISOString().slice(0,10);
+    localStorage.setItem('nok_plan_anchor',JSON.stringify({day:0,date:iso})); } }catch(e){}
+  applyFont();
+  // load commentary: localStorage overrides seed
+  try{ const s=localStorage.getItem(LS_KEY); DATA=s?JSON.parse(s):deepCopy(window.COMMENTARY_SEED||{}); }
+  catch(e){ DATA=deepCopy(window.COMMENTARY_SEED||{}); }
+  // prefs
+  try{ const p=JSON.parse(localStorage.getItem(LS_PREFS)||'{}');
+    if(p.version&&window.VERSIONS[p.version]) state.version=p.version;
+    if(typeof p.book==='number') state.book=p.book;
+    if(typeof p.chapter==='number') state.chapter=p.chapter;
+    if(p.theme) document.documentElement.dataset.theme=p.theme;
+    if(p.showDates){ document.documentElement.classList.add('show-dates'); }
+    if(p.hideNotes===true){ document.documentElement.classList.add('hide-notes'); } // default: MY journal is shown
+    if(p.journal==='original'||p.journal==='modern') state.journal=p.journal;
+    if(p.refcomm) state.refcomm=true;
+  }catch(e){}
+  if(state.refcomm){ ensureRefIndex(()=>{}); } _syncRefUI();
+  document.getElementById('themeBtn').textContent=document.documentElement.dataset.theme==='dark'?'☀':'☾';
+  document.getElementById('dateBtn').classList.toggle('active',document.documentElement.classList.contains('show-dates'));
+  if(localStorage.getItem('nok_dates_unlocked')) document.getElementById('dateBtn').style.display='';
+  { const off=document.documentElement.classList.contains('hide-notes');
+    const nb=document.getElementById('notesBtn'); nb.classList.toggle('active',!off); }
+  // first-visit welcome gate
+  if(!localStorage.getItem('nok_seen_welcome')){ state.gate=true; state.view='about'; }
+  // legacy UI preference
+  if(localStorage.getItem('nok_legacy')){ document.body.classList.add('legacy');
+    const ub=document.getElementById('uiSwitch'); if(ub) ub.textContent='✨ New UI';
+    if(state.view==='home') state.view='read'; }
+  document.getElementById('ver').textContent='v'+BUILD.v+' · built '+BUILD.date;
+  try{ const sw=localStorage.getItem('nok_sidew'); if(sw) document.getElementById('sidebar').style.width=sw+'px'; }catch(e){}
+  setupResizer();
+  _trackStreak();
+  document.querySelectorAll('[data-ico]').forEach(b=>{ b.insertAdjacentHTML('afterbegin',ICONS[b.dataset.ico]); });
+  document.getElementById('notesBtn').innerHTML=ICONS.chat;
+  document.getElementById('refBtn').innerHTML=ICONS.library;
+  document.getElementById('cmpBtn').innerHTML=ICONS.swap;
+  setViewTabs();
+  buildVersionSelect();
+  buildBookList();
+  render();
+}
+function setupResizer(){
+  const sb=document.getElementById('sidebar'), rz=document.getElementById('resizer'); if(!rz)return;
+  let drag=false;
+  rz.addEventListener('mousedown',e=>{ drag=true; rz.classList.add('dragging'); document.body.style.userSelect='none'; e.preventDefault(); });
+  window.addEventListener('mousemove',e=>{ if(!drag)return; let w=Math.max(240,Math.min(480,e.clientX)); sb.style.width=w+'px'; });
+  window.addEventListener('mouseup',()=>{ if(!drag)return; drag=false; rz.classList.remove('dragging'); document.body.style.userSelect='';
+    try{ localStorage.setItem('nok_sidew',parseInt(sb.style.width)); }catch(e){} });
+}
+function enterFromWelcome(){ localStorage.setItem('nok_seen_welcome','1'); localStorage.setItem('nok_dates_unlocked','1');
+  document.getElementById('dateBtn').style.display=''; state.gate=false; setView('home'); }
+function skipWelcome(force){
+  if(!force && !localStorage.getItem('nok_skip_nudge')){
+    localStorage.setItem('nok_skip_nudge','1');
+    const ov=document.createElement('div'); ov.className='skipov'; ov.id='skipov';
+    ov.innerHTML=`<div class="skipcard">
+      <div style="font-size:34px">🎁</div>
+      <h3>Before you go…</h3>
+      <p>Nii Okai wrote this welcome just for you — it changes how you’ll read everything that follows. And there’s a small gift at the end for those who finish it.</p>
+      <button class="btn primary" onclick="document.getElementById('skipov').remove();karListen()">🔊 Listen instead (3 min)</button>
+      <button class="btn" onclick="document.getElementById('skipov').remove()">I’ll read it now</button>
+      <button class="btn skipdim" onclick="document.getElementById('skipov').remove();skipWelcome(true)">Skip anyway →</button>
+    </div>`;
+    document.body.appendChild(ov); return;
+  }
+  localStorage.setItem('nok_seen_welcome','1'); state.gate=false; setView('home'); }
+function deepCopy(o){return JSON.parse(JSON.stringify(o||{}))}
+function savePrefs(){localStorage.setItem(LS_PREFS,JSON.stringify({
+  version:state.version,book:state.book,chapter:state.chapter,
+  theme:document.documentElement.dataset.theme||'light',
+  showDates:document.documentElement.classList.contains('show-dates'),
+  hideNotes:document.documentElement.classList.contains('hide-notes'),
+  journal:state.journal,refcomm:state.refcomm}))}
+function persist(){localStorage.setItem(LS_KEY,JSON.stringify(DATA));}
+
+/* ---------- Version loading ---------- */
+function buildVersionSelect(){
+  const sel=document.getElementById('verSelect');
+  sel.innerHTML=Object.entries(window.VERSIONS).map(([c,n])=>
+    `<option value="${c}" ${c===state.version?'selected':''}>${c} — ${n}</option>`).join('');
+}
+function ensureVersion(v,cb){
+  if(window.BIBLE&&window.BIBLE[v])return cb();
+  if(state.view==='read'){ const rd=document.getElementById('reader');
+    if(rd&&!rd.querySelector('.verse')) rd.innerHTML='<div class="empty"><div class="big">📖</div>Loading Scripture…</div>'; }
+  const s=document.createElement('script');
+  s.src='data/'+v+'.js'; s.onload=cb;
+  s.onerror=()=>{toast('Could not load '+v);cb();};
+  document.head.appendChild(s);
+}
+function setVersion(v){
+  state.version=v; savePrefs();
+  ensureVersion(v,()=>{ if(state.view==='read') render(); });
+}
+function toggleCompare(){
+  const csel=document.getElementById('cmpSelect'), cb=document.getElementById('cmpBtn');
+  if(state.compare){ state.compare=null; csel.style.display='none'; cb.classList.remove('active'); if(state.view==='read') renderRead(); return; }
+  // pick a default 2nd version different from primary
+  const opts=Object.keys(window.VERSIONS).filter(c=>c!==state.version);
+  const def=opts[0];
+  csel.innerHTML=Object.entries(window.VERSIONS).map(([c,n])=>`<option value="${c}" ${c===def?'selected':''}>${c} — ${n}</option>`).join('');
+  csel.style.display=''; cb.classList.add('active'); state.compare=def;
+  ensureVersion(def,()=>{ if(state.view==='read') renderRead(); });
+}
+function setCompare(v){ state.compare=v; ensureVersion(v,()=>{ if(state.view==='read') renderRead(); }); }
+
+/* ---------- Sidebar / books ---------- */
+function buildBookList(){
+  const OT=39, list=document.getElementById('booklist');
+  let html='<div class="book-group">Old Testament</div>';
+  window.BOOKS.forEach((b,i)=>{
+    if(i===OT) html+='<div class="book-group">New Testament</div>';
+    const cnt=bookNoteCount(b.name);
+    html+=`<div class="book ${i===state.book&&state.view==='read'?'active':''}" data-bi="${i}" onclick="openBook(${i})">
+      <span>${b.name}</span>${cnt?`<span class="cdot">${cnt}</span>`:''}</div>`;
+  });
+  list.innerHTML=html;
+}
+function bookNoteCount(name){
+  const b=DATA[name]; if(!b)return 0; let n=0;
+  for(const c in b)for(const v in b[c])n+=b[c][v].length; return n;
+}
+function openBook(i){ state.book=i; state.chapter=1; state.view='read'; setViewTabs(); savePrefs(); render(); toggleSidebar(false); }
+
+/* ---------- Render ---------- */
+function render(){
+  if(typeof stopReadAloud==='function') stopReadAloud();
+  const pb=document.getElementById('planBackBtn'); if(pb) pb.style.display = (state.plan&&state.view==='read')?'':'none';
+  if(state.view==='home') return renderHome();
+  if(state.view==='discourse') return renderDiscourse();
+  if(state.view==='menu') return renderMenu();
+  if(state.view==='about') return renderAbout();
+  if(state.view==='plan') return renderPlan();
+  if(state.view==='mine') return renderMine();
+  ensureVersion(state.version, renderRead);
+}
+/* ---------- Chronological reading plan ---------- */
+function isLeap(y){ return (y%4===0&&y%100!==0)||y%400===0; }
+function getPlan(){ const C=window.CHRONO||[]; const y=new Date().getFullYear();
+  if(!isLeap(y)||!C.length) return C;
+  const p=C.slice(); p.splice(59,0,{t:"Catch-up & reflection — no new passage today. Rest, review, or catch up on any missed days.",r:[],catchup:true}); return p; }
+function chDone(){ try{return JSON.parse(localStorage.getItem('nok_chrono_ch')||'{}'); }catch(e){return {};} }
+function saveChDone(d){ localStorage.setItem('nok_chrono_ch',JSON.stringify(d)); }
+function readingChapters(rd){ const o=[]; rd.r.forEach(x=>{ for(let c=x[1];c<=x[2];c++) o.push([x[0],c]); }); return o; }
+function readingDone(rd,d){ d=d||chDone(); return readingChapters(rd).every(([b,c])=>d[b+' '+c]); }
+function fmtRefs(r){ return r.map(x=>x[1]===x[2]?`${x[0]} ${x[1]}`:`${x[0]} ${x[1]}–${x[2]}`).join('; '); }
+function currentReading(){ const C=getPlan(); const d=chDone(); const i=C.findIndex(rd=>!readingDone(rd,d)); return i<0?C.length-1:i; }
+/* Date anchoring: by default Day 1 = Jan 1 this year. "Catch me up" re-anchors so your
+   current reading lands on today — pushing later dates forward (into next year if you're behind)
+   or pulling them closer (if you're ahead). Stored in localStorage so it persists. */
+function _jan1ISO(){ const d=new Date(new Date().getFullYear(),0,1); return d.toISOString().slice(0,10); }
+function planAnchor(){ try{ const a=JSON.parse(localStorage.getItem('nok_plan_anchor')||'null');
+  if(a&&Number.isFinite(a.day)&&a.date) return a; }catch(e){} return {day:0,date:_jan1ISO()}; }
+function anchorIsDefault(){ const a=planAnchor(); return a.day===0 && a.date===_jan1ISO(); }
+function _anchorDate(){ const p=planAnchor().date.split('-').map(Number); return new Date(p[0],p[1]-1,p[2]); }
+function planDate(i){ const a=planAnchor(); const d=_anchorDate(); d.setDate(d.getDate()+(i-a.day)); return d; }
+function dateLabel(i){ return planDate(i).toLocaleDateString('en-US',{month:'short',day:'2-digit'}); }
+function todayIdx(){ const a=planAnchor(); const base=_anchorDate(); const n=new Date();
+  const t=new Date(n.getFullYear(),n.getMonth(),n.getDate()); return a.day+Math.round((t-base)/86400000); }
+/* projected finish: at one reading a day from today, the last reading lands on today + (remaining-1) */
+function planFinishLabel(remaining){ const dt=new Date(); dt.setDate(dt.getDate()+Math.max(0,remaining-1));
+  return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function planCatchUp(){ const i=currentReading(); const n=new Date();
+  const iso=new Date(n.getFullYear(),n.getMonth(),n.getDate()).toISOString().slice(0,10);
+  localStorage.setItem('nok_plan_anchor',JSON.stringify({day:i,date:iso}));
+  planSel=i; showMissed=false; renderPlan();
+  toast('🎯 Caught up — Day '+(i+1)+' is set to today'); }
+function planCatchReset(){ localStorage.removeItem('nok_plan_anchor'); showMissed=false; renderPlan();
+  toast('Dates reset to the calendar year'); }
+let planSel=null, placeMode=false, planResume=null, showMissed=false;
+function setPlaceMode(on){ placeMode=on; renderPlan(); }
+function toggleMissed(){ showMissed=!showMissed; renderPlan(); }
+function gotoDay(i){ showMissed=false; planSel=i; renderPlan(); }
+function missedDays(){ const C=getPlan(); const d=chDone(); const N=C.length; const tIdx=Math.max(0,Math.min(todayIdx(),N-1));
+  const out=[]; C.forEach((rd,i)=>{ if(i<tIdx && !rd.catchup && !readingDone(rd,d)) out.push(i); }); return out; }
+/* select a day WITHOUT rebuilding/re-centering the strip — just swap the reading shown */
+function selectDay(i){ const C=getPlan(); i=Math.max(0,Math.min(C.length-1,i)); planSel=i;
+  const body=document.querySelector('.plansel');
+  if(body){ document.querySelectorAll('.daychip').forEach((c,idx)=>c.classList.toggle('sel',idx===i));
+    body.innerHTML=planBodyHTML(i); }
+  else renderPlan(); }
+/* the selected-day panel (extracted so selectDay can refresh it in place) */
+function planBodyHTML(si){ const C=getPlan(); const d=chDone(); const N=C.length; const tIdx=Math.max(0,Math.min(todayIdx(),N-1));
+  const sel=C[si]||{t:'',r:[['Genesis',1,1]]}; const chaps=readingChapters(sel); let rows='';
+  if(sel.catchup){ rows=`<div class="restday">☕ <b>Rest / catch-up day.</b> No new passage today — use it to catch up on any missed days or reflect.</div>`; }
+  else chaps.forEach(([b,c],ci)=>{ const cd=!!d[b+' '+c];
+    rows+=`<div class="passrow ${cd?'done':''}">
+      <span class="passchk" onclick="event.stopPropagation();toggleChapter('${esc(b)}',${c})">${cd?'✅':'⭕'}</span>
+      <div class="passmain" onclick="planRead(${si},${ci})"><span class="passref">${escHTML(b)} ${c}</span></div>
+      <span class="passchev" onclick="planRead(${si},${ci})">›</span></div>`; });
+  const allDone=sel.catchup||readingDone(sel,d);
+  return `<div class="plandayhead"><b>Day ${si+1}</b> of ${N} · ${dateLabel(si)}${si===tIdx?' <span class="todaypill">Today</span>':''}${allDone&&!sel.catchup?' <span class="donepill">✓ done</span>':''}</div>
+      <div class="passlist">${rows}</div>
+      ${sel.catchup
+        ? (si+1<N?`<button class="btn primary planstart" onclick="selectDay(${si+1})">Go to Day ${si+2} →</button>`:'')
+        : `<button class="btn primary planstart" onclick="planRead(${si},0)">${allDone?'📖 Read again':'📖 Start Reading'}</button>`}
+      <div class="planjump"><button class="btn" onclick="selectDay(${Math.max(0,si-1)})" ${si===0?'disabled':''}>← Day ${si}</button>
+        <button class="btn" onclick="selectDay(${Math.min(N-1,si+1)})" ${si>=N-1?'disabled':''}>Day ${si+2} →</button></div>`; }
+function renderPlan(){
+  document.getElementById('crumb').textContent='Chronological Plan';
+  document.getElementById('chapselWrap').style.display='none';
+  document.getElementById('readfoot').style.display='none';
+  const C=getPlan(); const d=chDone(); const N=C.length;
+  const doneCount=C.filter(rd=>!rd.catchup&&readingDone(rd,d)).length;
+  const totalReal=C.filter(rd=>!rd.catchup).length;
+  const pct=totalReal?Math.round(doneCount/totalReal*100):0;
+  const tIdx=Math.max(0,Math.min(todayIdx(),N-1));
+  const missedList=missedDays(); const missed=missedList.length;
+  const remaining=C.filter(rd=>!rd.catchup&&!readingDone(rd,d)).length;
+  const finishTxt = remaining>0
+    ? `🏁 At one reading a day, you'll finish <b>${planFinishLabel(remaining)}</b> · ${remaining} reading${remaining>1?'s':''} left`
+    : `🎉 You've completed the entire plan — every reading is done!`;
+  if(planSel===null||planSel<0||planSel>=N) planSel=tIdx;
+  const sel=C[planSel]||{t:'',r:[['Genesis',1,1]]};
+  let strip='';
+  C.forEach((rd,i)=>{ const dn=rd.catchup?true:readingDone(rd,d);
+    strip+=`<div class="daychip ${dn?'done':''} ${i===planSel?'sel':''} ${i===tIdx?'today':''}" id="chip${i}" onclick="${placeMode?`planSetPlace(${i})`:`selectDay(${i})`}">
+      <div class="dn">${i+1}${dn&&!rd.catchup?' ✓':''}${rd.catchup?'☕':''}</div><div class="dl">${dateLabel(i)}</div></div>`; });
+  const html=`<div class="page planpage">
+    <div class="planbanner"><div class="pb-kick">CHRONOLOGICAL</div><div class="pb-title">Bible in a Year</div><div class="pb-sub">Read the Word in the order it happened</div></div>
+    <div class="planprog"><div class="planbar"><div class="planfill" style="width:${pct}%"></div></div>
+      <div class="planprogtxt">${doneCount} of ${totalReal} days done · ${pct}%
+        ${missed>0?`<span class="missed" onclick="toggleMissed()" title="Tap to see what you've missed">${missed} missed ${missed>1?'days':'day'} ${showMissed?'▲':'▼'}</span>`:''}
+        ${!anchorIsDefault()?`<button class="anchorreset" onclick="planCatchReset()" title="Put the plan back on the normal calendar (Day 1 = Jan 1)">reset dates</button>`:''}
+        <button class="catchbtn" style="margin-left:auto" onclick="planCatchUp()" title="Shift the plan's DATES so today lines up with your current reading. Doesn't mark anything read.">📅 Catch me up</button>
+        <button class="btn" style="padding:5px 12px;font-size:12px" onclick="${placeMode?'setPlaceMode(false)':'setPlaceMode(true)'}" title="Mark every reading up to a chosen day as already READ (fills in the ticks).">${placeMode?'Cancel':'✔ Mark up to here'}</button></div>
+      <div class="planend">${finishTxt}</div></div>
+    ${placeMode?`<div class="placebar">📍 <b>Tap the day you're on</b> — everything before it gets marked as read.</div>`:''}
+    ${showMissed&&missed>0?`<div class="missedpanel"><div class="mp-h">${missed} reading${missed>1?'s':''} still pending — tap one to open it</div>
+      ${missedList.map(i=>`<div class="missedrow" onclick="gotoDay(${i})"><span class="md-day">Day ${i+1}</span><span class="md-ref">${escHTML(fmtRefs(C[i].r))}</span><span class="md-chev">›</span></div>`).join('')}</div>`:''}
+    <div class="daystrip" id="daystrip">${strip}</div>
+    <div class="plansel">${planBodyHTML(planSel)}</div>
+    ${topicalCardsHTML()}
+  </div>`;
+  document.getElementById('reader').innerHTML=html;
+  document.getElementById('reader').scrollTop=0; buildBookList();
+  const chip=document.getElementById('chip'+planSel); if(chip&&chip.scrollIntoView) chip.scrollIntoView({inline:'center',block:'nearest'});
+}
+/* open a chapter as a normal (whole-Bible) read */
+function openChapter(book,ch){ const bi=window.BOOKS.findIndex(b=>b.name===book); if(bi<0)return;
+  state.plan=null; planResume=null; state.book=bi; state.chapter=ch; state.view='read'; setViewTabs(); savePrefs();
+  ensureVersion(state.version, renderRead); toggleSidebar(false); }
+/* read a chapter WITHIN the plan — scoped to the day, stays in the plan.
+   NOTE: opening a chapter does NOT mark it read. It's ticked only when you move on (Next) or tick the circle. */
+function planRead(day,ci){ const C=getPlan(); const rd=C[day]; if(!rd)return; const chaps=readingChapters(rd);
+  if(!chaps.length){ selectDay(day); return; }
+  ci=Math.max(0,Math.min(chaps.length-1,ci));
+  const [b,c]=chaps[ci]; const bi=window.BOOKS.findIndex(x=>x.name===b); if(bi<0)return;
+  state.plan={day:day,ci:ci}; planResume={day:day,ci:ci}; planSel=day; state.book=bi; state.chapter=c; state.view='read'; setViewTabs(); savePrefs();
+  ensureVersion(state.version, renderRead); toggleSidebar(false);
+}
+function _markPlanChapterRead(day,ci){ const C=getPlan(); const chaps=readingChapters(C[day]); const cc=chaps[ci];
+  if(cc){ const d=chDone(); d[cc[0]+' '+cc[1]]=true; saveChDone(d); } }
+function planNav(delta){ if(!state.plan)return; const C=getPlan(); const chaps=readingChapters(C[state.plan.day]);
+  if(delta>0) _markPlanChapterRead(state.plan.day, state.plan.ci);   // finished this chapter → now tick it
+  const ni=state.plan.ci+delta;
+  if(ni>=0 && ni<chaps.length) planRead(state.plan.day,ni);
+  else if(ni>=chaps.length) planDayComplete();
+  else if(ni<0 && state.plan.day>0){ const pd=state.plan.day-1; const pc=readingChapters(C[pd]); planRead(pd,pc.length-1); }
+}
+function planDayComplete(){ if(!state.plan)return; const C=getPlan(); const day=state.plan.day;
+  const nextDay=day+1; const hasNext=nextDay<C.length;
+  state.plan=null; planResume=null; planSel=Math.min(C.length-1,nextDay); state.view='plan'; setViewTabs(); renderPlan();
+  showDayComplete(day+1, hasNext?nextDay:-1); }
+function exitPlanRead(){ state.plan=null; planResume=null; state.view='plan'; setViewTabs(); renderPlan(); }
+function toggleChapter(book,ch){ const d=chDone(); const k=book+' '+ch; if(d[k]) delete d[k]; else d[k]=true; saveChDone(d); renderPlan(); }
+function planSetPlace(i){ const d=chDone(); const C=getPlan();
+  for(let j=0;j<i;j++) readingChapters(C[j]).forEach(([b,c])=>{ d[b+' '+c]=true; });
+  saveChDone(d); placeMode=false; planSel=i; renderPlan();
+  toast(`Caught up — set to continue from Day ${i+1}`); }
+/* ---------- Reader highlights (stored on this device) ---------- */
+function _hl(){ try{ return JSON.parse(localStorage.getItem('nok_hl')||'{}'); }catch(e){ return {}; } }
+function hlGet(name,ch,v){ return _hl()[name+'|'+ch+'|'+v]||''; }
+function vmHl(ev,name,ch,v,c){ ev.stopPropagation(); closeVerseMenu();
+  const h=_hl(); const k=name+'|'+ch+'|'+v;
+  if(c) h[k]=c; else delete h[k];
+  localStorage.setItem('nok_hl',JSON.stringify(h)); renderRead();
+  setTimeout(()=>{ const el=document.getElementById('v'+v); if(el) el.scrollIntoView({block:'center'}); },50); }
+/* ---------- Reading voice (female / male / any installed voice) ---------- */
+const _VOICE_F=/female|\b(samantha|victoria|karen|moira|tessa|fiona|serena|allison|ava|susan|zoe|zoë|joanna|salli|kendra|kimberly|ivy|amy|emma|nicole|zira|aria|jenny|michelle|catherine|hazel|sonia|libby|clara|natasha|yuna|milena|shelley|sandy|martha|kate|ella|nora|olivia|luciana|asenath|ayanda|imani)\b/i;
+const _VOICE_M=/\bmale\b|\b(daniel|alex|fred|tom|aaron|arthur|gordon|oliver|rishi|david|guy|mark|ryan|matthew|brian|justin|joey|lee|rocko|reed|eddy|jamie|william|liam|christopher|roger|steffan|thomas|albert|junior|ralph|bruce|nathan|george|gary|aria_m)\b/i;
+function _vgender(v){ const n=(v.name||'')+' '+(v.voiceURI||'');
+  if(_VOICE_F.test(n)) return 'f';                       // tested first — "Female" contains "male"
+  if(_VOICE_M.test(n)) return 'm';
+  return ''; }
+function _voices(){ try{ const all=speechSynthesis.getVoices()||[];
+  const en=all.filter(v=>/^en/i.test(v.lang||'')); return en.length?en:all; }catch(e){ return []; } }
+function voicePref(){ try{ return localStorage.getItem('nok_voice')||'auto'; }catch(e){ return 'auto'; } }
+function pickVoice(){ const p=voicePref(); if(p==='auto') return null;
+  const V=_voices(); if(!V.length) return null;
+  if(p!=='f'&&p!=='m'){ const ex=V.find(v=>v.voiceURI===p)||V.find(v=>v.name===p); if(ex) return ex; return null; }
+  const local=V.filter(v=>v.localService!==false), pool=local.length?local:V;
+  return pool.find(v=>_vgender(v)===p) || V.find(v=>_vgender(v)===p) || null; }
+function applyVoice(u){ const v=pickVoice(); if(v){ u.voice=v; try{ u.lang=v.lang; }catch(e){} } }
+function fillVoiceSel(){ const s=document.getElementById('voiceSel'); if(!s) return;
+  const V=_voices(), p=voicePref();
+  let h='<option value="auto">🔊 Device voice</option>';
+  if(V.some(v=>_vgender(v)==='f')) h+='<option value="f">👩 Female voice</option>';
+  if(V.some(v=>_vgender(v)==='m')) h+='<option value="m">👨 Male voice</option>';
+  if(V.length) h+='<optgroup label="Every voice on this device">'+V.map(v=>
+    `<option value="${escHTML(v.voiceURI||v.name)}">${escHTML(v.name)}</option>`).join('')+'</optgroup>';
+  s.innerHTML=h; s.value=p; if(s.selectedIndex<0) s.value='auto'; }
+function setVoicePref(p){ try{ localStorage.setItem('nok_voice',p); }catch(e){}
+  const v=pickVoice();
+  toast('Reading voice: '+(v?v.name:(p==='f'?'female — none found, using device':p==='m'?'male — none found, using device':'device default')));
+  if(_rdState&&!_rdState.paused) _rdNext();               // switch mid-chapter, re-reading the current verse
+}
+if(window.speechSynthesis){ try{ speechSynthesis.onvoiceschanged=()=>fillVoiceSel(); }catch(e){} }
+
+/* ---------- Read the chapter aloud ---------- */
+let _rdState=null;
+function _rdPosAll(){ try{ return JSON.parse(localStorage.getItem('nok_rdpos')||'{}'); }catch(e){ return {}; } }
+function _rdSavePos(){ if(!_rdState) return; try{ const m=_rdPosAll();
+  m[_rdState.key]={i:_rdState.i,off:_rdState.off||0};
+  const k=Object.keys(m); if(k.length>40) delete m[k[0]];
+  localStorage.setItem('nok_rdpos',JSON.stringify(m)); }catch(e){} }
+function _rdClearPos(key){ try{ const m=_rdPosAll(); delete m[key];
+  localStorage.setItem('nok_rdpos',JSON.stringify(m)); }catch(e){} }
+function _rdKey(){ return window.BOOKS[state.book].name+'|'+state.chapter; }
+function readChapterAloud(){
+  if(_rdState){ if(_rdState.paused) resumeReadAloud(); else pauseReadAloud(); return; }
+  if(!window.speechSynthesis){ toast('Read-aloud isn’t supported on this device'); return; }
+  const name=window.BOOKS[state.book].name, ch=state.chapter;
+  const bib=(window.BIBLE||{})[state.version]; const verses=bib&&bib[name]&&bib[name][String(ch)];
+  if(!verses){ toast('Scripture is still loading — one moment'); return; }
+  const vs=Object.keys(verses).map(Number).sort((a,b)=>a-b);
+  if(!vs.length){ toast('Nothing to read in this chapter'); return; }
+  const key=name+'|'+ch, saved=_rdPosAll()[key];
+  let i=0,off=0;
+  if(saved&&saved.i>0&&saved.i<vs.length){ i=saved.i; off=saved.off||0; }
+  _rdState={i:i,off:off,vs:vs,verses:verses,key:key,paused:false,seq:0};
+  if(i>0) toast('Picking up where you left off — verse '+vs[i]);
+  _rdSyncBtn(); _rdNext(); }
+function _rdVerseText(){ const v=_rdState.vs[_rdState.i];
+  return String(_rdState.verses[String(v)]||'').replace(/[\[\]]/g,'').replace(/\s+/g,' ').trim(); }
+function _rdNext(){ if(!_rdState||_rdState.paused) return;
+  if(_rdState.i>=_rdState.vs.length){ const k=_rdState.key; stopReadAloud(); _rdClearPos(k);
+    toast('Chapter finished'); return; }
+  const seq=++_rdState.seq;                                // invalidates every earlier utterance's callbacks
+  const v=_rdState.vs[_rdState.i];
+  document.querySelectorAll('.verse.reading').forEach(e=>e.classList.remove('reading'));
+  const el=document.getElementById('v'+v);
+  if(el){ el.classList.add('reading'); const r=el.getBoundingClientRect();
+    if(r.top<90||r.bottom>window.innerHeight-150) el.scrollIntoView({behavior:'smooth',block:'center'}); }
+  const full=_rdVerseText();
+  const base=Math.max(0,Math.min(_rdState.off||0, Math.max(0,full.length-2)));
+  _rdState.base=base; _rdState.off=base;
+  const u=new SpeechSynthesisUtterance(full.slice(base)||' ');
+  u.rate=0.95; applyVoice(u);
+  const live=()=>_rdState&&_rdState.seq===seq&&!_rdState.paused;
+  u.onboundary=e=>{ if(live()&&typeof e.charIndex==='number') _rdState.off=base+e.charIndex; };
+  u.onend=()=>{ if(!live()) return; _rdState.i++; _rdState.off=0; _rdSavePos(); _rdNext(); };
+  u.onerror=()=>{ if(!live()) return; _rdState.i++; _rdState.off=0; _rdNext(); };
+  try{
+    if(speechSynthesis.speaking||speechSynthesis.pending){ speechSynthesis.cancel();
+      setTimeout(()=>{ if(live()) try{ speechSynthesis.speak(u); }catch(e){} },90); }
+    else speechSynthesis.speak(u);
+  }catch(e){}
+  _rdSyncBtn(); }
+function pauseReadAloud(){ if(!_rdState||_rdState.paused) return;
+  _rdState.seq++;                                          // stop the cancel below from advancing the verse
+  _rdState.paused=true;
+  try{ speechSynthesis.cancel(); }catch(e){}
+  _rdSavePos(); _rdSyncBtn(); toast('Paused — tap Resume to carry on from here'); }
+function resumeReadAloud(){ if(!_rdState||!_rdState.paused) return;
+  _rdState.paused=false; _rdSyncBtn(); _rdNext(); }
+/* Called with no argument when the reader simply navigates away — the place is kept,
+   so coming back and tapping Listen continues. The ⏹ button passes true to start over. */
+function stopReadAloud(reset){
+  if(_rdState){ _rdState.seq++; if(reset) _rdClearPos(_rdState.key); else _rdSavePos(); }
+  _rdState=null; try{ speechSynthesis.cancel(); }catch(e){}
+  document.querySelectorAll('.verse.reading').forEach(e=>e.classList.remove('reading'));
+  _rdSyncBtn(); if(reset) toast('Stopped — next time starts at verse 1'); }
+function _rdSyncBtn(){
+  const b=document.getElementById('readAloudBtn'), s=document.getElementById('rdStopBtn');
+  const on=!!_rdState;
+  if(b){ b.innerHTML = !on ? '🔊 Listen' : (_rdState.paused ? '▶️ Resume' : '⏸ Pause');
+    b.classList.toggle('primary',on&&!_rdState.paused); }
+  if(s) s.style.display = on ? '' : 'none';
+  if(on&&_rdState.key===_rdKey()){ const el=document.getElementById('v'+_rdState.vs[_rdState.i]);
+    if(el) el.classList.add('reading'); } }
+/* ---------- Text size ---------- */
+function applyFont(){ const f=parseFloat(localStorage.getItem('nok_fs')||'1'); document.documentElement.style.setProperty('--fs',f); }
+function setFont(d){ let f=parseFloat(localStorage.getItem('nok_fs')||'1');
+  f=Math.round(Math.min(1.6,Math.max(0.85,f+d))*100)/100; localStorage.setItem('nok_fs',f); applyFont();
+  toast('Text size '+Math.round(f*100)+'%'); }
+/* ---------- Weekly topical plans ---------- */
+const TOPICAL=[
+ {id:'peace',title:'Peace',tag:'Be still — HIS peace in anxious days',days:[['John',14],['Psalms',23],['Isaiah',26],['Philippians',4],['Psalms',46],['Romans',5],['Isaiah',54]]},
+ {id:'love',title:'Love',tag:'The greatest of these',days:[['1 Corinthians',13],['John',15],['1 John',4],['Romans',12],['Luke',10],['Ephesians',3],['Ruth',1]]},
+ {id:'faith',title:'Faith',tag:'Walking by faith, not by sight',days:[['Hebrews',11],['Genesis',22],['Mark',5],['Romans',4],['Daniel',3],['James',2],['Matthew',14]]},
+ {id:'hope',title:'Hope',tag:'An anchor for the soul',days:[['Romans',8],['Jeremiah',29],['Psalms',42],['Lamentations',3],['Isaiah',40],['Revelation',21],['Psalms',130]]},
+ {id:'wisdom',title:'Wisdom',tag:'From HIS mouth come knowledge & understanding',days:[['Proverbs',1],['Proverbs',3],['James',1],['1 Kings',3],['Ecclesiastes',3],['Proverbs',8],['Psalms',90]]},
+ {id:'forgiveness',title:'Forgiveness',tag:'Seventy times seven',days:[['Matthew',18],['Luke',15],['Psalms',51],['Genesis',45],['Colossians',3],['Matthew',6],['John',8]]}
+];
+function _topDone(id){ try{ return JSON.parse(localStorage.getItem('nok_top_'+id)||'{}'); }catch(e){ return {}; } }
+function topToggle(id,i){ const d=_topDone(id); if(d[i]) delete d[i]; else d[i]=true;
+  localStorage.setItem('nok_top_'+id,JSON.stringify(d)); renderTopical(id); }
+function topicalCardsHTML(){
+  return `<div class="topsec"><h3 class="topsec-h">Weekly plans · one chapter a day</h3><div class="topgrid">
+    ${TOPICAL.map(t=>{ const n=Object.keys(_topDone(t.id)).length;
+      return `<div class="topcard" onclick="renderTopical('${t.id}')">
+        <div class="tc-t">${t.title}</div><div class="tc-d">${t.tag}</div>
+        <div class="tc-p"><div style="width:${Math.round(n/7*100)}%"></div></div>
+        <div class="tc-n">${n}/7 days</div></div>`; }).join('')}
+  </div></div>`; }
+function renderTopical(id){ const t=TOPICAL.find(x=>x.id===id); if(!t) return;
+  state.view='plan'; setViewTabs();
+  document.getElementById('crumb').textContent='Weekly Plan';
+  document.getElementById('chapselWrap').style.display='none';
+  document.getElementById('readfoot').style.display='none';
+  const d=_topDone(id); const n=Object.keys(d).length;
+  const html=`<div class="page planpage">
+    <button class="btn" style="margin-bottom:12px" onclick="renderPlan()">← All plans</button>
+    <div class="planbanner"><div class="pb-kick">ONE WEEK · ONE CHAPTER A DAY</div>
+      <div class="pb-title">${t.title}</div><div class="pb-sub">${t.tag}</div></div>
+    <div class="planprog"><div class="planbar"><div class="planfill" style="width:${Math.round(n/7*100)}%"></div></div>
+      <div class="planprogtxt">${n} of 7 days done</div></div>
+    ${t.days.map((dd,i)=>`<div class="toprow">
+      <span class="topchk ${d[i]?'on':''}" onclick="topToggle('${t.id}',${i})" title="Mark day ${i+1} done">${d[i]?'✓':''}</span>
+      <div class="toprow-main" onclick="openChapter('${dd[0]}',${dd[1]})">
+        <div class="tr-day">Day ${i+1}</div><div class="tr-ref">${dd[0]} ${dd[1]}</div></div>
+      <span class="md-chev" onclick="openChapter('${dd[0]}',${dd[1]})">›</span></div>`).join('')}
+    ${n>=7?`<div class="planend">🎉 Week complete — well done! Pick another theme.</div>`:''}
+  </div>`;
+  const r=document.getElementById('reader'); r.innerHTML=html; r.scrollTop=0; }
+/* ---------- New UI views: Home, Discourse, Menu ---------- */
+/* Professional inline SVG icons (stroke style, inherit color) */
+const _I=(p)=>`<span class="nico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg></span>`;
+const ICONS={
+  home:_I('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.3V21h14V9.3"/><path d="M9.8 21v-6h4.4v6"/>'),
+  book:_I('<path d="M12 6.2C10.4 4.6 8 3.8 4 3.8v14.7c4 0 6.4.8 8 2.4 1.6-1.6 4-2.4 8-2.4V3.8c-4 0-6.4.8-8 2.4z"/><path d="M12 6.2v14.7"/>'),
+  cal:_I('<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8.2 2.8V7M15.8 2.8V7"/>'),
+  chat:_I('<path d="M21 11.6a7.6 7.6 0 0 1-7.6 7.6H4.2l2-2.8A7.6 7.6 0 1 1 21 11.6z"/>'),
+  menu:_I('<path d="M4 7h16M4 12h16M4 17h16"/>'),
+  flame:_I('<path d="M12 21c-3.9 0-6.5-2.4-6.5-6 0-2.5 1.6-4.7 3-6.2C9.7 7.5 11 5.6 11 3c3 1.8 7.5 6.4 7.5 12 0 3.6-2.6 6-6.5 6z"/><path d="M12 21c-1.8 0-3-1.2-3-3 0-1.4 1-2.6 1.8-3.5.5-.6 1-1.3 1.2-2 1.4 1 3 2.9 3 5.5 0 1.8-1.2 3-3 3z"/>'),
+  bmark:_I('<path d="M6.5 3.5h11V21L12 17.2 6.5 21z"/>'),
+  library:_I('<path d="M4 4.5h3.5V21H4zM9.5 4.5H13V21H9.5z"/><path d="m15.2 5.5 3.4-.9L22 19.8l-3.4.9z"/>'),
+  pen:_I('<path d="m14.5 5 4.5 4.5L8.5 20H4v-4.5z"/><path d="m12.7 6.8 4.5 4.5"/>'),
+  audio:_I('<path d="M4 10v4h3l4.5 4V6L7 10z"/><path d="M15.5 9.2a4.2 4.2 0 0 1 0 5.6M18 6.7a8 8 0 0 1 0 10.6"/>'),
+  pray:_I('<path d="M12 3.5c2 3 2 6.5 0 9.5-2-3-2-6.5 0-9.5z"/><path d="M12 13v7.5M8 17c1.3 0 2.7.5 4 1.5 1.3-1 2.7-1.5 4-1.5"/>'),
+  globe:_I('<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.3 3.8 5.2 3.8 8.5s-1.3 6.2-3.8 8.5c-2.5-2.3-3.8-5.2-3.8-8.5s1.3-6.2 3.8-8.5z"/>'),
+  swap:_I('<path d="M7 4 3.5 7.5 7 11M3.5 7.5H17M17 13l3.5 3.5L17 20M20.5 16.5H7"/>'),
+  download:_I('<path d="M12 3.5V15M7.5 10.5 12 15l4.5-4.5"/><path d="M4 17.5v2A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5v-2"/>'),
+  upload:_I('<path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M4 17.5v2A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5v-2"/>'),
+  search:_I('<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>'),
+  dots:_I('<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>'),
+  grid:_I('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
+  moon:_I('<path d="M20 13.5A8 8 0 1 1 10.5 4 6.5 6.5 0 0 0 20 13.5z"/>')
+};
+/* Sacred-name autocorrect: capital-G God (the Almighty) -> GOD; small-g gods/idols untouched.
+   "spirit of the lord" in any casing -> "Spirit of the Lord". Applied to journal notes only, never Scripture. */
+function sacredCase(t){ if(!t) return t;
+  t=t.replace(/\bGod\b/g,'GOD');
+  t=t.replace(/\bspirit of the lord\b/gi,'Spirit of the Lord');
+  return t; }
+function escNote(t){ return escHTML(sacredCase(t)); }
+function _dayOfYear(){ const n=new Date(); return Math.floor((n-new Date(n.getFullYear(),0,0))/864e5); }
+function _localDay(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function _trackStreak(){ try{
+  const day=_localDay(); const st=JSON.parse(localStorage.getItem('nok_streak')||'{"days":[]}');
+  if(!st.days.includes(day)){ st.days.push(day); if(st.days.length>420) st.days.splice(0,st.days.length-420);
+    localStorage.setItem('nok_streak',JSON.stringify(st)); } }catch(e){} }
+function _weekKey(d){ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  const dn=(x.getDay()+6)%7; x.setDate(x.getDate()-dn+3);
+  const y0=new Date(x.getFullYear(),0,4); const w=1+Math.round(((x-y0)/864e5-3+((y0.getDay()+6)%7))/7);
+  return x.getFullYear()+'-'+w; }
+function _streakStats(){ try{
+  const days=(JSON.parse(localStorage.getItem('nok_streak')||'{"days":[]}').days)||[];
+  const set=new Set(days); let d=new Date(), daily=0;
+  for(;;){ if(set.has(_localDay(d))){ daily++; d.setDate(d.getDate()-1); } else break; }
+  const weeks=new Set(days.map(k=>{const p=k.split('-');return _weekKey(new Date(+p[0],+p[1]-1,+p[2]));}));
+  let w=new Date(), weekly=0;
+  for(;;){ if(weeks.has(_weekKey(w))){ weekly++; w.setDate(w.getDate()-7); } else break; }
+  const months=new Set(days.map(k=>k.slice(0,7)));
+  let m=new Date(), monthly=0;
+  for(;;){ const k=m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0');
+    if(months.has(k)){ monthly++; m.setMonth(m.getMonth()-1); } else break; }
+  return {daily:daily,weekly:weekly,monthly:monthly,total:days.length};
+}catch(e){ return {daily:1,weekly:1,monthly:1,total:1}; } }
+function _notedVerses(){ const out=[]; for(const b in DATA)for(const c in DATA[b])for(const v in DATA[b][c]){ if(v!=='0'&&DATA[b][c][v].length) out.push([b,+c,+v]); } return out; }
+/* ---------- Seasons of the Christian year (Verse of the Day) ----------
+   Two kinds of tagging:
+     only  — verses that belong ONLY to this season. Outside its window they are
+             removed from the pool entirely, so no nativity verse ever shows in July.
+     also  — verses that fit the season but read well all year. Never excluded,
+             simply preferred while the season is at its peak.                     */
+function _absDay(d){ d=d||new Date();
+  return Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-new Date(1970,0,1))/864e5); }
+function _mdIn(d,a,b){ const v=(d.getMonth()+1)*100+d.getDate(), x=a[0]*100+a[1], y=b[0]*100+b[1];
+  return x<=y ? (v>=x&&v<=y) : (v>=x||v<=y); }                       // handles windows that wrap the new year
+function _easter(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,
+  f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,
+  i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+  mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;
+  return new Date(y,mo-1,da); }                                       // anonymous Gregorian computus
+function _easterOff(d){ d=d||new Date(); return _absDay(d)-_absDay(_easter(d.getFullYear())); }
+const SEASONS=[
+ {id:'christmas', name:'Advent & Christmas', icon:'✨',
+  window:d=>_mdIn(d,[12,1],[1,6]), peak:d=>_mdIn(d,[12,13],[12,27]),
+  only:[['Matthew',1,1,25],['Matthew',2,1,23],['Luke',1,5,80],['Luke',2,1,40],
+        ['Isaiah',7,10,16],['Isaiah',9,1,7],['Isaiah',11,1,10],['Micah',5,1,5],
+        ['John',1,1,18],['Galatians',4,4,7],['Revelation',12,1,5]],
+  also:[['Genesis',3,14,15],['Numbers',24,15,19],['2 Samuel',7,8,16],['Jeremiah',23,5,6]]},
+ {id:'passion', name:'Lent, Holy Week & Easter', icon:'✝️',
+  window:d=>{const o=_easterOff(d); return o>=-46&&o<=49;},
+  peak:d=>{const o=_easterOff(d); return o>=-9&&o<=9;},
+  only:[['Matthew',26,1,75],['Matthew',27,1,66],['Matthew',28,1,20],
+        ['Mark',14,1,72],['Mark',15,1,47],['Mark',16,1,20],
+        ['Luke',22,1,71],['Luke',23,1,56],['Luke',24,1,53],
+        ['John',12,12,19],['John',18,1,40],['John',19,1,42],['John',20,1,31],['John',21,1,25],
+        ['Isaiah',52,13,15],['Isaiah',53,1,12],['Psalms',22,1,31],['1 Corinthians',15,1,28]],
+  also:[['Exodus',12,1,51],['Exodus',13,1,22],['Genesis',22,1,19],['Numbers',9,1,14],
+        ['Numbers',21,4,9],['Leviticus',16,1,34],['Jonah',1,17,17],['Jonah',2,1,10],
+        ['Psalms',51,1,19],['Romans',6,1,11],['Hebrews',9,11,28],['Hebrews',10,1,25]]},
+ {id:'pentecost', name:'Pentecost', icon:'🔥',
+  window:d=>{const o=_easterOff(d); return o>=42&&o<=57;},
+  peak:d=>{const o=_easterOff(d); return o>=45&&o<=54;},
+  only:[['Acts',1,1,26],['Acts',2,1,47],['Joel',2,28,32]],
+  also:[['Exodus',19,1,25],['Exodus',20,1,26],['Leviticus',23,15,22],['Numbers',11,24,30],
+        ['Ezekiel',36,25,27],['John',14,15,31],['John',16,5,15]]},
+ {id:'newyear', name:'A New Year', icon:'🌅',
+  window:null, peak:d=>_mdIn(d,[12,28],[1,8]),
+  only:[],
+  also:[['Lamentations',3,19,26],['Isaiah',43,16,21],['Joshua',1,1,9],['Psalms',90,1,17],
+        ['Ecclesiastes',3,1,8],['Deuteronomy',8,1,20],['Philippians',3,12,14],
+        ['Genesis',1,1,5],['Proverbs',3,1,8]]}
+];
+function _refIn(ranges,b,c,v){ for(let i=0;i<ranges.length;i++){ const r=ranges[i];
+  if(r[0]===b&&r[1]===c&&v>=r[2]&&v<=r[3]) return true; } return false; }
+/* Split every noted verse into: what may show today, and what today's season wants first. */
+function _votdPool(now){ now=now||new Date();
+  const L=_notedVerses(), open=[], peak=[];
+  for(let n=0;n<L.length;n++){ const t=L[n];
+    let shut=false;
+    for(let s=0;s<SEASONS.length;s++){ const S=SEASONS[s];
+      if(S.only.length&&S.window&&_refIn(S.only,t[0],t[1],t[2])&&!S.window(now)){ shut=true; break; } }
+    if(shut) continue;                                    // out of season — hold it back
+    open.push(t);
+    for(let s=0;s<SEASONS.length;s++){ const S=SEASONS[s];
+      if(!S.peak||!S.peak(now)) continue;
+      if(_refIn(S.only,t[0],t[1],t[2])||_refIn(S.also,t[0],t[1],t[2])){ peak.push(t); break; } } }
+  return {open:open,peak:peak}; }
+function _votdSeason(t,now){ now=now||new Date();
+  for(let s=0;s<SEASONS.length;s++){ const S=SEASONS[s];
+    if(!S.peak||!S.peak(now)) continue;
+    if(_refIn(S.only,t[0],t[1],t[2])||_refIn(S.also,t[0],t[1],t[2])) return S; }
+  return null; }
+/* The handful of days that deserve an exact verse rather than whatever the season rotation lands on. */
+const VOTD_PINS=[
+ {when:d=>_mdIn(d,[12,24],[12,26]),                       // Christmas Eve → Boxing Day
+  refs:[['Matthew',2,1,12],['Luke',2,1,20],['Matthew',1,18,25],['Isaiah',9,6,7]]},
+ {when:d=>_easterOff(d)===-2,                             // Good Friday
+  refs:[['Isaiah',53,1,12],['John',19,1,42],['Genesis',22,1,19],['Exodus',12,1,30],['Psalms',22,1,21]]},
+ {when:d=>{const o=_easterOff(d); return o===0||o===1;},   // Easter Sunday & Monday
+  refs:[['Matthew',28,1,10],['Mark',16,1,8],['Luke',24,1,12],['John',20,1,18],['1 Corinthians',15,1,11]]},
+ {when:d=>_easterOff(d)===49,                             // Pentecost Sunday
+  refs:[['Acts',2,1,21],['Joel',2,28,32],['Numbers',11,24,30]]}
+];
+/* _absDay (not day-of-year) so the rotation keeps walking the whole journal
+   instead of replaying the same first 365 notes every year. */
+function _votd(){ const now=new Date(), p=_votdPool(now);
+  for(let i=0;i<VOTD_PINS.length;i++){ const P=VOTD_PINS[i]; if(!P.when(now)) continue;
+    const hit=p.open.filter(t=>_refIn(P.refs,t[0],t[1],t[2]));
+    if(hit.length) return hit[_absDay(now)%hit.length]; }
+  const L=p.peak.length?p.peak:p.open;
+  if(!L.length) return null; return L[_absDay(now)%L.length]; }
+function _guidedChapter(){ const keys=[],counts={};
+  for(const b in DATA)for(const c in DATA[b]){ let n=0; for(const v in DATA[b][c]) n+=DATA[b][c][v].length;
+    if(n>=2){ keys.push(b+'|'+c); counts[b+'|'+c]=n; } }
+  if(!keys.length)return null; const k=keys[_absDay()%keys.length];
+  const parts=k.split('|'); return [parts[0],+parts[1],counts[k]]; }
+function renderHome(){
+  document.getElementById('crumb').textContent='Home';
+  document.getElementById('chapselWrap').style.display='none';
+  document.getElementById('readfoot').style.display='none';
+  const vd=_votd();
+  const C=getPlan(), d=chDone();
+  let pi=C.length?C.findIndex(rd=>!rd.catchup&&!readingDone(rd,d)):-1; if(C.length&&pi<0) pi=C.length-1;
+  const bible=(window.BIBLE||{})[state.version];
+  let vtext=''; let note=null;
+  if(vd){ if(bible) vtext=(((bible[vd[0]]||{})[String(vd[1])]||{})[String(vd[2])])||'';
+    note=(DATA[vd[0]][String(vd[1])][String(vd[2])]||[])[0]||null; }
+  const planCard = pi>=0 ? (()=>{ const rd=C[pi];
+    const refs=rd.r&&rd.r.length?fmtRefs(rd.r):'Catch-up & reflection';
+    const btn=rd.r&&rd.r.length?`<button class="btn primary" onclick="planRead(${pi},0)">📖 Read today’s passage</button>`:'';
+    return `<div class="hcard"><div class="hk">${ICONS.cal} Today in the Plan</div>
+      <h3>Day ${pi+1} · ${escHTML(refs)}</h3>
+      <p class="soft">Chronological Bible in a Year — read the Word in the order it happened</p>
+      <div class="hrow">${btn}<button class="btn" onclick="setView('plan')">See the plan</button></div></div>`; })() : '';
+  const html=`<div class="page homefeed">
+    <div class="hcard hero">
+      <div class="hk">NEVER GET BORED</div>
+      <h2>Nii Okai’s Journal Through Scripture</h2>
+      <p class="hq">“Take a walk with me as we journey through Scripture — you will never get bored.”</p>
+      <div class="hrow">
+        <button class="btn" onclick="karListen()">🔊 Listen</button>
+        <button class="btn" onclick="setView('about')">Read the welcome →</button>
+      </div>
+      <audio id="welcomeAudio" preload="none"><source src="audio/welcome.mp3" type="audio/mpeg"><source src="audio/welcome.m4a" type="audio/mp4"></audio>
+    </div>
+    ${(()=>{const st=_streakStats();return `<div class="hcard">
+      <div class="hk">${ICONS.flame} Your Streak</div>
+      <div class="streakrow">
+        <div><b>${st.daily}</b><span>day streak</span></div>
+        <div><b>${st.weekly}</b><span>week streak</span></div>
+        <div><b>${st.monthly}</b><span>month streak</span></div>
+      </div>
+      <p class="soft" style="margin:8px 0 0">Open the app each day to keep the fire burning.</p>
+    </div>`})()}
+    ${vd?(()=>{ const S=_votdSeason(vd); return `<div class="hcard">
+      <div class="hk">${ICONS.book} Verse of the Day${S?` <span class="seasontag">${S.icon} ${escHTML(S.name)}</span>`:''}</div>
+      <div class="href">${vd[0]} ${vd[1]}:${vd[2]} · ${state.version}</div>
+      ${vtext?`<div class="hverse">“${escHTML(vtext)}”</div>`:`<div class="hverse" style="color:var(--soft)">Loading Scripture…</div>`}
+      ${note?`<div class="hnote">${ICONS.chat} ${escNote(note.text.slice(0,170))}${note.text.length>170?'…':''}</div>`:''}
+      <button class="btn primary" onclick="jumpTo('${esc(vd[0])}',${vd[1]},${vd[2]})">Open in Bible →</button>
+    </div>`; })():''}
+    ${planCard}
+    ${BLOG_URL?`<div class="hcard">
+      <div class="hk">${ICONS.pen} From the Blog</div>
+      <h3>Reflections & essays from Nii Okai</h3>
+      <p class="soft">Fresh writing beyond the journal — visit the blog.</p>
+      <button class="btn primary" onclick="window.open(BLOG_URL,'_blank','noopener')">Read the blog →</button>
+    </div>`:''}
+  </div>`;
+  const r=document.getElementById('reader'); r.innerHTML=html; r.scrollTop=0;
+  if(vd&&!vtext){ ensureVersion(state.version,()=>{ if(state.view==='home') renderHome(); }); }
+}
+function renderDiscourse(){
+  document.getElementById('crumb').textContent='Discourse';
+  document.getElementById('chapselWrap').style.display='none';
+  document.getElementById('readfoot').style.display='none';
+  document.getElementById('reader').innerHTML=`<div class="page homefeed">
+    <div class="hcard hero">
+      <div class="hk">💭 DISCOURSE · CHRIST SOCIAL <span class="soon-badge" style="margin:0 0 0 8px">Coming soon</span></div>
+      <h2>What verse don’t you understand today?</h2>
+      <p class="hq">Any question about the Bible today? A verse, a story, a dream — ask it here and let us probe our minds together. Share what GOD is teaching you, and learn from how Scripture is shaping others.</p>
+    </div>
+    <div class="hcard">
+      <div class="hk">✍️ Ask your question</div>
+      <textarea class="disc-input" placeholder="e.g. Genesis 6 — who were the “sons of God”? · What did my dream about the flood mean?" disabled></textarea>
+      <div class="hrow"><button class="btn primary" onclick="toast('Discourse opens soon — your questions will live here')">Post — coming soon</button></div>
+    </div>
+    <div class="hcard">
+      <div class="hk">🏆 Question of the Day</div>
+      <p class="soft">Each day, the question with the most engagement — answers, amens, and discussion — is crowned here for the whole community to weigh in on.</p>
+      <div class="qotd-empty">No questions yet — yours could be the very first when Discourse opens.</div>
+    </div>
+    <div class="hcard">
+      <div class="hk">Why Discourse?</div>
+      <p class="soft" style="margin:0">A social square for this journal — to discuss the latest revelations, ask honest questions, and sharpen one another. Iron sharpening iron.</p>
+    </div>
+  </div>`;
+  document.getElementById('reader').scrollTop=0;
+}
+function menuMHC(){ if(!state.refcomm) toggleRefComm(); setView('read'); }
+function renderMenu(){
+  document.getElementById('crumb').textContent='Menu';
+  document.getElementById('chapselWrap').style.display='none';
+  document.getElementById('readfoot').style.display='none';
+  const item=(ic,t,d,go,soon)=>`<div class="mitem" onclick="${soon?`toast('Coming soon — ${d}')`:go}">
+    <span class="mi">${ic}</span><div><div class="mt">${t}</div><div class="md">${d}</div></div>
+    ${soon?'<span class="soon">Coming soon</span>':'<span class="chev">›</span>'}</div>`;
+  document.getElementById('reader').innerHTML=`<div class="page"><div class="menulist">
+    ${item(ICONS.grid,'Books & Chapters','Jump to any book of the Bible, any chapter','openBookPicker()')}
+    ${item(ICONS.pen,'Nii Okai’s Journal','Every note, verse by verse — 20 years of walking through Scripture',"setView('mine')")}
+    ${item(ICONS.library,'Matthew Henry’s Commentary','The classic commentary, shown alongside your reading','menuMHC()')}
+    ${item(ICONS.audio,'Welcome Message','Read or listen to the welcome — and unlock the reader’s gift',"setView('about')")}
+    ${BLOG_URL?item(ICONS.pen,'Blog','Reflections and essays from Nii Okai',`window.open(BLOG_URL,'_blank','noopener')`):item(ICONS.pen,'Blog Posts','Reflections and essays from Nii Okai','',true)}
+    ${item(ICONS.book,'Verse Guides','Deep-dive guides through key verses','',true)}
+    ${item(ICONS.pray,'Prayer Guides','Guided prayers to carry you through the day','',true)}
+    ${item(ICONS.moon,'Appearance','Switch between light and dark reading','toggleTheme()')}
+    ${item(ICONS.download,'Export My Notes','Save a backup of your personal notes to a file','exportCommentary()')}
+    ${item(ICONS.upload,'Import Notes','Restore your notes from a backup file — moving to a new device starts here',"document.getElementById('importFile').click()")}
+    ${isOwner()?item('👁','Preview as a Reader','See the app exactly as your readers see it','togglePreview()'):''}
+    ${isOwner()?item('🖥','Switch Interface','Toggle between the new UI and the legacy UI','toggleLegacy()'):''}
+    <p style="text-align:center;color:var(--soft);font-size:11.5px;font-family:var(--sans)">Never Get Bored · v${BUILD.v} · built ${BUILD.date}</p>
+  </div></div>`;
+  document.getElementById('reader').scrollTop=0;
+}
+/* ---------- Book & chapter picker ---------- */
+let _bpOpen=-1,_bpAlpha=false;
+function openBookPicker(){ _bpOpen=state.book; _renderBP();
+  document.getElementById('bpOv').classList.add('show');
+  setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:'center'}); },30); }
+function closeBookPicker(){ document.getElementById('bpOv').classList.remove('show'); }
+function bpOrder(m){ _bpAlpha=(m==='alpha');
+  document.getElementById('bpTrad').classList.toggle('on',!_bpAlpha);
+  document.getElementById('bpAlpha').classList.toggle('on',_bpAlpha); _renderBP(); }
+function bpToggle(i){ _bpOpen=(_bpOpen===i?-1:i); _renderBP();
+  setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:'nearest'}); },20); }
+function bpGo(i,ch){ closeBookPicker(); state.book=i; state.chapter=ch; state.plan=null; state.view='read';
+  setViewTabs(); savePrefs(); render(); }
+function _renderBP(){ const idx=window.BOOKS.map((b,i)=>i);
+  if(_bpAlpha) idx.sort((a,b)=>window.BOOKS[a].name.localeCompare(window.BOOKS[b].name));
+  document.getElementById('bpList').innerHTML=idx.map(i=>{ const b=window.BOOKS[i]; const open=i===_bpOpen;
+    return `<div class="bp-book ${open?'cur':''}" onclick="bpToggle(${i})">${b.name}</div>
+      ${open?`<div class="bp-grid">${b.chapters.map((_,c)=>`<button class="${i===state.book&&c+1===state.chapter?'cur':''}" onclick="event.stopPropagation();bpGo(${i},${c+1})">${c+1}</button>`).join('')}</div>`:''}`;
+  }).join(''); }
+function toggleLegacy(){ const on=!document.body.classList.contains('legacy');
+  document.body.classList.toggle('legacy',on);
+  try{ localStorage.setItem('nok_legacy',on?'1':''); }catch(e){}
+  const b=document.getElementById('uiSwitch'); if(b) b.textContent=on?'✨ New UI':'🖥 Legacy UI';
+  setView(on?'read':'home'); }
+function renderAbout(){
+  document.getElementById('crumb').textContent='Welcome';
+  document.getElementById('chapselWrap').style.display='none';
+  document.getElementById('readfoot').style.display='none';
+  const paras=[
+    "I know the feeling. So many people open the Bible expecting to be bored — the genealogies, the laws, the “thou shalts,” chapter after chapter — and they quietly close it again. For over two decades I have been reading these same Scriptures, and I have found the very opposite: a book breathtaking in its wisdom, its humanity, its drama, and its God. What you hold here is my attempt to pull back the dull-looking surface and let you see what I have seen.",
+    "These pages are not a commentary in the academic sense. I am not a scholar handing down conclusions from a height. I am a fellow traveller scribbling in the margins as I walk — and I have been walking, and writing, for more than twenty years. What began as private notes between me and God slowly became this: a verse-by-verse record of what puzzled me, what stirred me, what made me laugh, what broke me, and what I never quite figured out.",
+    "So you will find questions I never fully answered. You will find me arguing with the text, wondering aloud, catching a small detail I had read a hundred times and never noticed. You will find my own struggles — with doubt, with sin, with the long silences of God — sitting right next to the verses that met me in them. That is the point. This is a journal, not a lecture.",
+    "A few honest words before you begin. Because these notes span twenty years, you will catch me growing, changing my mind, even contradicting an earlier version of myself. There are typos. There are half-formed thoughts. I have left them mostly as they were written, because that is what a journal is — and because I would rather be real than polished. If you find an error in my doctrine, or a verse I have taken out of context, I genuinely welcome the correction. The Word of God is eternal and infallible; it is the man writing about it who is not.",
+    "So read these beside your own Bible, never instead of it. Let them provoke you, challenge you, and send you straight back to the text to see for yourself. And if even one note makes you lean in closer to a passage you would have skimmed — if even once you catch yourself thinking, <i>“I never saw that before”</i> — then this journal has done exactly what I hoped.",
+    "The Bible came alive for me. I believe it can come alive for you too.",
+    "Welcome to the journey. I’m glad you’re here."
+  ];
+  const html=`<div class="page about">
+    <div style="text-align:right;margin-bottom:4px"><button class="btn about-skiptop" onclick="skipWelcome()">Skip for now →</button></div>
+    <div class="about-firsttime" style="margin-top:0">New here? Please take two minutes to read this first — it changes how you’ll read everything that follows. 🎁 <b>And there’s a reader’s gift waiting at the end</b> for those who do.</div>
+    <div class="about-hero">
+      <div class="about-kicker">Never Get Bored</div>
+      <h1 class="about-title">Nii Okai’s Journal Through Scripture</h1>
+      <div class="about-slogan">“Take a walk with me as we journey through Scripture — and understand every passage in a way you never imagined or thought possible. You will never get bored.”</div>
+      <div class="about-listen">
+        <button class="btn" id="welcomeAudioBtn" onclick="playWelcomeAudio()">🔊 Listen in Nii Okai’s voice</button>
+        <audio id="welcomeAudio" preload="metadata"><source src="audio/welcome.mp3" type="audio/mpeg"><source src="audio/welcome.m4a" type="audio/mp4"></audio>
+      </div>
+    </div>
+    <div class="about-lead">If you have ever found the Bible boring, this journal is for you.</div>
+    ${paras.map(p=>`<p class="about-p">${p}</p>`).join('')}
+    <div class="about-sign">— Nii Okai</div>
+    <div class="about-reward">🔓 <b>A small gift for reading to the end:</b> you’ve unlocked the <b>dates</b> each note was written — tap the 📅 in the top bar to see them as you read. (More to come for those who journey with me.)</div>
+    <div class="about-cta">
+      <button class="btn primary" onclick="enterFromWelcome()">I’ve read it — unlock & begin →</button>
+    </div>
+    <div class="howto">
+      <h3>How to find your way around — and get the most from it</h3>
+      <ul>
+        <li><b>Read</b> opens the Scripture. Verses I've journalled on are <b>highlighted with a 💬 badge</b> — <b>tap the verse</b> to open or hide my commentary on it.</li>
+        <li>At the top of each chapter, the <b>“💬 Commentary in this chapter”</b> bar lets you jump straight to any commented verse.</li>
+        <li>Use the <b>💬 button</b> (top bar) to switch between <b>scripture-only</b> reading and <b>scripture + commentary</b>.</li>
+        <li>The <b>Journal</b> tab lists everything I've written — <b>tap any entry to expand it</b>, or “Open in Bible →” to read it in context.</li>
+        <li><b>Search</b> looks through both my notes and the Scripture; the <b>version dropdown</b> switches Bible translations; ☾ toggles light/dark.</li>
+        <li><b>For the most out of this:</b> read the passage first in your own Bible, sit with it, form your own thought — <i>then</i> open mine. Let it provoke you back into the text, not replace it.</li>
+      </ul>
+    </div>
+  </div>`;
+  document.getElementById('reader').innerHTML=html;
+  document.getElementById('reader').scrollTop=0;
+  buildBookList();
+}
+/* Welcome narration — plays your own recording (audio/welcome.m4a or .mp3) if present,
+   otherwise falls back to the device's read-aloud voice. */
+function karListen(){ if(state.view!=='about'){ setView('about'); } setTimeout(()=>playWelcomeAudio(),300); }
+let _karWords=null,_karTimer=0;
+function _karPrep(){ const els=document.querySelectorAll('.about-lead,.about-p');
+  els.forEach(el=>{ if(el.dataset.kar) return; el.dataset.kar='1';
+    const txt=el.textContent; el.innerHTML=txt.split(/\s+/).filter(Boolean).map(w=>`<span class="kw">${escHTML(w)}</span>`).join(' '); });
+  _karWords=[...document.querySelectorAll('.kw')]; }
+function _karTick(a){ if(!_karWords||!a.duration) return;
+  const idx=Math.min(_karWords.length-1,Math.floor(_karWords.length*(a.currentTime/a.duration)));
+  _karWords.forEach((w,j)=>{ w.classList.toggle('on',j<idx); w.classList.toggle('cur',j===idx); });
+  const now=Date.now(); if(now-_karTimer>1500){ _karTimer=now;
+    const cur=_karWords[idx]; if(cur){ const r=cur.getBoundingClientRect();
+      if(r.top<80||r.bottom>window.innerHeight-120) cur.scrollIntoView({behavior:'smooth',block:'center'}); } } }
+function _karStart(a){ if(state.view!=='about') return; _karPrep();
+  a.ontimeupdate=()=>_karTick(a);
+  a.addEventListener('ended',()=>{ _karWords&&_karWords.forEach(w=>w.classList.remove('on','cur')); },{once:true}); }
+function playWelcomeAudio(){
+  const a=document.getElementById('welcomeAudio'), btn=document.getElementById('welcomeAudioBtn');
+  if(window.speechSynthesis&&speechSynthesis.speaking){ speechSynthesis.cancel(); if(btn)btn.textContent='🔊 Listen in Nii Okai’s voice'; return; }
+  if(a){ if(!a.paused){ a.pause(); a.currentTime=0; if(btn)btn.textContent='🔊 Listen in Nii Okai’s voice'; return; }
+    const onPlay=()=>{ if(btn)btn.textContent='⏸ Pause'; _karStart(a); a.onended=()=>{ if(btn)btn.textContent='🔊 Listen in Nii Okai’s voice'; }; };
+    a.play().then(onPlay).catch(()=>{                       // first attempt failed — force a reload and try once more
+      try{ a.load(); a.play().then(onPlay).catch(()=>_ttsWelcome(btn)); }catch(e){ _ttsWelcome(btn); } });
+    return; }
+  _ttsWelcome(btn);
+}
+function _ttsWelcome(btn){
+  if(!window.speechSynthesis){ toast('Audio isn’t available on this device'); return; }
+  const lead=document.querySelector('.about-lead'); const ps=[...document.querySelectorAll('.about-p')];
+  const text=(lead?lead.textContent+' ':'')+ps.map(p=>p.textContent).join(' ');
+  const u=new SpeechSynthesisUtterance(text); u.rate=.96; u.pitch=1; applyVoice(u);
+  u.onend=()=>{ if(btn)btn.textContent='🔊 Listen in Nii Okai’s voice'; };
+  speechSynthesis.cancel(); speechSynthesis.speak(u); if(btn)btn.textContent='⏸ Stop';
+  toast('Playing read-aloud — add audio/welcome.m4a to hear your own voice');
+}
+function renderRead(){
+  if(state.compare && !(window.BIBLE&&window.BIBLE[state.compare])){ ensureVersion(state.compare, renderRead); }
+  if(_rdState&&_rdState.key!==_rdKey()) stopReadAloud();   // moved to another chapter — keep the old place, stop reading
+  const book=window.BOOKS[state.book], name=book.name, ch=state.chapter;
+  const nch=book.chapters.length;
+  document.getElementById('crumb').innerHTML=`${name} ${ch} <span class="caret">▾</span>`;
+  { const pb=document.getElementById('planBackBtn'); if(pb) pb.style.display=state.plan?'':'none'; }
+  document.getElementById('chapselWrap').style.display='';
+  const csel=document.getElementById('chapSelect');
+  csel.innerHTML=book.chapters.map((_,i)=>`<option value="${i+1}" ${i+1===ch?'selected':''}>Ch ${i+1}</option>`).join('');
+  const bib=(window.BIBLE[state.version]||{})[name]||{};
+  const verses=bib[String(ch)]||{};
+  const vcount=book.chapters[ch-1];
+  const chData=(DATA[name]&&DATA[name][String(ch)])||{};
+  // plan context bar
+  let planBar='';
+  if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]);
+    planBar=`<div class="planctx">📖 <b>Day ${state.plan.day+1}</b> of the plan · passage ${state.plan.ci+1} of ${chaps.length}
+      <button class="btn" onclick="exitPlanRead()">✕ Back to plan</button></div>`; }
+  let html=`<div class="page">${planBar}
+    <div class="chap-title">${name} ${ch}</div>
+    <div class="chap-sub">${window.VERSIONS[state.version]} (${state.version})${state.compare?` &nbsp;⇄&nbsp; ${state.compare}`:''}</div>
+    <div class="rtools">
+      <button class="btn" id="readAloudBtn" onclick="readChapterAloud()">🔊 Listen</button>
+      <button class="btn" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">⏹</button>
+      <select class="btn vsel" id="voiceSel" onchange="setVoicePref(this.value)" title="Choose the reading voice"></select>
+      <button class="btn" onclick="setFont(-0.08)" title="Smaller text">A−</button>
+      <button class="btn" onclick="setFont(0.08)" title="Larger text">A+</button>
+    </div>
+    ${refCommPanel(name,ch)}`;
+  if(state.compare){
+    const bibB=(window.BIBLE[state.compare]||{})[name]||{}; const vB=bibB[String(ch)]||{};
+    html+=`<div class="cmpwrap">`;
+    for(let v=1;v<=vcount;v++){
+      html+=`<div class="cmprow"><div class="cmpv">${v}</div>
+        <div class="cmpcol">${(verses[String(v)]||'—')}</div>
+        <div class="cmpcol cmpb">${(vB[String(v)]||'—')}</div></div>`;
+    }
+    html+=`</div>`;
+  } else {
+    const noted=Object.keys(chData).filter(k=>k!=='0'&&chData[k].length).map(Number).sort((a,b)=>a-b);
+    if(noted.length){
+      const off=document.documentElement.classList.contains('hide-notes');
+      html+=`<div class="chapindex">
+        <div class="lbl-row">
+          <div class="lbl">${ICONS.chat} Commentary — tap a verse</div>
+          <button class="ci-toggle" onclick="toggleNotes()">${off?'Show all commentary':'Hide all (scripture only)'}</button>
+        </div>
+        <div class="chips">${noted.map(v=>`<span class="chip" onclick="jumpVerse(${v})">v${v}</span>`).join('')}</div></div>`;
+    }
+    const chNotes=chData['0']||[];
+    chNotes.forEach(nt=>{ html+=noteHTML(nt,name,ch,'0','Chapter note'); });
+    for(let v=1;v<=vcount;v++){
+      const txt=verses[String(v)]||'';
+      const notes=chData[String(v)]||[];
+      const hasRef = state.journal==='modern' && refinedFor(name,ch,v);
+      const mark=notes.length?`<span class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" title="Click to hide / show Nii Okai’s commentary on this verse">${ICONS.chat}${hasRef?'':' '+notes.length+(notes.length>1?' notes':' note')}</span>`:'';
+      const ncTier=notes.length?(notes.length>=3?' nc3':notes.length===2?' nc2':' nc1'):'';
+      const hlc=hlGet(name,ch,v);
+      html+=`<div class="verse ${notes.length?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" ondblclick="dblAddNote('${esc(name)}',${ch},${v})" ${notes.length?`title="Double-click to write a note here · the 💬 button hides / shows Nii Okai’s commentary · highlight text or use ⋯ for options"`:`title="Double-click to write a note · highlight text, or use ⋯ for options"`}>
+        <span class="vn" onclick="event.stopPropagation();openEditor('${esc(name)}',${ch},${v})" title="Add a note">${v}</span>${txt||'<i style="color:var(--soft)">(verse not in this translation)</i>'}${mark}
+        <button class="add vmenu-btn" onclick="event.stopPropagation();verseMenu(event,'${esc(name)}',${ch},${v})" title="Copy · Share · Search · Compare · Note">⋯</button></div>`;
+      if(notes.length){
+        html+=`<div class="notewrap" id="nw${v}">`;
+        const r = state.journal==='modern' ? refinedFor(name,ch,v) : null;
+        if(r){ html+=modernNoteHTML(name,ch,v,r); }
+        else { notes.forEach(nt=>{ html+=noteHTML(nt,name,ch,v); }); }
+        html+=`</div>`;
+      }
+    }
+  }
+  html+=`</div>`;
+  // sticky navigation — always visible
+  let nav;
+  if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]); const last=state.plan.ci>=chaps.length-1;
+    nav=`<div class="readnav planmode">
+      <button onclick="planNav(-1)" ${state.plan.day===0&&state.plan.ci===0?'disabled':''}>← Prev</button>
+      <span class="rn-mid">Day ${state.plan.day+1} · ${state.plan.ci+1}/${chaps.length}</span>
+      <button class="rn-next" onclick="planNav(1)">${last?'Finish day ✓':'Next →'}</button></div>`;
+  } else {
+    nav=`<div class="readnav">
+      <button onclick="prevChapter()" ${state.book===0&&ch===1?'disabled':''}>← Previous</button>
+      <button onclick="nextChapter()" ${state.book===window.BOOKS.length-1&&ch===nch?'disabled':''}>Next →</button></div>`;
+  }
+  const r=document.getElementById('reader'); r.innerHTML=html; r.scrollTop=0;
+  const foot=document.getElementById('readfoot'); foot.innerHTML=nav; foot.style.display='';
+  fillVoiceSel(); _rdSyncBtn();
+  buildBookList();
+}
+function jumpVerse(v){ const el=document.getElementById('v'+v); if(!el)return;
+  el.classList.remove('collapsed'); el.classList.add('revealed');
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+  const o=el.style.background; el.style.transition='background .3s'; el.style.background='var(--note-line)';
+  setTimeout(()=>el.style.background=o,1000); }
+function toggleVerse(v){ const el=document.getElementById('v'+v); if(!el)return;
+  if(document.documentElement.classList.contains('hide-notes')) el.classList.toggle('revealed'); // commentary globally off → reveal just this verse
+  else el.classList.toggle('collapsed'); }                                                      // commentary on → hide just this verse
+/* double-click a verse to hide/show its commentary — clear the word the double-click selected so the highlight menu doesn't pop */
+function dblToggleVerse(v){ try{ const s=window.getSelection(); if(s&&s.removeAllRanges) s.removeAllRanges(); }catch(e){}
+  if(typeof closeSelMenu==='function') closeSelMenu(); toggleVerse(v); }
+/* double-click a verse to write a note on it */
+function dblAddNote(name,ch,v){ try{ const s=window.getSelection(); if(s&&s.removeAllRanges) s.removeAllRanges(); }catch(e){}
+  if(typeof closeSelMenu==='function') closeSelMenu(); openEditor(name,ch,v); }
+function setJournalMode(m){ state.journal=m; savePrefs();
+  if(state.view==='mine') renderMine(); else if(state.view==='read') renderRead(); }
+function setTrkM(btn,m){ const t=btn.closest('.trk'); t.dataset.m=m;
+  t.querySelectorAll('.sub button').forEach(b=>b.classList.toggle('on', b.textContent.toLowerCase().includes(m==='side'?'side':'stack'))); }
+function refinedFor(name,ch,v){ return (window.REFINED&&REFINED[name]&&REFINED[name][String(ch)]&&REFINED[name][String(ch)][String(v)])||null; }
+function modernNoteHTML(name,ch,v,r){
+  const ref=`${name} ${ch}:${v}`;
+  const stack=r.d.map(dr=>`<div class="draft2"><span class="dl">${escHTML(dr[0])}</span>${escHTML(dr[1])}</div>`).join('');
+  const origSide=r.d.map(dr=>escHTML(dr[0]+'\n'+dr[1])).join('\n\n──────\n');
+  return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
+    <div class="meta"><span class="vref">${ref}</span>${r.e?'<span class="badge">📈 understanding grew</span>':''}</div>
+    <div class="body">${escNote(r.m)}</div>
+    ${r.e?`<div class="chg2" style="color:var(--accent)">📈 ${escHTML(r.e)}</div>`:''}
+    ${noteActionsHTML(String(v))}
+    <details class="trk owner-only" data-m="stack">
+      <summary>🔍 Track changes — your original & what I changed</summary>
+      <div class="sub"><button class="on" onclick="setTrkM(this,'stack')">Stacked</button><button onclick="setTrkM(this,'side')">⇄ Side by side</button></div>
+      <div class="tk-stack">${stack}<div class="chg2">✎ ${escHTML(r.c)}</div></div>
+      <div class="tk-side"><div class="sxs2">
+        <div><span class="dl">✨ Modern</span><div class="draft2" style="border-color:var(--note-line)">${escHTML(r.m)}</div></div>
+        <div><span class="dl">📝 Original</span><div class="draft2">${origSide}</div></div></div>
+        <div class="chg2">✎ ${escHTML(r.c)}</div></div>
+    </details></div>`;
+}
+function noteHTML(nt,name,ch,v,label){
+  const d=nt.date?new Date(nt.date).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'';
+  const ref=v==='0'?`${name} ${ch}`:`${name} ${ch}:${v}`;
+  return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
+    <div class="meta"><span class="vref">${ref}</span>
+      ${label?`<span class="badge">${label}</span>`:''}
+      ${nt.src==='import'?'<span class="badge">imported</span>':''}
+      ${d?`<span class="date">${d}</span>`:''}</div>
+    <div class="body" onclick="noteBodyClick(event,this,'${esc(name)}',${ch},'${v}','${nt.id}')" ondblclick="noteBodyDbl(event,'${esc(name)}',${ch},'${v}','${nt.id}')" title="Click to edit here · double-click for the full editor">${escNote(nt.text)}</div>
+    ${noteActionsHTML(String(v))}
+    <div class="tools">
+      <button onclick="event.stopPropagation();editNote('${esc(name)}',${ch},'${v}','${nt.id}')">Edit</button>
+      <button onclick="event.stopPropagation();openEditor('${esc(name)}',${ch},${v==='0'?0:v})">+ Add another</button>
+    </div></div>`;
+}
+
+/* ---------- My Commentary view ---------- */
+function renderMine(){
+  document.getElementById('crumb').textContent='Journal';
+  document.getElementById('chapselWrap').style.display='none';
+  document.getElementById('readfoot').style.display='none';
+  const legacy = state.journal==='original';
+  let total=0, books='';
+  window.BOOKS.forEach(b=>{
+    const bd=DATA[b.name]; if(!bd)return;
+    const items=[];
+    Object.keys(bd).sort((a,c)=>+a-+c).forEach(ch=>{
+      Object.keys(bd[ch]).sort((a,c)=>+a-+c).forEach(v=>{
+        if(!legacy){ const r=refinedFor(b.name,ch,v);          // New Edition: one refined entry per verse where it exists
+          if(r){ items.push({ch,v,text:r.m,edition:true}); total++; return; } }
+        bd[ch][v].forEach(nt=>{ items.push({ch,v,text:nt.text,date:nt.date}); total++; });
+      });
+    });
+    if(!items.length)return;
+    books+=`<details class="mc-book" open><summary>${b.name}<span class="n">${items.length} note${items.length>1?'s':''}</span></summary>`;
+    items.forEach(it=>{
+      const ref=it.v==='0'?`${b.name} ${it.ch}`:`${b.name} ${it.ch}:${it.v}`;
+      const d=it.date?new Date(it.date).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'';
+      books+=`<div class="mc-item" onclick="this.classList.toggle('open')">
+        <div class="r">${ref}${d?`<span class="mc-date">${d}</span>`:''}
+          <button class="mc-open" onclick="event.stopPropagation();jumpTo('${esc(b.name)}',${it.ch},${it.v==='0'?1:it.v})">Open in Bible →</button></div>
+        <div class="t">${escHTML(it.text)}</div></div>`;
+    });
+    books+=`</details>`;
+  });
+  const sub = legacy
+    ? 'The raw, unedited original — exactly as first written, typos and all.'
+    : 'The refined edition — my journal, gently polished for reading.';
+  const html=`<div class="page">
+    <div class="mc-head"><h2>${legacy?'Legacy Journal':'Nii Okai’s Journal'}</h2>
+      <div class="mine-seg jmtoggle">
+        <button class="${!legacy?'on':''}" onclick="setJournalMode('modern')">Journal</button>
+        <button class="${legacy?'on':''}" onclick="setJournalMode('original')">📜 Legacy Journal</button>
+      </div>
+      <span class="mc-count">${sub} · ${total} entr${total!==1?'ies':'y'} · tap one to expand</span></div>
+    ${total?books:'<div class="empty"><div class="big">✍</div>No commentary yet. Open any verse and add your thoughts.</div>'}
+  </div>`;
+  document.getElementById('reader').innerHTML=html;
+  document.getElementById('reader').scrollTop=0;
+  buildBookList();
+}
+function jumpTo(name,ch,v){
+  state.book=window.BOOKS.findIndex(b=>b.name===name); state.chapter=ch; state.view='read';
+  setViewTabs(); savePrefs();
+  ensureVersion(state.version,()=>{ renderRead(); setTimeout(()=>{const el=document.getElementById('v'+v);
+    if(el){el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.transition='background .3s';
+      const o=el.style.background; el.style.background='var(--note-line)'; setTimeout(()=>el.style.background=o,900);} },60); });
+  toggleSidebar(false);
+}
+
+/* ---------- Views & nav ---------- */
+function setView(v){
+  if(v==='plan' && planResume){ planRead(planResume.day,planResume.ci); return; } // resume where you left off in the plan
+  if(v==='menu'){ if(state.view==='menu'){ v=state._back||'home'; } else { state._back=state.view; } } // tap Menu again to go back
+  state.plan=null; state.view=v; setViewTabs(); render(); toggleSidebar(false); }
+/* Warm, congratulatory completion chime — an ascending major arpeggio that resolves into a chord.
+   Bell-like (sine + soft harmonic), gentle reverb-ish tail. Purely Web Audio, no file needed. */
+function playDing(){ try{ const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return;
+  const ac=new AC(); const t0=ac.currentTime; const master=ac.createGain();
+  master.gain.value=0.9; master.connect(ac.destination);
+  const bell=(freq,at,dur,vol)=>{ const o=ac.createOscillator(),o2=ac.createOscillator(),g=ac.createGain();
+    o.type='sine'; o2.type='sine'; o.frequency.value=freq; o2.frequency.value=freq*2.01; // add a shimmer harmonic
+    const g2=ac.createGain(); g2.gain.value=0.28; o2.connect(g2); g2.connect(g); o.connect(g); g.connect(master);
+    g.gain.setValueAtTime(0.0001,t0+at); g.gain.exponentialRampToValueAtTime(vol,t0+at+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+at+dur);
+    o.start(t0+at); o2.start(t0+at); o.stop(t0+at+dur+0.05); o2.stop(t0+at+dur+0.05); };
+  // C5 E5 G5 C6 arpeggio, then a soft sustained C-major chord
+  bell(523.25,0.00,0.45,0.32); bell(659.25,0.11,0.45,0.32); bell(783.99,0.22,0.5,0.34); bell(1046.5,0.33,0.9,0.4);
+  bell(523.25,0.5,1.3,0.16); bell(659.25,0.5,1.3,0.14); bell(783.99,0.5,1.3,0.14);
+  setTimeout(()=>{try{ac.close();}catch(e){}},2200);
+}catch(e){} }
+/* Encouraging Scripture (KJV, public domain) & sayings shown on day completion — rotates */
+const ENCOURAGE=[
+  {t:"Thy word is a lamp unto my feet, and a light unto my path.",r:"Psalm 119:105"},
+  {t:"This book of the law shall not depart out of thy mouth; but thou shalt meditate therein day and night.",r:"Joshua 1:8"},
+  {t:"Blessed is the man… his delight is in the law of the LORD; and in his law doth he meditate day and night.",r:"Psalm 1:1–2"},
+  {t:"They that wait upon the LORD shall renew their strength; they shall run, and not be weary.",r:"Isaiah 40:31"},
+  {t:"Let us not be weary in well doing: for in due season we shall reap, if we faint not.",r:"Galatians 6:9"},
+  {t:"I have esteemed the words of his mouth more than my necessary food.",r:"Job 23:12"},
+  {t:"How sweet are thy words unto my taste! yea, sweeter than honey to my mouth!",r:"Psalm 119:103"},
+  {t:"Being confident of this very thing, that he which hath begun a good work in you will perform it.",r:"Philippians 1:6"},
+  {t:"The path of the just is as the shining light, that shineth more and more unto the perfect day.",r:"Proverbs 4:18"},
+  {t:"Thy testimonies… are the rejoicing of my heart.",r:"Psalm 119:111"},
+  {t:"Well done, thou good and faithful servant… enter thou into the joy of thy lord.",r:"Matthew 25:21"},
+  {t:"A journey of a thousand miles begins with a single step — and you have taken today's.",r:"an old saying"},
+  {t:"Little by little, day by day — the faithful reader finishes the race.",r:"a word of encouragement"}
+];
+/* Beautiful, professional day-complete card */
+function showDayComplete(dayNum, nextDay){
+  const e=ENCOURAGE[Math.floor(Math.random()*ENCOURAGE.length)];
+  let ov=document.getElementById('completeOv');
+  if(!ov){ ov=document.createElement('div'); ov.id='completeOv'; ov.className='complete-ov'; document.body.appendChild(ov); }
+  const buttons = nextDay>=0
+    ? `<button class="btn primary complete-go" onclick="continueToNext(${nextDay})">Continue to Day ${nextDay+1} →</button>
+       <button class="btn complete-done" onclick="closeDayComplete()">I’m done for today</button>`
+    : `<div class="complete-fin">🎉 That was the final reading — you’ve finished the whole plan!</div>
+       <button class="btn primary complete-go" onclick="closeDayComplete()">Wonderful — done</button>`;
+  ov.innerHTML=`<div class="complete-card">
+    <div class="complete-seal">✓</div>
+    <div class="complete-kick">DAY ${dayNum} COMPLETE</div>
+    <div class="complete-title">Well done.</div>
+    <div class="complete-verse">“${escHTML(e.t)}”</div>
+    <div class="complete-ref">— ${escHTML(e.r)}</div>
+    <div class="complete-actions">${buttons}</div>
+  </div>`;
+  ov.classList.add('show'); playDing();
+  clearTimeout(window._compTimer);   // don't auto-dismiss — let the reader choose
+}
+function continueToNext(day){ closeDayComplete(); planRead(day,0); }
+function closeDayComplete(){ const ov=document.getElementById('completeOv'); if(ov) ov.classList.remove('show'); }
+function setViewTabs(){ let v=state.view; if(v==='read'&&state.plan) v='plan';
+  document.body.dataset.view=state.view;
+  document.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v)); }
+function tbSearch(){ const tb=document.querySelector('.topbar'); tb.classList.toggle('searching');
+  if(tb.classList.contains('searching')) setTimeout(()=>document.getElementById('search').focus(),60); }
+function tbMoreMenu(ev){ ev.stopPropagation(); closeVerseMenu();
+  const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu';
+  const dark=document.documentElement.dataset.theme==='dark';
+  m.innerHTML=`<button onclick="closeVerseMenu();toggleCompare()">⇄ Compare translations</button>
+    <button onclick="closeVerseMenu();toggleRefComm()">📚 Matthew Henry ${state.refcomm?'✓':''}</button>
+    <button onclick="closeVerseMenu();toggleTheme()">${dark?'☀ Light theme':'☾ Dark theme'}</button>
+    ${localStorage.getItem('nok_dates_unlocked')&&isOwner()?`<button onclick="closeVerseMenu();toggleDates()">📅 Note dates</button>`:''}`;
+  document.body.appendChild(m);
+  const r=ev.currentTarget.getBoundingClientRect(); const mw=m.offsetWidth;
+  m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(8,Math.min(r.right-mw,window.innerWidth-mw-8))+'px'; }
+function goChapter(c){ state.chapter=c; savePrefs(); renderRead(); }
+function prevChapter(){ if(state.chapter>1){state.chapter--;}
+  else if(state.book>0){state.book--; state.chapter=window.BOOKS[state.book].chapters.length;}
+  savePrefs(); renderRead(); }
+function nextChapter(){ const nch=window.BOOKS[state.book].chapters.length;
+  if(state.chapter<nch){state.chapter++;}
+  else if(state.book<window.BOOKS.length-1){state.book++; state.chapter=1;}
+  savePrefs(); renderRead(); }
+
+/* ---------- Editor ---------- */
+function openEditor(name,ch,v){
+  closeSelMenu&&closeSelMenu(); closeVerseMenu&&closeVerseMenu();
+  editing={book:name,ch:ch,v:String(v),id:null};
+  document.getElementById('edTitle').textContent=(v===0?'Add chapter note':'Add commentary');
+  showVerseInEditor(name,ch,v);
+  document.getElementById('edText').value='';
+  document.getElementById('edDelete').style.display='none';
+  _lastAuto=null; updateSpellStrip(document.getElementById('edText'));
+  document.getElementById('overlay').classList.add('show');
+  setTimeout(()=>document.getElementById('edText').focus(),50);
+}
+function editNote(name,ch,v,id){
+  const arr=DATA[name][String(ch)][String(v)]; const nt=arr.find(n=>n.id===id);
+  editing={book:name,ch:ch,v:String(v),id:id};
+  document.getElementById('edTitle').textContent='Edit commentary';
+  showVerseInEditor(name,ch,v==='0'?0:+v);
+  document.getElementById('edText').value=nt.text;
+  document.getElementById('edDelete').style.display='';
+  _lastAuto=null; updateSpellStrip(document.getElementById('edText'));
+  document.getElementById('overlay').classList.add('show');
+  setTimeout(()=>document.getElementById('edText').focus(),50);
+}
+function showVerseInEditor(name,ch,v){
+  const el=document.getElementById('edVerse');
+  if(v===0||v==='0'){ el.textContent=`${name} — Chapter ${ch} (chapter-level note)`; return; }
+  const bib=(window.BIBLE[state.version]||{})[name]||{};
+  const txt=(bib[String(ch)]||{})[String(v)]||'';
+  el.innerHTML=`<b>${name} ${ch}:${v}</b> &nbsp;<span style="color:var(--soft)">${state.version}</span><br>${txt}`;
+}
+function saveEditor(){
+  const text=sacredCase(document.getElementById('edText').value.trim());
+  if(!text){ toast('Nothing to save'); return; }
+  const {book,ch,v,id}=editing;
+  DATA[book]=DATA[book]||{}; DATA[book][String(ch)]=DATA[book][String(ch)]||{};
+  DATA[book][String(ch)][String(v)]=DATA[book][String(ch)][String(v)]||[];
+  const arr=DATA[book][String(ch)][String(v)];
+  if(id){ const nt=arr.find(n=>n.id===id); nt.text=text; nt.date=nt.date||new Date().toISOString(); nt.edited=new Date().toISOString(); }
+  else{ arr.push({id:Math.random().toString(36).slice(2,12),text:text,date:new Date().toISOString(),src:'user'}); }
+  const jv=(v==='0')?1:parseInt(v,10);
+  persist(); closeEditor(); markDirty();
+  if(state.view==='mine') renderMine();
+  else { renderRead(); setTimeout(()=>jumpVerse(jv),60); } // land back on the verse you just noted
+  toast('Saved');
+}
+function deleteCurrent(){
+  const {book,ch,v,id}=editing; if(!id)return;
+  if(!confirm('Delete this note?'))return;
+  const arr=DATA[book][String(ch)][String(v)];
+  const i=arr.findIndex(n=>n.id===id); if(i>=0)arr.splice(i,1);
+  if(!arr.length){ delete DATA[book][String(ch)][String(v)];
+    if(!Object.keys(DATA[book][String(ch)]).length) delete DATA[book][String(ch)]; }
+  persist(); closeEditor(); markDirty();
+  if(state.view==='mine') renderMine(); else renderRead();
+  toast('Deleted');
+}
+function closeEditor(){ document.getElementById('overlay').classList.remove('show'); editing=null; }
+
+/* ---------- Inline note editing: single click edits in place, double click opens full editor ---------- */
+let _noteClickTimer=null;
+function noteBodyClick(ev,el,name,ch,v,id){ ev.stopPropagation();
+  const sel=window.getSelection(); if(sel&&!sel.isCollapsed) return;      // let people select/copy text
+  if(_noteClickTimer){ clearTimeout(_noteClickTimer); _noteClickTimer=null; return; }
+  _noteClickTimer=setTimeout(()=>{ _noteClickTimer=null; inlineEditNote(el,name,ch,v,id); },240);
+}
+function noteBodyDbl(ev,name,ch,v,id){ ev.stopPropagation();
+  if(_noteClickTimer){ clearTimeout(_noteClickTimer); _noteClickTimer=null; } editNote(name,ch,v,id); }
+function inlineEditNote(el,name,ch,v,id){
+  if(el.querySelector('textarea')) return;
+  const arr=(DATA[name]&&DATA[name][String(ch)]&&DATA[name][String(ch)][String(v)])||[];
+  const nt=arr.find(n=>n.id===id); const cur=nt?nt.text:el.textContent;
+  el.innerHTML=`<textarea class="inline-ed" spellcheck="true" autocapitalize="sentences" oninput="noteAutocorrect(event)"></textarea>
+    <div class="inline-bar"><button class="btn primary" onclick="event.stopPropagation();saveInline(this,'${esc(name)}',${ch},'${v}','${id}')">Save</button>
+      <button class="btn" onclick="event.stopPropagation();cancelInline()">Cancel</button>
+      <span class="inline-hint">Enter saves · Esc cancels</span></div>`;
+  const t=el.querySelector('textarea'); t.value=cur; t.onclick=e=>e.stopPropagation();
+  t.onkeydown=e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); t.nextElementSibling.querySelector('.primary').click(); }
+    else if(e.key==='Escape'){ e.preventDefault(); cancelInline(); } };
+  t.focus(); t.style.height='auto'; t.style.height=Math.max(70,t.scrollHeight)+'px';
+}
+function cancelInline(){ if(state.view==='mine') renderMine(); else renderRead(); }
+function saveInline(btn,name,ch,v,id){ const ta=btn.closest('.body').querySelector('textarea'); const text=sacredCase(ta.value.trim());
+  if(!text){ toast('Nothing to save'); return; }
+  const arr=DATA[name][String(ch)][String(v)]; const nt=arr.find(n=>n.id===id);
+  if(nt){ nt.text=text; nt.date=nt.date||new Date().toISOString(); nt.edited=new Date().toISOString(); }
+  persist(); markDirty(); const jv=(v==='0')?1:parseInt(v,10);
+  if(state.view==='mine') renderMine(); else { renderRead(); setTimeout(()=>jumpVerse(jv),50); }
+  toast('Saved');
+}
+
+/* ---------- Conservative autocorrect (never touches British spelling / proper nouns) ---------- */
+const AUTOCORRECT={teh:'the',hte:'the',adn:'and',nad:'and',thier:'their',recieve:'receive',
+ becuase:'because',beacuse:'because',wich:'which',seperate:'separate',definately:'definitely',
+ occured:'occurred',untill:'until',wnat:'want',taht:'that',thna:'than',wiht:'with',
+ alot:'a lot',accross:'across',beleive:'believe',freind:'friend',wierd:'weird',
+ dont:"don't",doesnt:"doesn't",didnt:"didn't",cant:"can't",wont:"won't",wouldnt:"wouldn't",
+ couldnt:"couldn't",shouldnt:"shouldn't",isnt:"isn't",arent:"aren't",wasnt:"wasn't",
+ werent:"weren't",havent:"haven't",hasnt:"hasn't",hadnt:"hadn't",im:"I'm",ive:"I've",
+ youre:"you're",theyre:"they're",thats:"that's",whats:"what's"};
+/* Offline spelling model: dictionary + frequency rank + your personal dictionary + learned fixes */
+let _DICT=null, _RANK=null;
+let _USERDICT=new Set(), _LEARN={}, _rejected=new Set(), _lastAuto=null;
+function _loadUserSpell(){ try{ _USERDICT=new Set(JSON.parse(localStorage.getItem('nok_userdict')||'[]')); }catch(e){ _USERDICT=new Set(); }
+  try{ _LEARN=JSON.parse(localStorage.getItem('nok_learn')||'{}'); }catch(e){ _LEARN={}; } }
+function _saveUserDict(){ localStorage.setItem('nok_userdict',JSON.stringify([..._USERDICT])); }
+function _saveLearn(){ localStorage.setItem('nok_learn',JSON.stringify(_LEARN)); }
+function _buildDict(){ _DICT=new Set(); _RANK=new Map(); _loadUserSpell();
+  const w=window.DICT_WORDS||[]; for(let i=0;i<w.length;i++){ _DICT.add(w[i]); _RANK.set(w[i],i); }
+  // your own words (proper nouns, Pidgin, native expressions) count as known so we never mangle them
+  try{ for(const bk in DATA)for(const c in DATA[bk])for(const v in DATA[bk][c])DATA[bk][c][v].forEach(nt=>{
+    (nt.text.toLowerCase().match(/[a-z']{2,}/g)||[]).forEach(t=>{ if(!_DICT.has(t)){_DICT.add(t); _RANK.set(t,900000);} }); }); }catch(e){}
+  _USERDICT.forEach(t=>{ if(!_DICT.has(t)){_DICT.add(t); _RANK.set(t,850000);} });
+}
+function _isKnown(w){ if(!_DICT)_buildDict(); return _DICT.has(w)||_USERDICT.has(w)||_rejected.has(w); }
+const _AL="abcdefghijklmnopqrstuvwxyz";
+function _edits1(w){ const res=new Set();
+  for(let i=0;i<=w.length;i++){ const a=w.slice(0,i), b=w.slice(i);
+    if(b) res.add(a+b.slice(1));                                   // delete
+    if(b.length>1) res.add(a+b[1]+b[0]+b.slice(2));                // transpose
+    for(let j=0;j<26;j++){ const c=_AL[j]; if(b) res.add(a+c+b.slice(1)); res.add(a+c+b); } // replace + insert
+  } return res; }
+/* candidate suggestions, best (most common) first — edit distance 1, then 2 */
+function _suggest(word,max){ if(!_DICT)_buildDict(); max=max||5; const lower=word.toLowerCase();
+  const cand=new Map();
+  _edits1(lower).forEach(c=>{ if(_RANK.has(c)) cand.set(c,Math.min(cand.get(c)??Infinity,_RANK.get(c))); });
+  if(cand.size<max){ let n=0; for(const w1 of _edits1(lower)){ if(n>3000)break;
+    for(const c of _edits1(w1)){ n++; if(n>26000)break; if(_RANK.has(c)&&!cand.has(c)) cand.set(c,_RANK.get(c)); } } }
+  let out=[...cand.entries()].sort((a,b)=>a[1]-b[1]).slice(0,max).map(x=>x[0]);
+  const sp=_splitWord(lower); if(sp&&!out.includes(sp)) out.unshift(sp);   // offer the split too
+  return out.slice(0,max); }
+/* two merged words → split them ("notstated" → "not stated") */
+function _splitWord(lower){ if(!_DICT)_buildDict(); if(lower.length<5) return null;
+  let best=null,bestScore=Infinity;
+  for(let i=2;i<=lower.length-2;i++){ const a=lower.slice(0,i), b=lower.slice(i);
+    const ra=_RANK.get(a), rb=_RANK.get(b);
+    if(ra!==undefined&&rb!==undefined&&ra<50000&&rb<50000){ const sc=ra+rb; if(sc<bestScore){bestScore=sc;best=a+' '+b;} } }
+  return best; }
+/* confident single-word auto-fix (used while typing) */
+function _correct(word){ if(!_DICT)_buildDict();
+  const lower=word.toLowerCase();
+  if(_LEARN[lower]) return _LEARN[lower];          // something you taught me
+  if(lower.length<3) return null;
+  if(_isKnown(lower)) return null;
+  let best=null, bestRank=Infinity;
+  _edits1(lower).forEach(c=>{ const r=_RANK.get(c); if(r!==undefined && r<bestRank && r<800000){ bestRank=r; best=c; } });
+  if(best) return best;
+  const sp=_splitWord(lower); if(sp) return sp;     // merged-word split
+  // try distance-2 only if a clearly common single candidate emerges
+  const s=_suggest(lower,2); if(s.length===1 || (s.length>1 && _RANK.get(s[0])<3000)) return s[0]||null;
+  return null;
+}
+function _applyCase(src,fixed){
+  if(src===src.toUpperCase()&&src!==src.toLowerCase()) return fixed.toUpperCase();
+  if(src[0]===src[0].toUpperCase()&&src[0]!==src[0].toLowerCase()) return fixed.charAt(0).toUpperCase()+fixed.slice(1);
+  return fixed; }
+function noteAutocorrect(e){
+  const ta=e.target;
+  const auto=document.getElementById('edAuto');
+  const it=e.inputType; const d=e.data;
+  if(!auto||!auto.checked){ scheduleSpellStrip(ta); return; }
+  // (A) auto-fix just made, user hit Backspace → undo it and remember not to re-correct (your "retype leaves it")
+  if(_lastAuto && it && it.indexOf('delete')===0){
+    const {from,to,start}=_lastAuto; const val=ta.value;
+    if(val.slice(start,start+to.length)===to){                  // corrected word still intact, they backspaced the space after it
+      ta.value=val.slice(0,start)+from+val.slice(start+to.length);
+      ta.selectionStart=ta.selectionEnd=start+from.length;
+      _rejected.add(from.toLowerCase()); _lastAuto=null; scheduleSpellStrip(ta); return; }
+    _lastAuto=null;
+  }
+  if(it==='insertText' && d && !/[\s.!?,;:]/.test(d)) _lastAuto=null;   // typing a new word — forget the last auto-fix
+  const boundary = (it==='insertText'&&(d===' '||/[.!?,;:]/.test(d||'')))||it==='insertLineBreak'||it==='insertParagraph';
+  if(!boundary){ scheduleSpellStrip(ta); return; }
+  const val=ta.value; const caret=ta.selectionStart;
+  let end=caret-1; if(end<0){ scheduleSpellStrip(ta); return; }
+  let start=end; while(start>0 && /[A-Za-z']/.test(val[start-1])) start--;
+  const word=val.slice(start,end); if(!word){ scheduleSpellStrip(ta); return; }
+  const lower=word.toLowerCase(); let fixed=word;
+  if(_rejected.has(lower)){ /* you told me to leave this word alone */ }
+  else if(_LEARN[lower]!==undefined){ fixed=_applyCase(word,_LEARN[lower]); }
+  else if(AUTOCORRECT[lower]!==undefined){ fixed=_applyCase(word,AUTOCORRECT[lower]); }
+  else if(lower==='i'){ fixed='I'; }
+  else if(/^[a-z][a-z']*$/.test(word) && !/'/.test(word)){
+    const c=_correct(word); if(c) fixed=_applyCase(word,c);       // capitalised words skipped → names protected
+  }
+  const before=val.slice(0,start);
+  if(/(^|[.!?]\s+|\n\s*)$/.test(before) && /^[a-z]/.test(fixed)) fixed=fixed.charAt(0).toUpperCase()+fixed.slice(1);
+  if(fixed!==word){ const delta=fixed.length-word.length;
+    ta.value=val.slice(0,start)+fixed+val.slice(end);
+    ta.selectionStart=ta.selectionEnd=caret+delta;
+    if(/^[a-z]/i.test(word)) _lastAuto={from:word,to:fixed,start:start}; }
+  else _lastAuto=null;
+  scheduleSpellStrip(ta);
+}
+/* ---- live "spelling issues" strip under the note box ---- */
+let _spellTimer=null;
+function scheduleSpellStrip(ta){ clearTimeout(_spellTimer); _spellTimer=setTimeout(()=>updateSpellStrip(ta),300); }
+function updateSpellStrip(ta){ ta=ta||document.getElementById('edText'); const el=document.getElementById('edSpell');
+  if(!ta||!el) return; if(!_DICT)_buildDict();
+  const seen=new Set(), bad=[]; const re=/[A-Za-z][A-Za-z']*/g; let m;
+  while((m=re.exec(ta.value))){ const raw=m[0]; const w=raw.toLowerCase();
+    if(w.length<2) continue;
+    if(_DICT.has(w)||_USERDICT.has(w)||_rejected.has(w)||AUTOCORRECT[w]!==undefined) continue;
+    if(seen.has(w)) continue; seen.add(w); bad.push(raw); if(bad.length>=40) break; }
+  if(!bad.length){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='';
+  el.innerHTML='<span class="es-lbl">⚠ Check:</span>'+bad.map(w=>`<button class="es-chip" onclick="spellChip(event,'${esc(w)}')">${escHTML(w)}</button>`).join('');
+}
+function closeSpellPop(){ const p=document.getElementById('spellpop'); if(p) p.remove(); }
+document.addEventListener('click',closeSpellPop);
+function spellChip(ev,word){ ev.stopPropagation(); closeSpellPop();
+  const sug=_suggest(word,5);
+  const pop=document.createElement('div'); pop.className='vmenu'; pop.id='spellpop';
+  pop.innerHTML=(sug.length?sug.map(s=>`<button onclick="spellReplace('${esc(word)}','${esc(s)}')"><b>${escHTML(s)}</b></button>`).join('')
+      :'<div style="padding:8px 11px;color:var(--soft);font-size:13px">No suggestion found</div>')
+    +'<div class="cp-sep"></div>'
+    +`<button onclick="spellIgnore('${esc(word)}')">🚫 Ignore this time</button>`
+    +`<button onclick="spellAdd('${esc(word)}')">➕ Add to my dictionary</button>`;
+  document.body.appendChild(pop);
+  const r=ev.currentTarget.getBoundingClientRect(); const mh=pop.offsetHeight, mw=pop.offsetWidth;
+  let top=r.top-mh-6; if(top<8) top=r.bottom+6; let left=r.left; if(left+mw>window.innerWidth-8) left=window.innerWidth-mw-8;
+  pop.style.top=top+'px'; pop.style.left=Math.max(8,left)+'px'; }
+function spellReplace(from,to){ closeSpellPop(); const ta=document.getElementById('edText'); if(!ta) return;
+  const re=new RegExp('\\b'+from.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','gi');
+  ta.value=ta.value.replace(re,mm=>_applyCase(mm,to));
+  _LEARN[from.toLowerCase()]=to; _saveLearn();     // learn from your choice
+  _lastAuto=null; updateSpellStrip(ta); ta.focus(); }
+function spellIgnore(word){ closeSpellPop(); _rejected.add(word.toLowerCase()); updateSpellStrip(); }
+function spellAdd(word){ closeSpellPop(); const w=word.toLowerCase(); _USERDICT.add(w); _saveUserDict();
+  if(_DICT){_DICT.add(w); _RANK.set(w,850000);} updateSpellStrip(); toast('Added “'+word+'” to your dictionary'); }
+
+/* ---------- Copy & Share on a note ---------- */
+function verseText(name,ch,v){ return ((((window.BIBLE||{})[state.version]||{})[name]||{})[String(ch)]||{})[String(v)]||''; }
+function _noteParts(btn){ const n=btn.closest('.note'); const b=n.dataset.book,ch=n.dataset.ch,v=n.dataset.v;
+  const ref=v==='0'?`${b} ${ch}`:`${b} ${ch}:${v}`;
+  const verse=v==='0'?'':verseText(b,ch,v);
+  const body=(n.querySelector('.body')?n.querySelector('.body').textContent:'').trim();
+  return {b,ch,v,ref,verse,body}; }
+function _composeNote(p,mode){
+  if(mode==='verse') return p.verse?`${p.ref} (${state.version})\n${p.verse}`:p.ref;
+  if(mode==='note')  return `${p.ref}\n${p.body}`;
+  return (p.verse?`${p.ref} (${state.version})\n${p.verse}\n\n`:`${p.ref}\n`)+`📝 ${p.body}\n\n— Nii Okai · Never Get Bored`; }
+function copyThing(btn,mode){ const p=_noteParts(btn);
+  _clip(_composeNote(p,mode), mode==='verse'?'Verse copied':mode==='note'?'Note copied':'Verse + note copied'); }
+function shareThing(btn){ const p=_noteParts(btn); const t=_composeNote(p,'both');
+  if(navigator.share){ navigator.share({title:p.ref,text:t}).catch(()=>{}); } else _clip(t,'Copied — paste anywhere to share'); }
+function _clip(t,msg){ if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(t).then(()=>toast(msg||'Copied'),()=>_clipFallback(t,msg));
+  else _clipFallback(t,msg); }
+function _clipFallback(t,msg){ const ta=document.createElement('textarea'); ta.value=t;
+  ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); toast(msg||'Copied'); }catch(e){ toast('Copy failed'); }
+  document.body.removeChild(ta); }
+function noteActionsHTML(v){ const hasV=v!=='0'; return `<div class="notetools">
+  <div class="copymenu">
+    <button class="copytrig" onclick="toggleCopyMenu(event,this)" title="Copy or share">📋 Copy ▾</button>
+    <div class="copypop">
+      ${hasV?`<button onclick="pickCopy(this,'both')">📋 Copy verse &amp; note</button>`:''}
+      <button onclick="pickCopy(this,'note')">📝 Copy note</button>
+      ${hasV?`<button onclick="pickCopy(this,'verse')">📖 Copy verse</button>`:''}
+      <div class="cp-sep"></div>
+      <button onclick="pickShare(this)">🔗 Share</button>
+    </div>
+  </div></div>`; }
+function toggleCopyMenu(e,btn){ e.stopPropagation(); const pop=btn.nextElementSibling;
+  const open=pop.classList.contains('show'); closeCopyMenus(); if(!open) pop.classList.add('show'); }
+function closeCopyMenus(){ document.querySelectorAll('.copypop.show').forEach(p=>p.classList.remove('show')); }
+document.addEventListener('click',closeCopyMenus);
+function pickCopy(btn,mode){ closeCopyMenus(); copyThing(btn,mode); }
+function pickShare(btn){ closeCopyMenus(); shareThing(btn); }
+/* one-tap copy for a plain verse (no note) */
+function copyVerse(name,ch,v){ const t=verseText(name,ch,v); if(!t){ toast('No text to copy'); return; }
+  _clip(`${name} ${ch}:${v} (${state.version})\n${t}`,'Verse copied'); }
+/* floating verse action menu — Copy / Share / Search Google / Add note */
+function closeVerseMenu(){ const m=document.getElementById('vmenu'); if(m) m.remove(); }
+document.addEventListener('click',closeVerseMenu);
+window.addEventListener('scroll',closeVerseMenu,true);
+function verseMenu(ev,name,ch,v){ ev.stopPropagation(); closeVerseMenu(); closeCopyMenus();
+  const anchor=ev.currentTarget||ev.target;
+  const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu';
+  m.innerHTML=`<div class="hlrow"><span class="hlbl">Highlight</span>
+      <span class="hld hd-y" onclick="vmHl(event,'${esc(name)}',${ch},${v},'y')"></span>
+      <span class="hld hd-g" onclick="vmHl(event,'${esc(name)}',${ch},${v},'g')"></span>
+      <span class="hld hd-b" onclick="vmHl(event,'${esc(name)}',${ch},${v},'b')"></span>
+      <span class="hld hd-p" onclick="vmHl(event,'${esc(name)}',${ch},${v},'p')"></span>
+      <span class="hld hd-x" onclick="vmHl(event,'${esc(name)}',${ch},${v},'')">✕</span></div>
+    <button onclick="vmDo(event,'copy','${esc(name)}',${ch},${v})">📋 Copy verse</button>
+    <button onclick="vmDo(event,'share','${esc(name)}',${ch},${v})">🔗 Share</button>
+    <button onclick="vmDo(event,'google','${esc(name)}',${ch},${v})">🔎 Search on Google</button>
+    <button onclick="vmDo(event,'compare','${esc(name)}',${ch},${v})">⇄ Compare versions</button>
+    <button onclick="vmDo(event,'note','${esc(name)}',${ch},${v})">✎ Add a note</button>`;
+  document.body.appendChild(m);
+  const r=anchor.getBoundingClientRect(); const mw=m.offsetWidth, mh=m.offsetHeight;
+  let top=r.bottom+6; if(top+mh>window.innerHeight-8) top=Math.max(8,r.top-mh-6);
+  let left=r.left; if(left+mw>window.innerWidth-8) left=window.innerWidth-mw-8;
+  m.style.top=top+'px'; m.style.left=Math.max(8,left)+'px';
+}
+function vmDo(ev,action,name,ch,v){ ev.stopPropagation(); closeVerseMenu();
+  const t=verseText(name,ch,v); const ref=`${name} ${ch}:${v}`;
+  if(action==='copy'){ copyVerse(name,ch,v); }
+  else if(action==='share'){ const s=`${ref} (${state.version})\n${t}`;
+    if(navigator.share) navigator.share({title:ref,text:s}).catch(()=>{}); else _clip(s,'Copied — paste to share'); }
+  else if(action==='google'){ window.open('https://www.google.com/search?q='+encodeURIComponent(ref+' meaning'),'_blank','noopener'); }
+  else if(action==='compare'){ compareVerse(name,ch,v); }
+  else if(action==='note'){ openEditor(name,ch,v); }
+}
+/* ---------- Compare one verse across every translation ---------- */
+function compareVerse(name,ch,v){
+  const versions=Object.keys(window.VERSIONS||{KJV:'King James Version'});
+  let pending=versions.length;
+  const done=()=>{ if(--pending<=0) renderCompareVerse(name,ch,v,versions); };
+  versions.forEach(ver=>{ if(window.BIBLE&&window.BIBLE[ver]) done(); else ensureVersion(ver,done); });
+}
+function renderCompareVerse(name,ch,v,versions){
+  const rows=versions.map(ver=>{ const txt=(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(v)]||'—';
+    return `<div class="cvrow"><div class="cvver">${ver}<span>${escHTML(window.VERSIONS[ver]||'')}</span></div>
+      <div class="cvtxt">${escHTML(txt)}</div></div>`; }).join('');
+  let ov=document.getElementById('cvOv'); if(!ov){ ov=document.createElement('div'); ov.id='cvOv'; ov.className='complete-ov'; document.body.appendChild(ov); }
+  ov.innerHTML=`<div class="cvcard">
+    <div class="cvhead"><b>${name} ${ch}:${v}</b> — across translations<button class="cvclose" onclick="closeCompareVerse()">✕</button></div>
+    <div class="cvbody">${rows}</div>
+    <div class="cvfoot"><button class="btn" onclick="_clip(document.getElementById('cvOv').dataset.all,'Copied all versions')">📋 Copy all</button>
+      <button class="btn primary" onclick="closeCompareVerse()">Close</button></div></div>`;
+  ov.dataset.all=versions.map(ver=>`${ver}: ${(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(v)]||'—'}`).join('\n');
+  ov.classList.add('show');
+}
+function closeCompareVerse(){ const o=document.getElementById('cvOv'); if(o) o.classList.remove('show'); }
+/* ---------- Highlight-to-act: select text (even across two verses) → popup menu ---------- */
+function closeSelMenu(){ const m=document.getElementById('selmenu'); if(m) m.remove(); }
+function onReaderSelect(){
+  setTimeout(()=>{ const sel=window.getSelection(); if(!sel||sel.isCollapsed){ return; }
+    const text=(sel.toString()||'').trim(); if(text.length<2){ return; }
+    const reader=document.getElementById('reader'); const anc=sel.anchorNode;
+    if(!reader||!anc||!reader.contains(anc.nodeType===3?anc.parentNode:anc)) return;   // only inside the reader
+    // which verse did the selection start in?
+    let el=anc.nodeType===3?anc.parentNode:anc; while(el&&el!==reader&&!(el.classList&&el.classList.contains('verse'))) el=el.parentNode;
+    const vAttr=(el&&el.dataset&&el.dataset.v)?el.dataset.v:null;
+    closeSelMenu(); const m=document.createElement('div'); m.className='vmenu'; m.id='selmenu';
+    const b=esc(window.BOOKS[state.book].name), ch=state.chapter;
+    m.innerHTML=`<button onclick="selAct(event,'copy')">📋 Copy</button>
+      <button onclick="selAct(event,'share')">🔗 Share</button>
+      <button onclick="selAct(event,'google')">🔎 Search on Google</button>
+      ${vAttr?`<button onclick="selAct(event,'note','${b}',${ch},${vAttr})">✎ Add a note here</button>`:''}`;
+    document.body.appendChild(m);
+    const rng=sel.getRangeAt(0).getBoundingClientRect(); const mw=m.offsetWidth, mh=m.offsetHeight;
+    let top=rng.top-mh-8; if(top<8) top=rng.bottom+8; let left=rng.left; if(left+mw>window.innerWidth-8) left=window.innerWidth-mw-8;
+    m.style.top=top+'px'; m.style.left=Math.max(8,left)+'px';
+  },10);
+}
+function selAct(ev,action,book,ch,v){ ev.stopPropagation();
+  const text=(window.getSelection().toString()||'').trim();
+  const inRead=state.view==='read'; const ref=inRead?`${window.BOOKS[state.book].name} ${state.chapter} (${state.version})`:'';
+  const withRef=ref?`${text}\n— ${ref}`:text;
+  if(action==='copy'){ _clip(withRef,'Copied'); }
+  else if(action==='share'){ if(navigator.share) navigator.share({title:ref||'Note',text:withRef}).catch(()=>{}); else _clip(withRef,'Copied — paste to share'); }
+  else if(action==='google'){ window.open('https://www.google.com/search?q='+encodeURIComponent(text),'_blank','noopener'); }
+  else if(action==='note'){ closeSelMenu(); openEditor(book,ch,v); return; }
+  closeSelMenu();
+}
+const IS_TOUCH=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches;
+document.addEventListener('mouseup',e=>{ if(IS_TOUCH) return; if(e.target&&e.target.closest&&e.target.closest('#selmenu')) return; onReaderSelect(); });
+/* on touch: any tap outside a popup closes it (iOS doesn't always fire document click) */
+document.addEventListener('touchstart',e=>{ const t=e.target;
+  if(t&&t.closest&&(t.closest('#vmenu')||t.closest('#selmenu')||t.closest('.vmenu'))) return;
+  closeVerseMenu(); closeSelMenu(); },{passive:true});
+document.addEventListener('mousedown',e=>{ if(!(e.target&&e.target.closest&&e.target.closest('#selmenu'))) closeSelMenu(); });
+
+/* ---------- Search ---------- */
+let searchTimer=null;
+function onSearch(q){ clearTimeout(searchTimer); searchTimer=setTimeout(()=>doSearch(q),180); }
+function doSearch(q){
+  q=q.trim();
+  if(q.length<2){ if(state.view==='search'){ state.view='read'; setViewTabs(); render(); } return; }
+  state.view='search'; setViewTabs();
+  document.getElementById('crumb').textContent='Search';
+  document.getElementById('chapselWrap').style.display='none';
+  document.getElementById('readfoot').style.display='none';
+  const ql=q.toLowerCase();
+  // commentary results
+  let comm=[];
+  for(const bk in DATA)for(const ch in DATA[bk])for(const v in DATA[bk][ch])
+    DATA[bk][ch][v].forEach(nt=>{ if(nt.text.toLowerCase().includes(ql))
+      comm.push({bk,ch,v,text:nt.text}); });
+  // scripture results in loaded version
+  let scrip=[]; const bib=window.BIBLE[state.version]||{};
+  outer:for(const bk in bib){ for(const ch in bib[bk]){ for(const v in bib[bk][ch]){
+    const t=bib[bk][ch][v]; if(t&&t.toLowerCase().includes(ql)){ scrip.push({bk,ch,v,text:t});
+      if(scrip.length>=150)break outer; } } } }
+  let html=`<div class="page">
+    <div class="mc-head"><h2>“${escHTML(q)}”</h2><span class="mc-count">${comm.length} in commentary · ${scrip.length}${scrip.length>=150?'+':''} in ${state.version}</span></div>`;
+  if(comm.length){ html+='<div class="book-group" style="padding-left:0">Your commentary</div>';
+    comm.slice(0,80).forEach(r=>{ const ref=r.v==='0'?`${r.bk} ${r.ch}`:`${r.bk} ${r.ch}:${r.v}`;
+      html+=`<div class="sr-item" onclick="jumpTo('${esc(r.bk)}',${r.ch},${r.v==='0'?1:r.v})">
+        <div class="r">${ref}<span class="sr-tag">note</span></div>
+        <div class="t">${hl(r.text,q,160)}</div></div>`; }); }
+  if(scrip.length){ html+='<div class="book-group" style="padding-left:0">Scripture</div>';
+    scrip.slice(0,80).forEach(r=>{ html+=`<div class="sr-item" onclick="jumpTo('${esc(r.bk)}',${r.ch},${r.v})">
+        <div class="r">${r.bk} ${r.ch}:${r.v}</div>
+        <div class="t">${hl(r.text,q,200)}</div></div>`; }); }
+  if(!comm.length&&!scrip.length) html+='<div class="empty"><div class="big">🔍</div>No matches.</div>';
+  html+='</div>';
+  document.getElementById('reader').innerHTML=html;
+  document.getElementById('reader').scrollTop=0;
+}
+function hl(text,q,max){
+  let t=text; const i=t.toLowerCase().indexOf(q.toLowerCase());
+  if(i>60){ t='…'+t.slice(i-50); } if(t.length>max){ t=t.slice(0,max)+'…'; }
+  return escHTML(t).replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>');
+}
+
+/* ---------- Import / Export ---------- */
+function exportCommentary(){
+  const blob=new Blob(['window.COMMENTARY_SEED='+JSON.stringify(DATA,null,1)+';'],{type:'text/javascript'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='commentary.js'; a.click();
+  // also offer json
+  const blob2=new Blob([JSON.stringify(DATA,null,1)],{type:'application/json'});
+  const a2=document.createElement('a'); a2.href=URL.createObjectURL(blob2); a2.download='commentary.json';
+  setTimeout(()=>a2.click(),120);
+  state.dirty=false;
+  toast('Exported commentary.js + .json — replace the files in your data folder to keep changes');
+}
+function importCommentary(ev){
+  const f=ev.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{ try{
+    let txt=r.result.trim();
+    txt=txt.replace(/^window\.COMMENTARY_SEED\s*=/,'').replace(/;?\s*$/,'');
+    const obj=JSON.parse(txt);
+    if(!confirm('Import will MERGE these notes into your current commentary. Continue?')){ev.target.value='';return;}
+    mergeCommentary(obj); persist(); markDirty();
+    render(); toast('Imported & merged');
+  }catch(e){ toast('Could not read that file'); } ev.target.value=''; };
+  r.readAsText(f);
+}
+function mergeCommentary(obj){
+  for(const bk in obj)for(const ch in obj[bk])for(const v in obj[bk][ch]){
+    DATA[bk]=DATA[bk]||{}; DATA[bk][ch]=DATA[bk][ch]||{}; DATA[bk][ch][v]=DATA[bk][ch][v]||[];
+    const existing=new Set(DATA[bk][ch][v].map(n=>n.text.trim()));
+    obj[bk][ch][v].forEach(n=>{ if(!existing.has((n.text||'').trim())) DATA[bk][ch][v].push(n); });
+  }
+}
+
+/* ---------- Misc ---------- */
+function markDirty(){ state.dirty=true; }
+function toggleTheme(){ const d=document.documentElement;
+  d.dataset.theme=d.dataset.theme==='dark'?'light':'dark';
+  document.getElementById('themeBtn').textContent=d.dataset.theme==='dark'?'☀':'☾'; savePrefs(); }
+function toggleDates(){ document.documentElement.classList.toggle('show-dates');
+  document.getElementById('dateBtn').classList.toggle('active',document.documentElement.classList.contains('show-dates'));
+  savePrefs(); }
+function toggleNotes(){ document.documentElement.classList.toggle('hide-notes');
+  const off=document.documentElement.classList.contains('hide-notes');
+  document.getElementById('notesBtn').classList.toggle('active',!off);
+  document.getElementById('notesBtn').title=off?'Currently scripture-only — tap to show commentary':'Showing commentary — tap for scripture only';
+  savePrefs(); if(state.view==='read') renderRead(); }
+/* ---------- Reference commentary layer (Matthew Henry, public domain, lazy-loaded) ---------- */
+function ensureRefIndex(cb){ if(window.REFCOMM_BOOKS) return cb();
+  const s=document.createElement('script'); s.src='data/mhc/_index.js'; s.onload=cb; s.onerror=()=>{ window.REFCOMM_BOOKS={MHC:[]}; cb(); }; document.head.appendChild(s); }
+function ensureRefBook(book,cb){ if(window.REFCOMM&&window.REFCOMM.MHC&&window.REFCOMM.MHC[book]) return cb(true);
+  const s=document.createElement('script'); s.src='data/mhc/'+encodeURIComponent(book)+'.js';
+  s.onload=()=>cb(true); s.onerror=()=>cb(false); document.head.appendChild(s); }
+function refInstalled(){ return !!(window.REFCOMM_BOOKS&&window.REFCOMM_BOOKS.MHC&&window.REFCOMM_BOOKS.MHC.length); }
+function _syncRefUI(){ const on=state.refcomm;
+  const rb=document.getElementById('refBtn'); if(rb) rb.classList.toggle('active',on);
+  const tb=document.getElementById('refToggleBtn'); if(tb) tb.classList.toggle('on',on);
+  const st=document.getElementById('refState'); if(st) st.textContent=on?'On':'Off'; }
+function toggleRefComm(){ state.refcomm=!state.refcomm; savePrefs(); _syncRefUI();
+  if(state.refcomm){ ensureRefIndex(()=>{ if(!refInstalled()) toast('Matthew Henry isn’t installed yet — run “Get Matthew Henry.command” in the tools folder');
+    if(state.view==='read') renderRead(); }); }
+  else if(state.view==='read') renderRead();
+}
+/* returns the HTML panel for the current chapter (or '' ) and kicks off lazy load if needed */
+function refCommPanel(name,ch){
+  if(!state.refcomm) return '';
+  if(!window.REFCOMM||!window.REFCOMM.MHC||!window.REFCOMM.MHC[name]){
+    if(refInstalled() && (window.REFCOMM_BOOKS.MHC.indexOf(name)>=0) && !_refTried[name]){
+      _refTried[name]=1; ensureRefBook(name,()=>{ if(state.refcomm&&state.view==='read') renderRead(); });
+    }
+    return '';
+  }
+  const chap=window.REFCOMM.MHC[name][String(ch)]; if(!chap||!chap.length) return '';
+  const rows=chap.map(e=>`<p class="rc-p">${e.v?`<b>v${e.v}</b> `:''}${escHTML(e.t)}</p>`).join('');
+  return `<details class="refcomm"><summary>📖 Matthew Henry’s Commentary — ${escHTML(name)} ${ch} <span class="rc-pd">public domain · not Nii Okai’s journal</span></summary>
+    <div class="refcomm-body">${rows}</div></details>`;
+}
+function togglePreview(){ const on=document.body.classList.toggle('as-public');
+  const b=document.getElementById('previewBtn');
+  b.classList.toggle('active',on); b.textContent= on?'✕ Exit reader preview':'👁 Preview as a reader';
+  // mimic a fresh reader: owner-unlocked extras (e.g. the dates you unlocked) are hidden until they read the Welcome
+  document.getElementById('dateBtn').style.display = (!on && localStorage.getItem('nok_dates_unlocked'))?'':'none'; }
+function toggleSidebar(open){ document.getElementById('sidebar').classList.toggle('open',open);
+  document.getElementById('backdrop').classList.toggle('show',open); }
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3200); }
+function esc(s){ return String(s).replace(/'/g,"\\'"); }
+function escHTML(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeEditor();
+  if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&editing)saveEditor(); });
+window.addEventListener('beforeunload',e=>{ if(state.dirty){ e.preventDefault(); e.returnValue=''; } });
+
+init();
+/* Heavy data (Bible text, spell dictionary) loads in the background after first paint */
+window.addEventListener('load',()=>{ setTimeout(()=>{
+  ensureVersion(state.version,()=>{ if(state.view==='read') render(); });
+  const d=document.createElement('script'); d.src='data/dict.js';
+  d.onload=()=>{ _DICT=null; }; document.head.appendChild(d);
+},60); });
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+/* ---- Update alert: tell the reader when a new version has been deployed ---- */
+let _updTag=null,_updShown=false;
+async function _updCheck(){ try{
+  const r=await fetch('index.html',{method:'HEAD',cache:'no-store'}); if(!r.ok) return;
+  const t=r.headers.get('etag')||r.headers.get('last-modified'); if(!t) return;
+  if(_updTag===null){ _updTag=t; return; }
+  if(t!==_updTag&&!_updShown){ _updShown=true; _showUpdBar(); }
+}catch(e){} }
+async function _showUpdBar(){ if(document.getElementById('updbar')) return;
+  let vtxt='A new version is available';
+  try{ const t=await (await fetch('index.html',{cache:'no-store'})).text();
+    const m=t.match(/BUILD=\{v:'([\d.]+)'/); if(m) vtxt='Version '+m[1]+' is available'; }catch(e){}
+  const b=document.createElement('div'); b.className='updbar'; b.id='updbar';
+  b.innerHTML='✨ '+vtxt
+    +'<button class="upd-btn" onclick="_doUpdate()">Update</button>'
+    +'<button class="upd-x" onclick="document.getElementById(\'updbar\').remove()" title="Later">✕</button>';
+  document.body.appendChild(b); }
+function _doUpdate(){
+  const done=()=>location.reload();
+  if('serviceWorker' in navigator&&navigator.serviceWorker.getRegistration){
+    navigator.serviceWorker.getRegistration().then(reg=>{ if(reg) return reg.update(); }).then(done,done);
+  } else done(); }
+window.addEventListener('load',()=>{ _updCheck(); setInterval(_updCheck,30*60*1000); });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) _updCheck(); });
+</script>
+</body>
+</html>
