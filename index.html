@@ -1505,7 +1505,7 @@ function renderAbout(){
    otherwise falls back to the device's read-aloud voice. */
 function karListen(){ if(state.view!=='about'){ setView('about'); } setTimeout(()=>playWelcomeAudio(),300); }
 let _karWords=null,_karTimer=0;
-function _karPrep(){ const els=document.querySelectorAll('.about-lead,.about-p');
+function _karPrep(){ const els=document.querySelectorAll('.about-slogan,.about-lead,.about-p');
   els.forEach(el=>{ if(el.dataset.kar) return; el.dataset.kar='1';
     const txt=el.textContent; el.innerHTML=txt.split(/\s+/).filter(Boolean).map(w=>`<span class="kw">${escHTML(w)}</span>`).join(' '); });
   _karWords=[...document.querySelectorAll('.kw')]; }
@@ -1530,8 +1530,8 @@ function playWelcomeAudio(){
 }
 function _ttsWelcome(btn){
   if(!window.speechSynthesis){ toast('Audio isn’t available on this device'); return; }
-  const lead=document.querySelector('.about-lead'); const ps=[...document.querySelectorAll('.about-p')];
-  const text=(lead?lead.textContent+' ':'')+ps.map(p=>p.textContent).join(' ');
+  const slog=document.querySelector('.about-slogan'); const lead=document.querySelector('.about-lead'); const ps=[...document.querySelectorAll('.about-p')];
+  const text=(slog?slog.textContent+' ':'')+(lead?lead.textContent+' ':'')+ps.map(p=>p.textContent).join(' ');
   const u=new SpeechSynthesisUtterance(text); u.rate=.96; u.pitch=1; applyVoice(u);
   u.onend=()=>{ if(btn)btn.textContent='🔊 Listen in Nii Okai’s voice'; };
   speechSynthesis.cancel(); speechSynthesis.speak(u); if(btn)btn.textContent='⏸ Stop';
