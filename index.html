@@ -482,8 +482,9 @@ body:not(.legacy) .main{padding-bottom:54px}
 .mitem .chev{margin-left:auto;color:var(--soft)}
 .mitem .soon{margin-left:auto;font-size:10.5px;font-weight:700;background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:2px 8px;white-space:nowrap}
 .about-skiptop{font-size:12.5px}
-.kw.on{color:var(--accent)}
-.kw.cur{background:var(--accent);color:#fff;border-radius:4px;padding:0 3px}
+.kpara{transition:opacity .35s ease,background-color .35s ease;border-radius:6px}
+.kpara.done{opacity:.5}
+.kpara.cur{background-color:rgba(234,179,8,.16);opacity:1}
 .skipov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:90;display:flex;align-items:center;justify-content:center;padding:20px}
 .skipcard{background:var(--panel);border-radius:18px;padding:26px 22px;max-width:380px;text-align:center;font-family:var(--sans);box-shadow:var(--shadow)}
 .skipcard h3{font-family:var(--serif);font-size:22px;margin:8px 0 8px}
@@ -1504,24 +1505,36 @@ function renderAbout(){
 /* Welcome narration — plays your own recording (audio/welcome.m4a or .mp3) if present,
    otherwise falls back to the device's read-aloud voice. */
 function karListen(){ if(state.view!=='about'){ setView('about'); } setTimeout(()=>playWelcomeAudio(),300); }
-let _karWords=null,_karTimer=0;
-function _karPrep(){ const els=document.querySelectorAll('.about-slogan,.about-lead,.about-p');
-  els.forEach(el=>{ if(el.dataset.kar) return; el.dataset.kar='1';
-    const txt=el.textContent; el.innerHTML=txt.split(/\s+/).filter(Boolean).map(w=>`<span class="kw">${escHTML(w)}</span>`).join(' '); });
-  _karWords=[...document.querySelectorAll('.kw')]; }
-function _karTick(a){ if(!_karWords||!a.duration) return;
-  const idx=Math.min(_karWords.length-1,Math.floor(_karWords.length*(a.currentTime/a.duration)));
-  _karWords.forEach((w,j)=>{ w.classList.toggle('on',j<idx); w.classList.toggle('cur',j===idx); });
-  const now=Date.now(); if(now-_karTimer>1500){ _karTimer=now;
-    const cur=_karWords[idx]; if(cur){ const r=cur.getBoundingClientRect();
-      if(r.top<80||r.bottom>window.innerHeight-120) cur.scrollIntoView({behavior:'smooth',block:'center'}); } } }
+/* Paragraph-by-paragraph narration highlight. Each paragraph is given a share of
+   the recording proportional to how many words it contains, which tracks natural
+   speech far better than splitting the time evenly across every word. The page
+   markup is left untouched, so italics inside the text survive. */
+let _karEls=null,_karW=null,_karTotal=0,_karLast=-1;
+function _karPrep(){
+  _karEls=[...document.querySelectorAll('.about-slogan,.about-lead,.about-p')];
+  _karEls.forEach(el=>el.classList.add('kpara'));
+  _karW=_karEls.map(el=>Math.max(1,el.textContent.trim().split(/\s+/).filter(Boolean).length));
+  _karTotal=_karW.reduce((a,b)=>a+b,0)||1;
+  _karLast=-1; }
+function _karClear(){ if(_karEls) _karEls.forEach(el=>el.classList.remove('cur','done')); _karLast=-1; }
+function _karTick(a){
+  if(!_karEls||!_karEls.length||!a.duration) return;
+  const target=_karTotal*(a.currentTime/a.duration);
+  let acc=0,idx=_karEls.length-1;
+  for(let i=0;i<_karEls.length;i++){ acc+=_karW[i]; if(target<acc){ idx=i; break; } }
+  if(idx===_karLast) return;
+  _karLast=idx;
+  _karEls.forEach((el,j)=>{ el.classList.toggle('cur',j===idx); el.classList.toggle('done',j<idx); });
+  const cur=_karEls[idx];
+  if(cur){ const r=cur.getBoundingClientRect();
+    if(r.top<90||r.bottom>window.innerHeight-140) cur.scrollIntoView({behavior:'smooth',block:'center'}); } }
 function _karStart(a){ if(state.view!=='about') return; _karPrep();
   a.ontimeupdate=()=>_karTick(a);
-  a.addEventListener('ended',()=>{ _karWords&&_karWords.forEach(w=>w.classList.remove('on','cur')); },{once:true}); }
+  a.addEventListener('ended',_karClear,{once:true}); }
 function playWelcomeAudio(){
   const a=document.getElementById('welcomeAudio'), btn=document.getElementById('welcomeAudioBtn');
   if(window.speechSynthesis&&speechSynthesis.speaking){ speechSynthesis.cancel(); if(btn)btn.textContent='🔊 Listen in Nii Okai’s voice'; return; }
-  if(a){ if(!a.paused){ a.pause(); a.currentTime=0; if(btn)btn.textContent='🔊 Listen in Nii Okai’s voice'; return; }
+  if(a){ if(!a.paused){ a.pause(); a.currentTime=0; _karClear(); if(btn)btn.textContent='🔊 Listen in Nii Okai’s voice'; return; }
     const onPlay=()=>{ if(btn)btn.textContent='⏸ Pause'; _karStart(a); a.onended=()=>{ if(btn)btn.textContent='🔊 Listen in Nii Okai’s voice'; }; };
     a.play().then(onPlay).catch(()=>{                       // first attempt failed — force a reload and try once more
       try{ a.load(); a.play().then(onPlay).catch(()=>_ttsWelcome(btn)); }catch(e){ _ttsWelcome(btn); } });
