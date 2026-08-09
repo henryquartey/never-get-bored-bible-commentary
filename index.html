@@ -1509,6 +1509,12 @@ function karListen(){ if(state.view!=='about'){ setView('about'); } setTimeout((
    the recording proportional to how many words it contains, which tracks natural
    speech far better than splitting the time evenly across every word. The page
    markup is left untouched, so italics inside the text survive. */
+/* Measured from the recording itself (silence analysis of audio/welcome.mp3):
+   the second at which each block actually begins. Exact, not estimated.
+   If the recording is ever replaced, the length check below fails and it
+   quietly falls back to the word-weighted estimate. */
+const KAR_TIMES=[0.46,10.35,17.35,49.40,82.41,110.16,149.20,175.81,180.66];
+const KAR_AUDIO_LEN=186.51, KAR_LEAD=0.25;
 let _karEls=null,_karW=null,_karTotal=0,_karLast=-1;
 function _karPrep(){
   _karEls=[...document.querySelectorAll('.about-slogan,.about-lead,.about-p')];
@@ -1519,9 +1525,15 @@ function _karPrep(){
 function _karClear(){ if(_karEls) _karEls.forEach(el=>el.classList.remove('cur','done')); _karLast=-1; }
 function _karTick(a){
   if(!_karEls||!_karEls.length||!a.duration) return;
-  const target=_karTotal*(a.currentTime/a.duration);
-  let acc=0,idx=_karEls.length-1;
-  for(let i=0;i<_karEls.length;i++){ acc+=_karW[i]; if(target<acc){ idx=i; break; } }
+  let idx;
+  if(_karEls.length===KAR_TIMES.length && Math.abs(a.duration-KAR_AUDIO_LEN)<1.5){
+    const t=a.currentTime+KAR_LEAD; idx=0;
+    for(let i=0;i<KAR_TIMES.length;i++){ if(t>=KAR_TIMES[i]) idx=i; else break; }
+  } else {
+    const target=_karTotal*(a.currentTime/a.duration);
+    let acc=0; idx=_karEls.length-1;
+    for(let i=0;i<_karEls.length;i++){ acc+=_karW[i]; if(target<acc){ idx=i; break; } }
+  }
   if(idx===_karLast) return;
   _karLast=idx;
   _karEls.forEach((el,j)=>{ el.classList.toggle('cur',j===idx); el.classList.toggle('done',j<idx); });
