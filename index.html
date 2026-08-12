@@ -5,22 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Never Get Bored — Nii Okai's Journal Through Scripture</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#9a6b3f">
+<meta name="theme-color" content="#4C2A85">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Nii Okai's Bible Journal">
 <style>
 :root{
-  --bg:#faf9f7; --panel:#ffffff; --ink:#1f2328; --soft:#6b7280; --line:#e7e3dc;
-  --accent:#9a6b3f; --accent-rgb:154,107,63; --accent-soft:#f1e7da; --note-bg:#fff8ef; --note-line:#e9c89a;
+  --bg:#fbfafc; --panel:#ffffff; --ink:#1f2328; --soft:#6b7280; --line:#e6e3ea;
+  --accent:#4C2A85; --accent-rgb:76,42,133; --accent-soft:#ece7f6; --note-bg:#f8f5fd; --note-line:#c9bce4;
   --scripture:#2a2c30; --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
   --serif:Georgia,'Iowan Old Style','Times New Roman',serif;
   --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
 }
 html[data-theme="dark"]{
   --bg:#15171a; --panel:#1d2024; --ink:#e7e9ec; --soft:#9aa3ad; --line:#2c3036;
-  --accent:#d8a36a; --accent-rgb:216,163,106; --accent-soft:#332a20; --note-bg:#211c14; --note-line:#5c4a2e;
+  --accent:#b9a3e8; --accent-rgb:185,163,232; --accent-soft:#2a2440; --note-bg:#1d1a2b; --note-line:#453a63;
   --scripture:#dfe2e6; --shadow:0 1px 3px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.4);
 }
 *{box-sizing:border-box}
@@ -140,6 +140,15 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .verse.nc1:hover{background:rgba(var(--accent-rgb),.10)}
 .verse.nc2:hover{background:rgba(var(--accent-rgb),.20);border-left-width:5px}
 .verse.nc3:hover{background:rgba(var(--accent-rgb),.32);border-left-width:7px}
+/* On phones and tablets a commented verse is marked by its badge and a hairline
+   only. The block tint reads as clutter while scrolling on a small screen, and
+   some mobile browsers leave a tapped verse stuck in its hover colour. Desktop
+   keeps the full tint and hover behaviour. */
+@media(pointer:coarse){
+  .verse.has-note{background:none;border-left-width:2px;padding-left:10px}
+  .verse:hover{background:none}
+  .verse.has-note:hover,.verse.nc1:hover,.verse.nc2:hover,.verse.nc3:hover{background:none;border-left-width:2px}
+}
 /* floating verse action menu */
 .vmenu{position:fixed;z-index:210;min-width:180px;background:var(--panel);border:1px solid var(--line);
   border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.2);padding:5px}
@@ -313,8 +322,8 @@ html.show-dates .mc-item .mc-date{display:inline}
   transform:scale(.9) translateY(12px);transition:transform .35s cubic-bezier(.2,.9,.3,1.2)}
 .complete-ov.show .complete-card{transform:none}
 .complete-seal{width:64px;height:64px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;
-  font-size:32px;color:#fff;background:linear-gradient(135deg,#c79256,#9a6b3f);
-  box-shadow:0 8px 22px rgba(154,107,63,.45);animation:sealPop .5s cubic-bezier(.2,.9,.3,1.4)}
+  font-size:32px;color:#fff;background:linear-gradient(135deg,#7B54C0,#4C2A85);
+  box-shadow:0 8px 22px rgba(76,42,133,.45);animation:sealPop .5s cubic-bezier(.2,.9,.3,1.4)}
 @keyframes sealPop{0%{transform:scale(0) rotate(-25deg)}100%{transform:scale(1) rotate(0)}}
 .complete-kick{font-family:var(--sans);font-size:11px;font-weight:800;letter-spacing:.16em;color:var(--accent);margin-bottom:4px}
 .complete-title{font-family:var(--serif);font-size:30px;font-weight:700;color:var(--ink);margin-bottom:16px}
