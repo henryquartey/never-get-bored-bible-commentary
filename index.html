@@ -140,6 +140,19 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .verse.nc1:hover{background:rgba(var(--accent-rgb),.10)}
 .verse.nc2:hover{background:rgba(var(--accent-rgb),.20);border-left-width:5px}
 .verse.nc3:hover{background:rgba(var(--accent-rgb),.32);border-left-width:7px}
+.note .who{font-family:var(--sans);font-size:9.5px;font-weight:800;letter-spacing:.09em;color:var(--accent);
+  border:1px solid currentColor;border-radius:4px;padding:1px 6px;vertical-align:1px}
+.note .who.mine{color:var(--soft)}
+.vmenu .vm-sec{font-family:var(--sans);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);padding:7px 11px 2px}
+.vmenu .vm-row{display:flex;gap:6px;padding:4px 8px}
+.vmenu .vm-row button{flex:1;text-align:center;border:1px solid var(--line)}
+.vmenu .vm-voice{width:calc(100% - 16px);margin:2px 8px 4px;font-size:12.5px}
+.vmenu .vm-div{height:1px;background:var(--line);margin:6px 4px}
+.readnav .rn-listen{flex:0 0 auto}
+.fabnotes{position:fixed;right:14px;bottom:112px;z-index:55;display:none;font-family:var(--sans);font-size:12.5px;font-weight:600;
+  background:var(--panel);color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:9px 15px;
+  box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer}
+.fabnotes.show{display:block}
 /* On phones and tablets a commented verse is marked by its badge and a hairline
    only. The block tint reads as clutter while scrolling on a small screen, and
    some mobile browsers leave a tapped verse stuck in its hover colour. Desktop
@@ -695,6 +708,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
   </div>
 </div>
 
+<button class="fabnotes" id="fabNotes" onclick="toggleNotes()">Scripture only</button>
 <nav class="bottomnav" id="bottomnav">
   <button data-view="home" data-ico="home" onclick="setView('home')">Home</button>
   <button data-view="read" data-ico="book" onclick="setView('read')">Bible</button>
@@ -982,9 +996,7 @@ function renderPlan(){
     <div class="planprog"><div class="planbar"><div class="planfill" style="width:${pct}%"></div></div>
       <div class="planprogtxt">${doneCount} of ${totalReal} days done · ${pct}%
         ${missed>0?`<span class="missed" onclick="toggleMissed()" title="Tap to see what you've missed">${missed} missed ${missed>1?'days':'day'} ${showMissed?'▲':'▼'}</span>`:''}
-        ${!anchorIsDefault()?`<button class="anchorreset" onclick="planCatchReset()" title="Put the plan back on the normal calendar (Day 1 = Jan 1)">reset dates</button>`:''}
-        <button class="catchbtn" style="margin-left:auto" onclick="planCatchUp()" title="Shift the plan's DATES so today lines up with your current reading. Doesn't mark anything read.">📅 Catch me up</button>
-        <button class="btn" style="padding:5px 12px;font-size:12px" onclick="${placeMode?'setPlaceMode(false)':'setPlaceMode(true)'}" title="Mark every reading up to a chosen day as already READ (fills in the ticks).">${placeMode?'Cancel':'✔ Mark up to here'}</button></div>
+        <button class="catchbtn" style="margin-left:auto" onclick="planOptionsMenu(event)" title="Catch up, mark progress, reset dates">⚙ Options</button></div>
       <div class="planend">${finishTxt}</div></div>
     ${placeMode?`<div class="placebar">📍 <b>Tap the day you're on</b> — everything before it gets marked as read.</div>`:''}
     ${showMissed&&missed>0?`<div class="missedpanel"><div class="mp-h">${missed} reading${missed>1?'s':''} still pending — tap one to open it</div>
@@ -1393,23 +1405,28 @@ function renderDiscourse(){
   document.getElementById('readfoot').style.display='none';
   document.getElementById('reader').innerHTML=`<div class="page homefeed">
     <div class="hcard hero">
-      <div class="hk">💭 DISCOURSE · CHRIST SOCIAL <span class="soon-badge" style="margin:0 0 0 8px">Coming soon</span></div>
-      <h2>What verse don’t you understand today?</h2>
-      <p class="hq">Any question about the Bible today? A verse, a story, a dream — ask it here and let us probe our minds together. Share what GOD is teaching you, and learn from how Scripture is shaping others.</p>
+      <div class="hk">💭 DISCOURSE — TALK IT THROUGH</div>
+      <h2>Something in the Bible puzzling you? Start the conversation.</h2>
+      <p class="hq">Discourse is this journal’s meeting place — for the questions you’d ask over a coffee, not in a classroom. Bring the verse that won’t leave you alone, the story that doesn’t add up, or what GOD is teaching you this week — and let iron sharpen iron.</p>
     </div>
     <div class="hcard">
-      <div class="hk">✍️ Ask your question</div>
-      <textarea class="disc-input" placeholder="e.g. Genesis 6 — who were the “sons of God”? · What did my dream about the flood mean?" disabled></textarea>
-      <div class="hrow"><button class="btn primary" onclick="toast('Discourse opens soon — your questions will live here')">Post — coming soon</button></div>
+      <div class="hk">✍️ ASK NOW — IT GOES STRAIGHT TO NII OKAI</div>
+      <textarea class="disc-input" id="discQ" placeholder="e.g. Genesis 6 — who were the “sons of God”? · Why does Ecclesiastes sound so hopeless?"></textarea>
+      <div class="hrow"><button class="btn primary" onclick="discSend()">✉️ Send your question</button></div>
+      <p class="soft" style="font-size:12px;margin:8px 0 0">Delivered by email while the community feed is being built. Questions may be answered right here in the journal — and the best become Question of the Day when the feed opens.</p>
     </div>
     <div class="hcard">
-      <div class="hk">🏆 Question of the Day</div>
-      <p class="soft">Each day, the question with the most engagement — answers, amens, and discussion — is crowned here for the whole community to weigh in on.</p>
-      <div class="qotd-empty">No questions yet — yours could be the very first when Discourse opens.</div>
+      <div class="hk">📝 YOUR OWN NOTES — AVAILABLE TODAY</div>
+      <p class="soft">No need to wait to write. In the Bible tab, tap any verse number — or double-tap the verse — and write your own note. It sits under the verse beside Nii Okai’s, marked <b>MY NOTE</b>, and stays private on this device. Back it up any time from Menu → Export My Notes.</p>
+      <div class="hrow"><button class="btn" onclick="setView('read')">Open the Bible →</button></div>
     </div>
     <div class="hcard">
-      <div class="hk">Why Discourse?</div>
-      <p class="soft" style="margin:0">A social square for this journal — to discuss the latest revelations, ask honest questions, and sharpen one another. Iron sharpening iron.</p>
+      <div class="hk">🏆 QUESTION OF THE DAY <span class="soon-badge" style="margin:0 0 0 8px">Coming soon</span></div>
+      <p class="soft" style="margin:0">When the community feed opens, the question with the most engagement — answers, amens, discussion — is crowned here daily for everyone to weigh in on.</p>
+    </div>
+    <div class="hcard">
+      <div class="hk">✉️ REACH NII OKAI</div>
+      <p class="soft" style="margin:0">Questions, corrections, testimonies — <a href="mailto:henryquarteyministries@gmail.com">henryquarteyministries@gmail.com</a>. If a note blessed you, that inbox would love to hear it.</p>
     </div>
   </div>`;
   document.getElementById('reader').scrollTop=0;
@@ -1433,6 +1450,7 @@ function renderMenu(){
     ${item(ICONS.moon,'Appearance','Switch between light and dark reading','toggleTheme()')}
     ${item(ICONS.download,'Export My Notes','Save a backup of your personal notes to a file','exportCommentary()')}
     ${item(ICONS.upload,'Import Notes','Restore your notes from a backup file — moving to a new device starts here',"document.getElementById('importFile').click()")}
+    ${item('✉️','Contact Nii Okai','Questions, corrections, testimonies — henryquarteyministries@gmail.com',"location.href='mailto:henryquarteyministries@gmail.com?subject='+encodeURIComponent('Never Get Bored journal')")}
     ${isOwner()?item('👁','Preview as a Reader','See the app exactly as your readers see it','togglePreview()'):''}
     ${isOwner()?item('🖥','Switch Interface','Toggle between the new UI and the legacy UI','toggleLegacy()'):''}
     <p style="text-align:center;color:var(--soft);font-size:11.5px;font-family:var(--sans)">Never Get Bored · v${BUILD.v} · built ${BUILD.date}</p>
@@ -1591,15 +1609,7 @@ function renderRead(){
     planBar=`<div class="planctx">📖 <b>Day ${state.plan.day+1}</b> of the plan · passage ${state.plan.ci+1} of ${chaps.length}
       <button class="btn" onclick="exitPlanRead()">✕ Back to plan</button></div>`; }
   let html=`<div class="page">${planBar}
-    <div class="chap-title">${name} ${ch}</div>
     <div class="chap-sub">${window.VERSIONS[state.version]} (${state.version})${state.compare?` &nbsp;⇄&nbsp; ${state.compare}`:''}</div>
-    <div class="rtools">
-      <button class="btn" id="readAloudBtn" onclick="readChapterAloud()">🔊 Listen</button>
-      <button class="btn" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">⏹</button>
-      <select class="btn vsel" id="voiceSel" onchange="setVoicePref(this.value)" title="Choose the reading voice"></select>
-      <button class="btn" onclick="setFont(-0.08)" title="Smaller text">A−</button>
-      <button class="btn" onclick="setFont(0.08)" title="Larger text">A+</button>
-    </div>
     ${refCommPanel(name,ch)}`;
   if(state.compare){
     const bibB=(window.BIBLE[state.compare]||{})[name]||{}; const vB=bibB[String(ch)]||{};
@@ -1612,11 +1622,12 @@ function renderRead(){
     html+=`</div>`;
   } else {
     const noted=Object.keys(chData).filter(k=>k!=='0'&&chData[k].length).map(Number).sort((a,b)=>a-b);
+    window._chapHasNotes=noted.length>0;
     if(noted.length){
       const off=document.documentElement.classList.contains('hide-notes');
       html+=`<div class="chapindex">
         <div class="lbl-row">
-          <div class="lbl">${ICONS.chat} Commentary — tap a verse</div>
+          <div class="lbl">${ICONS.chat} To view commentary — tap a verse</div>
           <button class="ci-toggle" onclick="toggleNotes()">${off?'Show all commentary':'Hide all (scripture only)'}</button>
         </div>
         <div class="chips">${noted.map(v=>`<span class="chip" onclick="jumpVerse(${v})">v${v}</span>`).join('')}</div></div>`;
@@ -1648,16 +1659,21 @@ function renderRead(){
   if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]); const last=state.plan.ci>=chaps.length-1;
     nav=`<div class="readnav planmode">
       <button onclick="planNav(-1)" ${state.plan.day===0&&state.plan.ci===0?'disabled':''}>← Prev</button>
+      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud()">🔊 Listen</button>
+      <button class="rn-listen" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">⏹</button>
       <span class="rn-mid">Day ${state.plan.day+1} · ${state.plan.ci+1}/${chaps.length}</span>
       <button class="rn-next" onclick="planNav(1)">${last?'Finish day ✓':'Next →'}</button></div>`;
   } else {
     nav=`<div class="readnav">
       <button onclick="prevChapter()" ${state.book===0&&ch===1?'disabled':''}>← Previous</button>
+      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud()">🔊 Listen</button>
+      <button class="rn-listen" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">⏹</button>
       <button onclick="nextChapter()" ${state.book===window.BOOKS.length-1&&ch===nch?'disabled':''}>Next →</button></div>`;
   }
   const r=document.getElementById('reader'); r.innerHTML=html; r.scrollTop=0;
   const foot=document.getElementById('readfoot'); foot.innerHTML=nav; foot.style.display='';
   fillVoiceSel(); _rdSyncBtn();
+  if(typeof _fabSync==='function')_fabSync();
   buildBookList();
 }
 function jumpVerse(v){ const el=document.getElementById('v'+v); if(!el)return;
@@ -1684,7 +1700,7 @@ function modernNoteHTML(name,ch,v,r){
   const stack=r.d.map(dr=>`<div class="draft2"><span class="dl">${escHTML(dr[0])}</span>${escHTML(dr[1])}</div>`).join('');
   const origSide=r.d.map(dr=>escHTML(dr[0]+'\n'+dr[1])).join('\n\n──────\n');
   return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
-    <div class="meta"><span class="vref">${ref}</span>${r.e?'<span class="badge">📈 understanding grew</span>':''}</div>
+    <div class="meta"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${r.e?'<span class="badge">📈 understanding grew</span>':''}</div>
     <div class="body">${escNote(r.m)}</div>
     ${r.e?`<div class="chg2" style="color:var(--accent)">📈 ${escHTML(r.e)}</div>`:''}
     ${noteActionsHTML(String(v))}
@@ -1701,8 +1717,10 @@ function modernNoteHTML(name,ch,v,r){
 function noteHTML(nt,name,ch,v,label){
   const d=nt.date?new Date(nt.date).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'';
   const ref=v==='0'?`${name} ${ch}`:`${name} ${ch}:${v}`;
+  const seedV=(((window.COMMENTARY_SEED||{})[name]||{})[String(ch)]||{})[String(v)];
+  const own=!(seedV&&seedV.some&&seedV.some(x=>x.id===nt.id));
   return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
-    <div class="meta"><span class="vref">${ref}</span>
+    <div class="meta"><span class="who ${own?'mine':''}">${own?'MY NOTE':'NII OKAI'}</span><span class="vref">${ref}</span>
       ${label?`<span class="badge">${label}</span>`:''}
       ${nt.src==='import'?'<span class="badge">imported</span>':''}
       ${d?`<span class="date">${d}</span>`:''}</div>
@@ -1836,10 +1854,25 @@ function tbSearch(){ const tb=document.querySelector('.topbar'); tb.classList.to
 function tbMoreMenu(ev){ ev.stopPropagation(); closeVerseMenu();
   const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu';
   const dark=document.documentElement.dataset.theme==='dark';
-  m.innerHTML=`<button onclick="closeVerseMenu();toggleCompare()">⇄ Compare translations</button>
+  const rd=state.view==='read';
+  m.innerHTML=`${rd?`<div class="vm-sec">🎙 Reading voice</div>
+    <select class="btn vsel vm-voice" id="voiceSel" onchange="setVoicePref(this.value)"></select>
+    <div class="vm-sec">Text size</div>
+    <div class="vm-row"><button onclick="setFont(-0.08)">A−</button><button onclick="setFont(0.08)">A+</button></div>
+    <div class="vm-div"></div>`:''}<button onclick="closeVerseMenu();toggleCompare()">⇄ Compare translations</button>
     <button onclick="closeVerseMenu();toggleRefComm()">📚 Matthew Henry ${state.refcomm?'✓':''}</button>
     <button onclick="closeVerseMenu();toggleTheme()">${dark?'☀ Light theme':'☾ Dark theme'}</button>
     ${localStorage.getItem('nok_dates_unlocked')&&isOwner()?`<button onclick="closeVerseMenu();toggleDates()">📅 Note dates</button>`:''}`;
+  document.body.appendChild(m);
+  if(rd) fillVoiceSel();
+  const r=ev.currentTarget.getBoundingClientRect(); const mw=m.offsetWidth;
+  m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(8,Math.min(r.right-mw,window.innerWidth-mw-8))+'px'; }
+/* Plan page housekeeping actions, tucked into one menu so the page stays calm */
+function planOptionsMenu(ev){ ev.stopPropagation(); closeVerseMenu();
+  const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu'; m.style.minWidth='250px';
+  m.innerHTML=`<button onclick="closeVerseMenu();planCatchUp()">📅 Catch me up — align dates with where I am</button>
+    <button onclick="closeVerseMenu();${placeMode?'setPlaceMode(false)':'setPlaceMode(true)'}">${placeMode?'✕ Cancel “mark up to here”':'✔ Mark read up to a day…'}</button>
+    ${!anchorIsDefault()?`<button onclick="closeVerseMenu();planCatchReset()">↺ Reset dates to the normal calendar</button>`:''}`;
   document.body.appendChild(m);
   const r=ev.currentTarget.getBoundingClientRect(); const mw=m.offsetWidth;
   m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(8,Math.min(r.right-mw,window.innerWidth-mw-8))+'px'; }
@@ -2211,6 +2244,30 @@ function selAct(ev,action,book,ch,v){ ev.stopPropagation();
   closeSelMenu();
 }
 const IS_TOUCH=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches;
+/* Discourse: send a question by email (works today, no server needed) */
+function discSend(){ const el=document.getElementById('discQ'); const t=(el&&el.value||'').trim();
+  if(t.length<5){ toast('Type your question first'); return; }
+  location.href='mailto:henryquarteyministries@gmail.com?subject='+encodeURIComponent('Bible Discourse — a question')
+    +'&body='+encodeURIComponent(t+'\n\n— sent from Never Get Bored (bible.getwordwisdom.com)'); }
+/* Swipe left / right in the Bible view to change chapter (phones and tablets) */
+(function(){ const rd=document.getElementById('reader'); if(!rd) return;
+  let sx=0,sy=0,st=0,go=false;
+  rd.addEventListener('touchstart',e=>{ if(state.view!=='read'||state.plan||e.touches.length!==1){go=false;return;}
+    go=true; sx=e.touches[0].clientX; sy=e.touches[0].clientY; st=Date.now(); },{passive:true});
+  rd.addEventListener('touchend',e=>{ if(!go) return; go=false;
+    const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+    if(Date.now()-st>600||Math.abs(dx)<70||Math.abs(dy)>60) return;
+    const sel=window.getSelection&&window.getSelection(); if(sel&&!sel.isCollapsed) return;
+    if(dx<0) nextChapter(); else prevChapter(); },{passive:true});
+})();
+/* Floating scripture-only pill — appears once you're scrolling a commented chapter */
+function _fabSync(){ const f=document.getElementById('fabNotes'); if(!f) return;
+  const rd=document.getElementById('reader');
+  const show=state.view==='read'&&window._chapHasNotes&&rd&&rd.scrollTop>420;
+  const off=document.documentElement.classList.contains('hide-notes');
+  f.textContent=off?'💬 Show commentary':'Scripture only';
+  f.classList.toggle('show',!!show); }
+(function(){ const rd=document.getElementById('reader'); if(rd) rd.addEventListener('scroll',_fabSync,{passive:true}); })();
 document.addEventListener('mouseup',e=>{ if(IS_TOUCH) return; if(e.target&&e.target.closest&&e.target.closest('#selmenu')) return; onReaderSelect(); });
 /* on touch: any tap outside a popup closes it (iOS doesn't always fire document click) */
 document.addEventListener('touchstart',e=>{ const t=e.target;
