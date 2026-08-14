@@ -148,11 +148,14 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .vmenu .vm-row button{flex:1;text-align:center;border:1px solid var(--line)}
 .vmenu .vm-voice{width:calc(100% - 16px);margin:2px 8px 4px;font-size:12.5px}
 .vmenu .vm-div{height:1px;background:var(--line);margin:6px 4px}
-.readnav .rn-listen{flex:0 0 auto}
-.fabnotes{position:fixed;right:14px;bottom:112px;z-index:55;display:none;font-family:var(--sans);font-size:12.5px;font-weight:600;
-  background:var(--panel);color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:9px 15px;
-  box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer}
-.fabnotes.show{display:block}
+.readnav .rn-listen{flex:0 0 auto;background:var(--accent);color:#fff;border-color:var(--accent);border-radius:999px;padding:11px 22px}
+.readnav .rn-listen:hover:not(:disabled){color:#fff;border-color:var(--accent);opacity:.92}
+.fabnotes{position:fixed;right:12px;top:50%;transform:translateY(-50%) translateX(10px);z-index:55;
+  opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;
+  font-family:var(--sans);font-size:12.5px;font-weight:600;max-width:44vw;
+  background:var(--panel);color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:10px 15px;
+  box-shadow:0 6px 20px rgba(0,0,0,.2);cursor:pointer}
+.fabnotes.show{opacity:1;pointer-events:auto;transform:translateY(-50%)}
 /* On phones and tablets a commented verse is marked by its badge and a hairline
    only. The block tint reads as clutter while scrolling on a small screen, and
    some mobile browsers leave a tapped verse stuck in its hover colour. Desktop
@@ -832,7 +835,7 @@ function skipWelcome(force){
       <div style="font-size:34px">🎁</div>
       <h3>Before you go…</h3>
       <p>Nii Okai wrote this welcome just for you — it changes how you’ll read everything that follows. And there’s a small gift at the end for those who finish it.</p>
-      <button class="btn primary" onclick="document.getElementById('skipov').remove();karListen()">🔊 Listen instead (3 min)</button>
+      <button class="btn primary" onclick="document.getElementById('skipov').remove();karListen()">▶︎ Listen instead (3 min)</button>
       <button class="btn" onclick="document.getElementById('skipov').remove()">I’ll read it now</button>
       <button class="btn skipdim" onclick="document.getElementById('skipov').remove();skipWelcome(true)">Skip anyway →</button>
     </div>`;
@@ -1059,15 +1062,23 @@ function _vgender(v){ const n=(v.name||'')+' '+(v.voiceURI||'');
 function _voices(){ try{ const all=speechSynthesis.getVoices()||[];
   const en=all.filter(v=>/^en/i.test(v.lang||'')); return en.length?en:all; }catch(e){ return []; } }
 function voicePref(){ try{ return localStorage.getItem('nok_voice')||'auto'; }catch(e){ return 'auto'; } }
-function pickVoice(){ const p=voicePref(); if(p==='auto') return null;
-  const V=_voices(); if(!V.length) return null;
+function _vscore(v){ const n=(v.name||'')+' '+(v.voiceURI||''); let sc=0;
+  if(/natural|neural|premium|enhanced|siri/i.test(n)) sc+=8;
+  if(/google/i.test(n)) sc+=5;
+  if(/aria|ava|samantha|zira|jenny|libby|sonia|serena|karen|daniel|moira|tessa|matilda/i.test(n)) sc+=3;
+  if(/^en-(gb|us)/i.test(v.lang||'')) sc+=2;
+  if(/compact|espeak|novelty|whisper|bells|organ|bad news|good news|cellos|zarvox|trinoids|albert|jester/i.test(n)) sc-=9;
+  return sc; }
+function pickVoice(){ const p=voicePref(); const V=_voices(); if(!V.length) return null;
+  if(p==='auto'){ const best=V.slice().sort((a,b)=>_vscore(b)-_vscore(a))[0];
+    return _vscore(best)>0?best:null; }
   if(p!=='f'&&p!=='m'){ const ex=V.find(v=>v.voiceURI===p)||V.find(v=>v.name===p); if(ex) return ex; return null; }
-  const local=V.filter(v=>v.localService!==false), pool=local.length?local:V;
+  const local=V.filter(v=>v.localService!==false), pool=(local.length?local:V).slice().sort((a,b)=>_vscore(b)-_vscore(a));
   return pool.find(v=>_vgender(v)===p) || V.find(v=>_vgender(v)===p) || null; }
 function applyVoice(u){ const v=pickVoice(); if(v){ u.voice=v; try{ u.lang=v.lang; }catch(e){} } }
 function fillVoiceSel(){ const s=document.getElementById('voiceSel'); if(!s) return;
   const V=_voices(), p=voicePref();
-  let h='<option value="auto">🔊 Device voice</option>';
+  let h='<option value="auto">Device voice (best available)</option>';
   if(V.some(v=>_vgender(v)==='f')) h+='<option value="f">👩 Female voice</option>';
   if(V.some(v=>_vgender(v)==='m')) h+='<option value="m">👨 Male voice</option>';
   if(V.length) h+='<optgroup label="Every voice on this device">'+V.map(v=>
@@ -1147,7 +1158,7 @@ function stopReadAloud(reset){
 function _rdSyncBtn(){
   const b=document.getElementById('readAloudBtn'), s=document.getElementById('rdStopBtn');
   const on=!!_rdState;
-  if(b){ b.innerHTML = !on ? '🔊 Listen' : (_rdState.paused ? '▶️ Resume' : '⏸ Pause');
+  if(b){ b.innerHTML = !on ? '▶︎ Listen' : (_rdState.paused ? '▶︎ Resume' : '❚❚ Pause');
     b.classList.toggle('primary',on&&!_rdState.paused); }
   if(s) s.style.display = on ? '' : 'none';
   if(on&&_rdState.key===_rdKey()){ const el=document.getElementById('v'+_rdState.vs[_rdState.i]);
@@ -1367,7 +1378,7 @@ function renderHome(){
       <h2>Nii Okai’s Journal Through Scripture</h2>
       <p class="hq">“Take a walk with me as we journey through Scripture — you will never get bored.”</p>
       <div class="hrow">
-        <button class="btn" onclick="karListen()">🔊 Listen</button>
+        <button class="btn" onclick="karListen()">▶︎ Listen</button>
         <button class="btn" onclick="setView('about')">Read the welcome →</button>
       </div>
       <audio id="welcomeAudio" preload="none"><source src="audio/welcome.mp3" type="audio/mpeg"><source src="audio/welcome.m4a" type="audio/mp4"></audio>
@@ -1410,10 +1421,10 @@ function renderDiscourse(){
       <p class="hq">Discourse is this journal’s meeting place — for the questions you’d ask over a coffee, not in a classroom. Bring the verse that won’t leave you alone, the story that doesn’t add up, or what GOD is teaching you this week — and let iron sharpen iron.</p>
     </div>
     <div class="hcard">
-      <div class="hk">✍️ ASK NOW — IT GOES STRAIGHT TO NII OKAI</div>
+      <div class="hk">✍️ ASK NOW — START THE CONVERSATION</div>
       <textarea class="disc-input" id="discQ" placeholder="e.g. Genesis 6 — who were the “sons of God”? · Why does Ecclesiastes sound so hopeless?"></textarea>
       <div class="hrow"><button class="btn primary" onclick="discSend()">✉️ Send your question</button></div>
-      <p class="soft" style="font-size:12px;margin:8px 0 0">Delivered by email while the community feed is being built. Questions may be answered right here in the journal — and the best become Question of the Day when the feed opens.</p>
+      <p class="soft" style="font-size:12px;margin:8px 0 0">For now your question reaches Nii Okai directly by email — reader-to-reader conversation is on the way. Good questions may be answered right here in the journal, and the best become Question of the Day when the feed opens.</p>
     </div>
     <div class="hcard">
       <div class="hk">📝 YOUR OWN NOTES — AVAILABLE TODAY</div>
@@ -1444,6 +1455,7 @@ function renderMenu(){
     ${item(ICONS.pen,'Nii Okai’s Journal','Every note, verse by verse — 20 years of walking through Scripture',"setView('mine')")}
     ${item(ICONS.library,'Matthew Henry’s Commentary','The classic commentary, shown alongside your reading','menuMHC()')}
     ${item(ICONS.audio,'Welcome Message','Read or listen to the welcome — and unlock the reader’s gift',"setView('about')")}
+    ${item('📲','Install the App','Put it on your home screen — opens full-screen, works offline','installApp()')}
     ${BLOG_URL?item(ICONS.pen,'Blog','Reflections and essays from Nii Okai',`window.open(BLOG_URL,'_blank','noopener')`):item(ICONS.pen,'Blog Posts','Reflections and essays from Nii Okai','',true)}
     ${item(ICONS.book,'Verse Guides','Deep-dive guides through key verses','',true)}
     ${item(ICONS.pray,'Prayer Guides','Guided prayers to carry you through the day','',true)}
@@ -1502,7 +1514,7 @@ function renderAbout(){
       <h1 class="about-title">Nii Okai’s Journal Through Scripture</h1>
       <div class="about-slogan">“Take a walk with me as we journey through Scripture — and understand every passage in a way you never imagined or thought possible. You will never get bored.”</div>
       <div class="about-listen">
-        <button class="btn" id="welcomeAudioBtn" onclick="playWelcomeAudio()">🔊 Listen in Nii Okai’s voice</button>
+        <button class="btn" id="welcomeAudioBtn" onclick="playWelcomeAudio()">▶︎ Listen in Nii Okai’s voice</button>
         <audio id="welcomeAudio" preload="metadata"><source src="audio/welcome.mp3" type="audio/mpeg"><source src="audio/welcome.m4a" type="audio/mp4"></audio>
       </div>
     </div>
@@ -1572,9 +1584,9 @@ function _karStart(a){ if(state.view!=='about') return; _karPrep();
   a.addEventListener('ended',_karClear,{once:true}); }
 function playWelcomeAudio(){
   const a=document.getElementById('welcomeAudio'), btn=document.getElementById('welcomeAudioBtn');
-  if(window.speechSynthesis&&speechSynthesis.speaking){ speechSynthesis.cancel(); if(btn)btn.textContent='🔊 Listen in Nii Okai’s voice'; return; }
-  if(a){ if(!a.paused){ a.pause(); a.currentTime=0; _karClear(); if(btn)btn.textContent='🔊 Listen in Nii Okai’s voice'; return; }
-    const onPlay=()=>{ if(btn)btn.textContent='⏸ Pause'; _karStart(a); a.onended=()=>{ if(btn)btn.textContent='🔊 Listen in Nii Okai’s voice'; }; };
+  if(window.speechSynthesis&&speechSynthesis.speaking){ speechSynthesis.cancel(); if(btn)btn.textContent='▶︎ Listen in Nii Okai’s voice'; return; }
+  if(a){ if(!a.paused){ a.pause(); a.currentTime=0; _karClear(); if(btn)btn.textContent='▶︎ Listen in Nii Okai’s voice'; return; }
+    const onPlay=()=>{ if(btn)btn.textContent='❚❚ Pause'; _karStart(a); a.onended=()=>{ if(btn)btn.textContent='▶︎ Listen in Nii Okai’s voice'; }; };
     a.play().then(onPlay).catch(()=>{                       // first attempt failed — force a reload and try once more
       try{ a.load(); a.play().then(onPlay).catch(()=>_ttsWelcome(btn)); }catch(e){ _ttsWelcome(btn); } });
     return; }
@@ -1585,8 +1597,8 @@ function _ttsWelcome(btn){
   const slog=document.querySelector('.about-slogan'); const lead=document.querySelector('.about-lead'); const ps=[...document.querySelectorAll('.about-p')];
   const text=(slog?slog.textContent+' ':'')+(lead?lead.textContent+' ':'')+ps.map(p=>p.textContent).join(' ');
   const u=new SpeechSynthesisUtterance(text); u.rate=.96; u.pitch=1; applyVoice(u);
-  u.onend=()=>{ if(btn)btn.textContent='🔊 Listen in Nii Okai’s voice'; };
-  speechSynthesis.cancel(); speechSynthesis.speak(u); if(btn)btn.textContent='⏸ Stop';
+  u.onend=()=>{ if(btn)btn.textContent='▶︎ Listen in Nii Okai’s voice'; };
+  speechSynthesis.cancel(); speechSynthesis.speak(u); if(btn)btn.textContent='❚❚ Stop';
   toast('Playing read-aloud — add audio/welcome.m4a to hear your own voice');
 }
 function renderRead(){
@@ -1659,14 +1671,14 @@ function renderRead(){
   if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]); const last=state.plan.ci>=chaps.length-1;
     nav=`<div class="readnav planmode">
       <button onclick="planNav(-1)" ${state.plan.day===0&&state.plan.ci===0?'disabled':''}>← Prev</button>
-      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud()">🔊 Listen</button>
+      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud()">▶︎ Listen</button>
       <button class="rn-listen" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">⏹</button>
       <span class="rn-mid">Day ${state.plan.day+1} · ${state.plan.ci+1}/${chaps.length}</span>
       <button class="rn-next" onclick="planNav(1)">${last?'Finish day ✓':'Next →'}</button></div>`;
   } else {
     nav=`<div class="readnav">
       <button onclick="prevChapter()" ${state.book===0&&ch===1?'disabled':''}>← Previous</button>
-      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud()">🔊 Listen</button>
+      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud()">▶︎ Listen</button>
       <button class="rn-listen" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">⏹</button>
       <button onclick="nextChapter()" ${state.book===window.BOOKS.length-1&&ch===nch?'disabled':''}>Next →</button></div>`;
   }
@@ -2260,14 +2272,51 @@ function discSend(){ const el=document.getElementById('discQ'); const t=(el&&el.
     const sel=window.getSelection&&window.getSelection(); if(sel&&!sel.isCollapsed) return;
     if(dx<0) nextChapter(); else prevChapter(); },{passive:true});
 })();
-/* Floating scripture-only pill — appears once you're scrolling a commented chapter */
+/* Floating pill: offers "Scripture only" while commentary is on screen, fades a few
+   seconds after scrolling stops, and flips to "Show commentary" when notes are hidden. */
+let _fabTimer=0;
 function _fabSync(){ const f=document.getElementById('fabNotes'); if(!f) return;
   const rd=document.getElementById('reader');
-  const show=state.view==='read'&&window._chapHasNotes&&rd&&rd.scrollTop>420;
-  const off=document.documentElement.classList.contains('hide-notes');
-  f.textContent=off?'💬 Show commentary':'Scripture only';
-  f.classList.toggle('show',!!show); }
-(function(){ const rd=document.getElementById('reader'); if(rd) rd.addEventListener('scroll',_fabSync,{passive:true}); })();
+  const hidden=document.documentElement.classList.contains('hide-notes');
+  let ok=state.view==='read'&&window._chapHasNotes&&!!rd;
+  if(ok&&!hidden){ ok=false; const h=window.innerHeight;
+    for(const nw of rd.querySelectorAll('.notewrap')){ const r=nw.getBoundingClientRect();
+      if(r.bottom>80&&r.top<h-80){ ok=true; break; } } }
+  f.textContent=hidden?'Show commentary':'Read Scripture only';
+  if(!ok){ f.classList.remove('show'); return; }
+  f.classList.add('show');
+  clearTimeout(_fabTimer); _fabTimer=setTimeout(()=>f.classList.remove('show'),2800); }
+(function(){ const rd=document.getElementById('reader'); if(!rd) return;
+  rd.addEventListener('scroll',_fabSync,{passive:true});
+  const f=document.getElementById('fabNotes');
+  if(f){ f.addEventListener('mouseenter',()=>clearTimeout(_fabTimer));
+         f.addEventListener('mouseleave',()=>{_fabTimer=setTimeout(()=>f.classList.remove('show'),1600);} ); }
+})();
+/* ---------- Install the app (PWA) ---------- */
+let _bip=null;
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); _bip=e; });
+function installApp(){
+  const standalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone;
+  if(standalone){ toast('You are already using the installed app'); return; }
+  if(_bip){ _bip.prompt(); _bip.userChoice.finally(()=>{_bip=null;}); return; }
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const old=document.getElementById('instov'); if(old) old.remove();
+  const ov=document.createElement('div'); ov.id='instov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  ov.innerHTML=`<div style="background:var(--panel);color:var(--ink);border-radius:16px;max-width:430px;width:100%;padding:24px;font-family:var(--sans);box-shadow:0 20px 60px rgba(0,0,0,.35)">
+    <h3 style="margin:0 0 12px;font-family:var(--serif);font-size:20px">Install this app</h3>
+    ${ios?`<p style="margin:0 0 8px">On iPhone or iPad (in Safari):</p>
+      <ol style="margin:0 0 12px;padding-left:20px;line-height:1.9">
+        <li>Tap the <b>Share</b> button (the square with the arrow)</li>
+        <li>Scroll down and choose <b>Add to Home Screen</b></li>
+        <li>Tap <b>Add</b></li></ol>`
+    :`<p style="margin:0 0 8px">In Chrome or Edge: open the browser menu <b>⋮</b> and choose <b>Install app</b> (or tap the install icon in the address bar).</p>
+      <p style="margin:0 0 12px">In Safari on a Mac: <b>File → Add to Dock</b>.</p>`}
+    <p style="color:var(--soft);font-size:13px;margin:0 0 14px">Once installed it opens full-screen from your home screen and works completely offline — Scripture, commentary and your notes.</p>
+    <button class="btn primary" style="width:100%" onclick="document.getElementById('instov').remove()">Done</button></div>`;
+  document.body.appendChild(ov); }
+if(/[?&]install\b/.test(location.search)) setTimeout(installApp,700);
 document.addEventListener('mouseup',e=>{ if(IS_TOUCH) return; if(e.target&&e.target.closest&&e.target.closest('#selmenu')) return; onReaderSelect(); });
 /* on touch: any tap outside a popup closes it (iOS doesn't always fire document click) */
 document.addEventListener('touchstart',e=>{ const t=e.target;
@@ -2359,11 +2408,20 @@ function toggleTheme(){ const d=document.documentElement;
 function toggleDates(){ document.documentElement.classList.toggle('show-dates');
   document.getElementById('dateBtn').classList.toggle('active',document.documentElement.classList.contains('show-dates'));
   savePrefs(); }
-function toggleNotes(){ document.documentElement.classList.toggle('hide-notes');
+function toggleNotes(){
+  let anchor=null;
+  if(state.view==='read'){ const rd=document.getElementById('reader');
+    if(rd){ const top=rd.getBoundingClientRect().top;
+      for(const el of rd.querySelectorAll('.verse')){
+        if(el.getBoundingClientRect().bottom>top+10){ anchor=el.dataset.v; break; } } } }
+  document.documentElement.classList.toggle('hide-notes');
   const off=document.documentElement.classList.contains('hide-notes');
   document.getElementById('notesBtn').classList.toggle('active',!off);
   document.getElementById('notesBtn').title=off?'Currently scripture-only — tap to show commentary':'Showing commentary — tap for scripture only';
-  savePrefs(); if(state.view==='read') renderRead(); }
+  savePrefs();
+  if(state.view==='read'){ renderRead();
+    if(anchor){ const el=document.getElementById('v'+anchor); if(el) el.scrollIntoView({block:'start'}); } }
+  if(typeof _fabSync==='function') _fabSync(); }
 /* ---------- Reference commentary layer (Matthew Henry, public domain, lazy-loaded) ---------- */
 function ensureRefIndex(cb){ if(window.REFCOMM_BOOKS) return cb();
   const s=document.createElement('script'); s.src='data/mhc/_index.js'; s.onload=cb; s.onerror=()=>{ window.REFCOMM_BOOKS={MHC:[]}; cb(); }; document.head.appendChild(s); }
