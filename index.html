@@ -875,7 +875,7 @@ function toggleCompare(){
   // pick a default 2nd version different from primary
   const opts=Object.keys(window.VERSIONS).filter(c=>c!==state.version);
   const def=opts[0];
-  csel.innerHTML=Object.entries(window.VERSIONS).map(([c,n])=>`<option value="${c}" ${c===def?'selected':''}>${c} — ${n}</option>`).join('');
+  csel.innerHTML=Object.entries(window.VERSIONS).map(([c,n])=>`<option value="${c}" title="${n}" ${c===def?'selected':''}>${c}</option>`).join('');
   csel.style.display=''; cb.classList.add('active'); state.compare=def;
   ensureVersion(def,()=>{ if(state.view==='read') renderRead(); });
 }
