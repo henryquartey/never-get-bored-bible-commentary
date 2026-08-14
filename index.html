@@ -121,7 +121,7 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .searchwrap::before{content:"⌕";position:absolute;left:10px;top:7px;color:var(--soft);font-size:16px}
 
 .reader{overflow-y:auto;flex:1;min-height:0;padding:30px 16px 40px}
-.page{max-width:760px;margin:0 auto}
+.page{max-width:1080px;margin:0 auto}
 .chap-title{font-family:var(--serif);font-size:30px;text-align:center;margin:0 0 4px;font-weight:600}
 .chap-sub{text-align:center;color:var(--soft);font-size:13px;margin-bottom:28px}
 
@@ -150,12 +150,11 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .vmenu .vm-div{height:1px;background:var(--line);margin:6px 4px}
 .readnav .rn-listen{flex:0 0 auto;background:var(--accent);color:#fff;border-color:var(--accent);border-radius:999px;padding:11px 22px}
 .readnav .rn-listen:hover:not(:disabled){color:#fff;border-color:var(--accent);opacity:.92}
-.fabnotes{position:fixed;right:12px;top:50%;transform:translateY(-50%) translateX(10px);z-index:55;
-  opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;
-  font-family:var(--sans);font-size:12.5px;font-weight:600;max-width:44vw;
+.fabnotes{position:fixed;right:14px;bottom:118px;z-index:55;opacity:0;pointer-events:none;transform:translateY(8px);
+  transition:opacity .25s ease,transform .25s ease;font-family:var(--sans);font-size:12.5px;font-weight:600;max-width:60vw;
   background:var(--panel);color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:10px 15px;
   box-shadow:0 6px 20px rgba(0,0,0,.2);cursor:pointer}
-.fabnotes.show{opacity:1;pointer-events:auto;transform:translateY(-50%)}
+.fabnotes.show{opacity:1;pointer-events:auto;transform:none}
 /* On phones and tablets a commented verse is marked by its badge and a hairline
    only. The block tint reads as clutter while scrolling on a small screen, and
    some mobile browsers leave a tapped verse stuck in its hover colour. Desktop
@@ -382,7 +381,7 @@ html.show-dates .mc-item .mc-date{display:inline}
 .planctx .btn{margin-left:auto;padding:5px 12px;font-size:12.5px}
 /* reader footer navigation — a real bottom bar that never covers text */
 .readfoot{flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(0,0,0,.06)}
-.readnav{display:flex;gap:10px;align-items:center;padding:12px 20px;max-width:792px;margin:0 auto}
+.readnav{display:flex;gap:10px;align-items:center;padding:12px 20px;max-width:1080px;margin:0 auto}
 .readnav button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:11px 16px;font-size:14px;font-weight:600;flex:1;cursor:pointer}
 .readnav button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
 .readnav button:disabled{opacity:.35;cursor:default}
@@ -855,7 +854,7 @@ function persist(){localStorage.setItem(LS_KEY,JSON.stringify(DATA));}
 function buildVersionSelect(){
   const sel=document.getElementById('verSelect');
   sel.innerHTML=Object.entries(window.VERSIONS).map(([c,n])=>
-    `<option value="${c}" ${c===state.version?'selected':''}>${c} — ${n}</option>`).join('');
+    `<option value="${c}" title="${n}" ${c===state.version?'selected':''}>${c}</option>`).join('');
 }
 function ensureVersion(v,cb){
   if(window.BIBLE&&window.BIBLE[v])return cb();
@@ -1714,7 +1713,7 @@ function modernNoteHTML(name,ch,v,r){
   return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
     <div class="meta"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${r.e?'<span class="badge">📈 understanding grew</span>':''}</div>
     <div class="body">${escNote(r.m)}</div>
-    ${r.e?`<div class="chg2" style="color:var(--accent)">📈 ${escHTML(r.e)}</div>`:''}
+    ${r.e?`<div class="chg2" style="color:var(--accent)">📈 ${escHTML(String(r.e).replace(/<[^>]+>/g,''))}</div>`:''}
     ${noteActionsHTML(String(v))}
     <details class="trk owner-only" data-m="stack">
       <summary>🔍 Track changes — your original & what I changed</summary>
@@ -2272,26 +2271,15 @@ function discSend(){ const el=document.getElementById('discQ'); const t=(el&&el.
     const sel=window.getSelection&&window.getSelection(); if(sel&&!sel.isCollapsed) return;
     if(dx<0) nextChapter(); else prevChapter(); },{passive:true});
 })();
-/* Floating pill: offers "Scripture only" while commentary is on screen, fades a few
-   seconds after scrolling stops, and flips to "Show commentary" when notes are hidden. */
-let _fabTimer=0;
+/* Floating pill — appears once you scroll into a commented chapter, stays until you
+   leave, and flips label with the commentary state. */
 function _fabSync(){ const f=document.getElementById('fabNotes'); if(!f) return;
   const rd=document.getElementById('reader');
   const hidden=document.documentElement.classList.contains('hide-notes');
-  let ok=state.view==='read'&&window._chapHasNotes&&!!rd;
-  if(ok&&!hidden){ ok=false; const h=window.innerHeight;
-    for(const nw of rd.querySelectorAll('.notewrap')){ const r=nw.getBoundingClientRect();
-      if(r.bottom>80&&r.top<h-80){ ok=true; break; } } }
-  f.textContent=hidden?'Show commentary':'Read Scripture only';
-  if(!ok){ f.classList.remove('show'); return; }
-  f.classList.add('show');
-  clearTimeout(_fabTimer); _fabTimer=setTimeout(()=>f.classList.remove('show'),2800); }
-(function(){ const rd=document.getElementById('reader'); if(!rd) return;
-  rd.addEventListener('scroll',_fabSync,{passive:true});
-  const f=document.getElementById('fabNotes');
-  if(f){ f.addEventListener('mouseenter',()=>clearTimeout(_fabTimer));
-         f.addEventListener('mouseleave',()=>{_fabTimer=setTimeout(()=>f.classList.remove('show'),1600);} ); }
-})();
+  const show=state.view==='read'&&window._chapHasNotes&&rd&&rd.scrollTop>420;
+  f.textContent=hidden?'Show all commentaries':'Read verses only';
+  f.classList.toggle('show',!!show); }
+(function(){ const rd=document.getElementById('reader'); if(rd) rd.addEventListener('scroll',_fabSync,{passive:true}); })();
 /* ---------- Install the app (PWA) ---------- */
 let _bip=null;
 window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); _bip=e; });
@@ -2311,7 +2299,8 @@ function installApp(){
         <li>Tap the <b>Share</b> button (the square with the arrow)</li>
         <li>Scroll down and choose <b>Add to Home Screen</b></li>
         <li>Tap <b>Add</b></li></ol>`
-    :`<p style="margin:0 0 8px">In Chrome or Edge: open the browser menu <b>⋮</b> and choose <b>Install app</b> (or tap the install icon in the address bar).</p>
+    :`<p style="margin:0 0 8px">In Chrome on a computer: menu <b>⋮</b> → <b>Cast, save and share</b> → <b>Install page as app…</b> — or click the small install icon at the right end of the address bar if one appears.</p>
+      <p style="margin:0 0 8px">On an Android phone: menu <b>⋮</b> → <b>Add to Home screen</b> → <b>Install</b>.</p>
       <p style="margin:0 0 12px">In Safari on a Mac: <b>File → Add to Dock</b>.</p>`}
     <p style="color:var(--soft);font-size:13px;margin:0 0 14px">Once installed it opens full-screen from your home screen and works completely offline — Scripture, commentary and your notes.</p>
     <button class="btn primary" style="width:100%" onclick="document.getElementById('instov').remove()">Done</button></div>`;
