@@ -1620,7 +1620,7 @@ function renderRead(){
     planBar=`<div class="planctx">📖 <b>Day ${state.plan.day+1}</b> of the plan · passage ${state.plan.ci+1} of ${chaps.length}
       <button class="btn" onclick="exitPlanRead()">✕ Back to plan</button></div>`; }
   let html=`<div class="page">${planBar}
-    <div class="chap-sub">${window.VERSIONS[state.version]} (${state.version})${state.compare?` &nbsp;⇄&nbsp; ${state.compare}`:''}</div>
+    ${state.compare?`<div class="chap-sub">${state.version} &nbsp;⇄&nbsp; ${state.compare}</div>`:''}
     ${refCommPanel(name,ch)}`;
   if(state.compare){
     const bibB=(window.BIBLE[state.compare]||{})[name]||{}; const vB=bibB[String(ch)]||{};
@@ -2277,7 +2277,7 @@ function _fabSync(){ const f=document.getElementById('fabNotes'); if(!f) return;
   const rd=document.getElementById('reader');
   const hidden=document.documentElement.classList.contains('hide-notes');
   const show=state.view==='read'&&window._chapHasNotes&&rd&&rd.scrollTop>420;
-  f.textContent=hidden?'Show all commentaries':'Read verses only';
+  f.textContent=hidden?'Show commentary':'Read verses only';
   f.classList.toggle('show',!!show); }
 (function(){ const rd=document.getElementById('reader'); if(rd) rd.addEventListener('scroll',_fabSync,{passive:true}); })();
 /* ---------- Install the app (PWA) ---------- */
