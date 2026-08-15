@@ -773,12 +773,13 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <script src="data/refined.js"></script>
 <script src="data/chronological.js"></script>
 <script src="data/audio_kjv.js"></script>
+<script src="data/audio_kokoro.js" onerror="window.AUDIO_KOKORO=null"></script>
 
 <script>
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.42.0', date:'15 Aug 2026'};
+const BUILD={v:'0.43.0', date:'15 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -1128,7 +1129,8 @@ function _rdKey(){ return window.BOOKS[state.book].name+'|'+state.chapter; }
 function readChapterAloud(){
   if(_rdState){ if(_rdState.paused) resumeReadAloud(); else pauseReadAloud(); return; }
   if(AUD.key){ if(AUD.el&&AUD.el.paused) audResume(); else audPause(); return; }
-  if(narrPref()==='human'&&window.AUDIO_KJV){ audPlay(window.BOOKS[state.book].name,state.chapter); return; }
+  const nm=window.BOOKS[state.book].name, ch=state.chapter;
+  if(narrSourceFor(nm,ch)!=='device'){ audPlay(nm,ch); return; }
   readChapterTTS(); }
 function readChapterTTS(){
   if(_rdState){ if(_rdState.paused) resumeReadAloud(); else pauseReadAloud(); return; }
@@ -1198,94 +1200,125 @@ function _rdSyncBtn(){
     if(el) el.classList.add('reading'); }
   _audRender(); }
 
-/* ---------- Human narration: LibriVox "Bible (KJV), Complete", read by Michael Armenta (public domain) ----------
-   data/audio_kjv.js maps every chapter to one of 127 mp3s on archive.org. Each mp3 covers several
-   chapters, so the chapter's start time is an ESTIMATE from the KJV text length — the reader can
-   scrub, and 📍 "Chapter starts here" saves the true start for next time (nok_audfix). */
-const AUD={el:null,key:null,book:null,ch:0,info:null,loading:false,note:null,seekTo:null,timer:null,lastSave:0,here:null};
-function narrPref(){ try{ return localStorage.getItem('nok_narr')||'human'; }catch(e){ return 'human'; } }
+/* ---------- Narration ----------
+   Two recorded sources plus the device voice:
+   • "studio" — Kokoro (open-source TTS, voice George), one file per chapter on GitHub Releases, verse-exact
+                (data/audio_kokoro.js → window.AUDIO_KOKORO; grows book by book as it is generated).
+   • "human"  — LibriVox "Bible (KJV), Complete", read by Michael Armenta, public domain, streamed from
+                archive.org (data/audio_kjv.js → window.AUDIO_KJV). Each mp3 covers several chapters, so
+                chapter starts are estimated (or speech-aligned when the map has a 3rd element).
+   • "device" — speechSynthesis (readChapterTTS), also the fallback when audio can't load.           */
+const AUD={el:null,src:null,key:null,book:null,ch:0,info:null,loading:false,note:null,seekTo:null,timer:null,lastSave:0,here:null,vlast:null,vcache:null,buffering:false};
+function narrPref(){ try{ return localStorage.getItem('nok_narr')||'studio'; }catch(e){ return 'studio'; } }
 function setNarrPref(p){ try{ localStorage.setItem('nok_narr',p); }catch(e){}
   stopReadAloud(); AUD.note=null; _audRender();
-  toast(p==='human'?'Listen will play human narration (LibriVox KJV)':'Listen will use your device’s voice'); }
+  toast(p==='studio'?'Listen will use the Studio voice (George)':p==='human'?'Listen will play the human narration (LibriVox)':'Listen will use your device’s voice'); }
+function studioHas(name,ch){ const K=window.AUDIO_KOKORO; return !!(K&&K.chapters&&K.chapters[name]&&K.chapters[name][String(ch)]); }
+/* Which recorded source Listen should use for this chapter, honouring the preference and what exists */
+function narrSourceFor(name,ch){ const p=narrPref();
+  if(p==='device') return 'device';
+  if(p==='studio'&&studioHas(name,ch)) return 'studio';
+  if(window.AUDIO_KJV&&audInfoHuman(name,ch)) return 'human';
+  if(studioHas(name,ch)) return 'studio';
+  return 'device'; }
 function _audFixAll(){ try{ return JSON.parse(localStorage.getItem('nok_audfix')||'{}'); }catch(e){ return {}; } }
 function _audPosAll(){ try{ return JSON.parse(localStorage.getItem('nok_audpos')||'{}'); }catch(e){ return {}; } }
-function _audSavePos(t){ if(!AUD.key) return; try{ const m=_audPosAll(); m[AUD.key]=Math.round(t*10)/10;
-  const k=Object.keys(m); if(k.length>60) delete m[k[0]]; localStorage.setItem('nok_audpos',JSON.stringify(m)); }catch(e){} }
-function _audClearPos(key){ try{ const m=_audPosAll(); delete m[key]; localStorage.setItem('nok_audpos',JSON.stringify(m)); }catch(e){} }
-/* Where a chapter lives: {n,url,start,end,dur,file,book,ch,fixed} — start/end are seconds into the mp3 */
-function audInfo(name,ch){ const A=window.AUDIO_KJV; if(!A||!A.chapters[name]) return null;
+function _audSavePos(t){ if(!AUD.key) return; try{ const m=_audPosAll(); m[AUD.src+':'+AUD.key]=Math.round(t*10)/10;
+  const k=Object.keys(m); if(k.length>80) delete m[k[0]]; localStorage.setItem('nok_audpos',JSON.stringify(m)); }catch(e){} }
+function _audClearPos(src,key){ try{ const m=_audPosAll(); delete m[src+':'+key]; localStorage.setItem('nok_audpos',JSON.stringify(m)); }catch(e){} }
+/* Studio voice: {src:'studio', url, start:0, end:dur, dur, exact:[verse starts], book, ch} */
+function audInfoStudio(name,ch){ const K=window.AUDIO_KOKORO; if(!studioHas(name,ch)) return null;
+  const c=K.chapters[name][String(ch)]; const dur=c[0]/10;
+  return {src:'studio',n:null,url:K.base+K.tag(name)+'/'+K.file(name,ch),start:0,end:dur,dur:dur,file:null,book:name,ch:ch,fixed:false,exact:c[1].map(x=>x/10),reader:(K.voice||'George')+' · '+(K.engine||'Kokoro')}; }
+/* Human narration: where a chapter lives inside its LibriVox mp3 — start/end are seconds into the file */
+function audInfoHuman(name,ch){ const A=window.AUDIO_KJV; if(!A||!A.chapters[name]) return null;
   const c=A.chapters[name][String(ch)]; if(!c) return null; const f=A.files[c[0]]; if(!f) return null;
   const fix=_audFixAll(); const key=name+'|'+ch;
   const start = fix[key]!=null ? fix[key] : c[1];
   let end=f.dur-3;
   if(ch<f.to){ const n=A.chapters[name][String(ch+1)]; const nk=name+'|'+(ch+1); end = fix[nk]!=null ? fix[nk] : n[1]; }
-  return {n:c[0],url:A.base+A.file(c[0]),start:start,end:Math.max(end,start+5),dur:f.dur,file:f,book:name,ch:ch,fixed:fix[key]!=null}; }
+  const exact = Array.isArray(c[2]) ? c[2].map(x=>c[1]+x/10) : null;   // speech-aligned verse start times (absolute secs)
+  return {src:'human',n:c[0],url:A.base+A.file(c[0]),start:start,end:Math.max(end,start+5),dur:f.dur,file:f,book:name,ch:ch,fixed:fix[key]!=null,exact:exact,reader:A.reader}; }
+function audInfo(name,ch,src){ src=src||narrSourceFor(name,ch); return src==='studio'?audInfoStudio(name,ch):src==='human'?audInfoHuman(name,ch):null; }
 function _audEl(){ if(AUD.el) return AUD.el;
   const a=document.createElement('audio'); a.preload='none'; a.style.display='none'; a.setAttribute('playsinline',''); document.body.appendChild(a);
-  a.addEventListener('loadedmetadata',()=>{ if(AUD.seekTo!=null){ try{ a.currentTime=AUD.seekTo; }catch(e){} AUD.seekTo=null; } });
+  a.addEventListener('loadedmetadata',()=>{ if(AUD.seekTo!=null){ try{ a.currentTime=Math.min(AUD.seekTo,Math.max(0,(a.duration||Infinity)-2)); }catch(e){} AUD.seekTo=null; } });
   a.addEventListener('playing',()=>{ AUD.loading=false; clearTimeout(AUD.timer); AUD.timer=null; AUD.buffering=false; _rdSyncBtn(); _audMedia(); });
   a.addEventListener('waiting',()=>{ AUD.buffering=true; _audRender(); });
   a.addEventListener('pause',()=>{ if(AUD.key){ _audSavePos(a.currentTime); _rdSyncBtn(); } });
   a.addEventListener('timeupdate',()=>{ if(!AUD.key) return; _audTick(a.currentTime); });
-  a.addEventListener('ended',()=>{ if(!AUD.key) return; const k=AUD.key; audStop(false); _audClearPos(k);
-    toast('End of this recording — tap Next → and Listen to carry on'); });
-  a.addEventListener('error',()=>{ if(AUD.key) _audFallback('error'); });
+  a.addEventListener('ended',()=>{ if(!AUD.key) return; _audEnded(); });
+  a.addEventListener('error',()=>{ if(AUD.key&&a.error) _audFallback('error'); });   // a.error is null for a stale event after load()
   a.addEventListener('stalled',()=>{ if(AUD.key&&AUD.loading&&!AUD.timer) AUD.timer=setTimeout(()=>_audFallback('timeout'),12000); });
   return AUD.el=a; }
-function audPlay(name,ch){
-  const info=audInfo(name,ch);
+function audPlay(name,ch,src){
+  src=src||narrSourceFor(name,ch);
+  if(src==='device'){ readChapterTTS(); return; }
+  const info=audInfo(name,ch,src);
   if(!info){ _audFallback('nomap'); return; }
   if(navigator.onLine===false){ _audFallback('offline'); return; }
   if(_rdState){ _rdState.seq++; _rdState=null; try{ speechSynthesis.cancel(); }catch(e){} document.querySelectorAll('.verse.reading').forEach(e=>e.classList.remove('reading')); }
   const a=_audEl(); const key=name+'|'+ch;
-  const saved=_audPosAll()[key];
+  const saved=_audPosAll()[src+':'+key];
   let t=info.start; if(typeof saved==='number'&&saved>info.start+3&&saved<info.end-3){ t=saved; toast('Picking up where you left off'); }
-  AUD.key=key; AUD.book=name; AUD.ch=ch; AUD.info=info; AUD.loading=true; AUD.here=ch; AUD.note=null; AUD.buffering=false; AUD.vlast=null; AUD.vcache=null;
-  const sameFile = a.getAttribute('data-n')===String(info.n) && a.readyState>0;
+  if(narrPref()==='studio'&&src==='human'&&!AUD.note) AUD.note='The Studio voice isn’t ready for this chapter yet — playing the human narration (LibriVox) instead.';
+  AUD.src=src; AUD.key=key; AUD.book=name; AUD.ch=ch; AUD.info=info; AUD.loading=true; AUD.here=ch; AUD.buffering=false; AUD.vlast=null; AUD.vcache=null;
+  const sameFile = a.getAttribute('data-src')===info.url && a.readyState>0;
   if(sameFile){ try{ a.currentTime=Math.min(t,(a.duration||Infinity)-2); }catch(e){ AUD.seekTo=t; } }
-  else { a.setAttribute('data-n',String(info.n)); AUD.seekTo=t; a.src=info.url; a.load(); }
-  clearTimeout(AUD.timer); AUD.timer=setTimeout(()=>{ if(AUD.key===key&&AUD.loading) _audFallback('timeout'); },20000);
-  const p=a.play(); if(p&&p.catch) p.catch(err=>{ if(AUD.key===key&&AUD.loading&&!(err&&err.name==='AbortError')) _audFallback('error'); });
+  else { a.setAttribute('data-src',info.url); AUD.seekTo=t>0?t:null; a.src=info.url; a.load(); }
+  const mine=src+':'+key;
+  clearTimeout(AUD.timer); AUD.timer=setTimeout(()=>{ if(AUD.src+':'+AUD.key===mine&&AUD.loading) _audFallback('timeout'); },20000);
+  const p=a.play(); if(p&&p.catch) p.catch(err=>{ if(AUD.src+':'+AUD.key===mine&&AUD.loading&&!(err&&err.name==='AbortError')) _audFallback('error'); });
   _rdSyncBtn(); }
 function audPause(){ const a=AUD.el; if(!a||!AUD.key) return; try{ a.pause(); }catch(e){} _audSavePos(a.currentTime); _rdSyncBtn();
   toast('Paused — tap Resume to carry on from here'); }
 function audResume(){ const a=AUD.el; if(!a||!AUD.key) return; if(navigator.onLine===false){ toast('You’re offline — narration will resume when you reconnect'); }
   const p=a.play(); if(p&&p.catch) p.catch(()=>{}); _rdSyncBtn(); }
 /* reset=true → forget the place (⏹); otherwise keep it so Listen picks up here later */
-function audStop(reset){ const a=AUD.el, key=AUD.key; if(!key) return;
+function audStop(reset){ const a=AUD.el, key=AUD.key, src=AUD.src; if(!key) return;
   clearTimeout(AUD.timer); AUD.timer=null;
   if(a){ if(!reset&&!a.paused) _audSavePos(a.currentTime); try{ a.pause(); }catch(e){} }
-  if(reset){ _audClearPos(key); toast('Stopped — next time starts at the top of the chapter'); }
-  AUD.key=null; AUD.book=null; AUD.ch=0; AUD.info=null; AUD.loading=false; AUD.buffering=false; AUD.here=null; AUD.vlast=null; AUD.vcache=null;
+  if(reset){ _audClearPos(src,key); toast('Stopped — next time starts at the top of the chapter'); }
+  AUD.src=null; AUD.key=null; AUD.book=null; AUD.ch=0; AUD.info=null; AUD.loading=false; AUD.buffering=false; AUD.here=null; AUD.vlast=null; AUD.vcache=null;
   document.querySelectorAll('.verse.reading').forEach(e=>e.classList.remove('reading'));
   try{ if(navigator.mediaSession) navigator.mediaSession.playbackState='none'; }catch(e){}
   _audRender(); }
 function audSkip(d){ const a=AUD.el; if(!a||!AUD.key) return; try{ a.currentTime=Math.max(0,Math.min((a.duration||AUD.info.dur)-1,a.currentTime+d)); }catch(e){} _audRender(); }
 function audSeek(v){ const a=AUD.el; if(!a||!AUD.key) return; try{ a.currentTime=parseFloat(v)||0; }catch(e){ AUD.seekTo=parseFloat(v)||0; } _audRender(); }
-/* 📍 The reader has found the real start of the chapter — remember it (also fixes the previous chapter's end) */
-function audMarkStart(){ const a=AUD.el; if(!a||!AUD.key||!AUD.info) return;
+/* End of a file: studio → straight on to the next chapter; human → the LibriVox section ended, carry on with the next chapter's file */
+function _audEnded(){ const src=AUD.src, key=AUD.key, book=AUD.book, ch=AUD.ch;
+  audStop(false); _audClearPos(src,key);
+  if(state.view!=='read'||state.plan||window.BOOKS[state.book].name!==book||state.chapter!==ch){ toast('Chapter finished'); return; }
+  const last = state.book===window.BOOKS.length-1 && ch===window.BOOKS[state.book].chapters.length;
+  if(last){ toast('You have reached the end of Revelation'); return; }
+  nextChapter();
+  const nm=window.BOOKS[state.book].name, nc=state.chapter;
+  toast('→ '+nm+' '+nc); setTimeout(()=>{ if(state.view==='read'&&window.BOOKS[state.book].name===nm&&state.chapter===nc&&!AUD.key&&!_rdState) audPlay(nm,nc); },350); }
+/* 📍 (human narration only) The reader has found the real start of the chapter — remember it (also fixes the previous chapter's end) */
+function audMarkStart(){ const a=AUD.el; if(!a||!AUD.key||!AUD.info||AUD.src!=='human') return;
   const t=Math.round(a.currentTime*10)/10; const key=AUD.book+'|'+AUD.ch;
   try{ const m=_audFixAll(); m[key]=t; localStorage.setItem('nok_audfix',JSON.stringify(m)); }catch(e){}
-  AUD.info=audInfo(AUD.book,AUD.ch); AUD.here=AUD.ch; AUD.vcache=null; _audRender();
+  AUD.info=audInfoHuman(AUD.book,AUD.ch); AUD.here=AUD.ch; AUD.vcache=null; _audRender();
   toast('Saved — '+AUD.book+' '+AUD.ch+' now starts at '+_fmtT(t)); }
-function audUnmark(){ if(!AUD.key) return; const key=AUD.book+'|'+AUD.ch;
+function audUnmark(){ if(!AUD.key||AUD.src!=='human') return; const key=AUD.book+'|'+AUD.ch;
   try{ const m=_audFixAll(); delete m[key]; localStorage.setItem('nok_audfix',JSON.stringify(m)); }catch(e){}
-  AUD.info=audInfo(AUD.book,AUD.ch); AUD.vcache=null; _audRender(); toast('Back to the estimated chapter start'); }
+  AUD.info=audInfoHuman(AUD.book,AUD.ch); AUD.vcache=null; _audRender(); toast('Back to the estimated chapter start'); }
 function _audTick(t){ const now=Date.now(); if(now-AUD.lastSave>4000){ AUD.lastSave=now; _audSavePos(t); }
-  // which chapter is the narrator (probably) in right now?
-  const A=window.AUDIO_KJV, f=AUD.info.file; let here=AUD.ch;
-  for(let c=f.from;c<=f.to;c++){ const i=(c===AUD.ch)?AUD.info:audInfo(AUD.book,c); if(i&&t>=i.start-0.5) here=c; }
+  let here=AUD.ch;
+  if(AUD.src==='human'){ const f=AUD.info.file;   // which chapter is the narrator (probably) in right now?
+    for(let c=f.from;c<=f.to;c++){ const i=(c===AUD.ch)?AUD.info:audInfoHuman(AUD.book,c); if(i&&t>=i.start-0.5) here=c; } }
   if(here!==AUD.here){ AUD.here=here; _audRender(); } else _audRenderTime(t);
   _audFollowVerse(t,here); }
 /* ---- Follow the narrator through the text ----
-   There are no verse timestamps in the recording, so the verse is estimated from how far into the
-   chapter's window we are, weighted by KJV verse length. Anchors (🎧 "Narrator is on this verse now"
-   in a verse's ⋯ menu, stored in nok_audanchor) pin (time, verse) points; the estimate is linear between pins. */
+   Studio voice: exact verse times → one verse highlighted.
+   Human narration: verse is estimated from how far into the chapter's window we are, weighted by KJV verse
+   length (pins from 🎧 "Narrator is on this verse now" make it piecewise-linear) → a band of 3 verses is
+   highlighted; when the chapter has been speech-aligned the band is 2 verses. */
 function _audAnchorsAll(){ try{ return JSON.parse(localStorage.getItem('nok_audanchor')||'{}'); }catch(e){ return {}; } }
-function audAnchor(v){ const a=AUD.el; if(!a||!AUD.key||!AUD.info) return;
+function audAnchor(v){ const a=AUD.el; if(!a||!AUD.key||!AUD.info||AUD.src!=='human') return;
   const t=Math.round(a.currentTime*10)/10;
   if(v===1){ audMarkStart(); return; }                      // verse 1 = the chapter start itself
-  try{ const m=_audAnchorsAll(); const cur=m[AUD.key]||{}; 
+  try{ const m=_audAnchorsAll(); const cur=m[AUD.key]||{};
     for(const k of Object.keys(cur)){ if((+k<v&&cur[k]>=t)||(+k>v&&cur[k]<=t)) delete cur[k]; }   // drop pins that now contradict this one
     cur[String(v)]=t; m[AUD.key]=cur; const ks=Object.keys(m); if(ks.length>80) delete m[ks[0]];
     localStorage.setItem('nok_audanchor',JSON.stringify(m)); }catch(e){}
@@ -1301,35 +1334,47 @@ function _audVerseModel(){ // cumulative char fractions per verse of the CURRENT
   Object.keys(anch).map(Number).sort((a,b)=>a-b).forEach(v=>{ const i=vs.indexOf(v); if(i>=0&&anch[v]>pins[pins.length-1][1]) pins.push([frac[i],anch[v]]); });
   if(AUD.info.end>pins[pins.length-1][1]) pins.push([1,AUD.info.end]);
   return AUD.vcache={key:AUD.key,vs:vs,frac:frac,pins:pins}; }
-function _audVerseAt(t){ const M=_audVerseModel(); if(!M) return 0;
+function _audVerseAt(t){
+  if(AUD.info&&AUD.info.exact&&!AUD.info.fixed){ const E=AUD.info.exact; let v=0;      // exact timings: verse whose start has passed
+    for(let i=0;i<E.length;i++){ if(t>=E[i]-0.15) v=i+1; else break; } return v; }
+  const M=_audVerseModel(); if(!M) return 0;
   // time → fraction through the chapter, piecewise-linear over the pins
   let f;
   if(t<=M.pins[0][1]) f=0; else if(t>=M.pins[M.pins.length-1][1]) f=1;
   else { for(let i=1;i<M.pins.length;i++){ const [f0,t0]=M.pins[i-1],[f1,t1]=M.pins[i]; if(t<=t1){ f=f0+(f1-f0)*(t-t0)/Math.max(1e-6,t1-t0); break; } } }
   let idx=0; for(let i=0;i<M.frac.length;i++){ if(M.frac[i]<=f) idx=i; else break; }
   return M.vs[idx]; }
+function _audBand(){ // how many verses to light up around the estimate
+  if(!AUD.info) return 1; if(AUD.src==='studio') return 1; return (AUD.info.exact&&!AUD.info.fixed) ? 2 : 3; }
 function _audFollowVerse(t,here,force){
   if(state.view!=='read'||AUD.key!==_rdKey()||(AUD.el&&AUD.el.paused&&!force)) return;
   if(here!=null&&here!==AUD.ch){ if(AUD.vlast){ document.querySelectorAll('.verse.reading').forEach(e=>e.classList.remove('reading')); AUD.vlast=null; } return; }
   const v=_audVerseAt(t); if(!v||(v===AUD.vlast&&!force)) return;
   AUD.vlast=v;
   document.querySelectorAll('.verse.reading').forEach(e=>e.classList.remove('reading'));
-  const el=document.getElementById('v'+v); if(!el) return;
-  el.classList.add('reading'); const r=el.getBoundingClientRect();
-  if(r.top<90||r.bottom>window.innerHeight-190) el.scrollIntoView({behavior:'smooth',block:'center'}); }
+  const band=_audBand(); let from = band===3 ? v-1 : v, to = band===3 ? v+1 : v+band-1; if(from<1){ to+=1-from; from=1; }
+  let focus=null;
+  for(let k=Math.max(1,from);k<=to;k++){ const el=document.getElementById('v'+k); if(!el) continue; el.classList.add('reading'); if(k===v) focus=el; }
+  if(!focus) return;
+  const r=focus.getBoundingClientRect();
+  if(r.top<90||r.bottom>window.innerHeight-190) focus.scrollIntoView({behavior:'smooth',block:'center'}); }
 function _audFallback(reason){
-  const name=AUD.book||window.BOOKS[state.book].name, ch=AUD.ch||state.chapter;
-  if(AUD.key){ const a=AUD.el; clearTimeout(AUD.timer); AUD.timer=null; try{ a.pause(); a.removeAttribute('src'); a.removeAttribute('data-n'); a.load(); }catch(e){}
-    AUD.key=null; AUD.info=null; AUD.loading=false; AUD.here=null; }
-  AUD.note = reason==='offline' ? 'You’re offline, so the human narration can’t stream right now — your device’s voice is reading instead. Narration comes back when you reconnect.'
+  const name=AUD.book||window.BOOKS[state.book].name, ch=AUD.ch||state.chapter, src=AUD.src;
+  if(AUD.key){ const a=AUD.el; clearTimeout(AUD.timer); AUD.timer=null; try{ a.pause(); a.removeAttribute('src'); a.removeAttribute('data-src'); a.load(); }catch(e){}
+    AUD.src=null; AUD.key=null; AUD.info=null; AUD.loading=false; AUD.here=null; AUD.vlast=null; }
+  // Studio voice failed for a reason other than being offline → try the human narration before giving up on audio
+  if(src==='studio'&&reason!=='offline'&&window.AUDIO_KJV&&audInfoHuman(name,ch)&&state.view==='read'&&window.BOOKS[state.book].name===name&&state.chapter===ch){
+    AUD.note='The Studio voice couldn’t be loaded just now — playing the human narration (LibriVox) instead.';
+    audPlay(name,ch,'human'); return; }
+  AUD.note = reason==='offline' ? 'You’re offline, so recorded narration can’t stream right now — your device’s voice is reading instead. Narration comes back when you reconnect.'
            : reason==='nomap'  ? 'There’s no recording for this chapter, so your device’s voice is reading instead.'
-           : 'The human narration couldn’t be loaded just now (slow connection, or archive.org is busy) — your device’s voice is reading instead. Tap ⏹ and Listen again to retry.';
+           : 'The narration couldn’t be loaded just now (slow connection, or the server is busy) — your device’s voice is reading instead. Tap ⏹ and Listen again to retry.';
   if(state.view==='read'&&window.BOOKS[state.book].name===name&&state.chapter===ch){ readChapterTTS(); }
   _rdSyncBtn(); }
 function _fmtT(s){ s=Math.max(0,Math.floor(s||0)); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60;
   return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0'); }
 function _audMedia(){ try{ if(!navigator.mediaSession||!AUD.key) return;
-  navigator.mediaSession.metadata=new MediaMetadata({title:AUD.book+' '+AUD.ch+' (KJV)',artist:'Read by Michael Armenta · LibriVox',album:'Never Get Bored — Nii Okai’s Journal'});
+  navigator.mediaSession.metadata=new MediaMetadata({title:AUD.book+' '+AUD.ch+' (KJV)',artist:AUD.src==='studio'?'Studio voice · George (Kokoro)':'Read by Michael Armenta · LibriVox',album:'Never Get Bored — Nii Okai’s Journal'});
   navigator.mediaSession.setActionHandler('play',()=>audResume()); navigator.mediaSession.setActionHandler('pause',()=>audPause());
   navigator.mediaSession.setActionHandler('seekbackward',()=>audSkip(-15)); navigator.mediaSession.setActionHandler('seekforward',()=>audSkip(30));
   navigator.mediaSession.playbackState='playing'; }catch(e){} }
@@ -1342,19 +1387,22 @@ function _audRender(){ const bar=document.getElementById('audbar'), nt=document.
   if(!bar) return;
   if(!AUD.key||!AUD.info){ bar.innerHTML=''; bar.style.display='none'; return; }
   const a=AUD.el, info=AUD.info, dur=(a&&a.duration)||info.dur, t=a?a.currentTime:info.start;
-  const A=window.AUDIO_KJV; const p1=Math.round(info.start/dur*1000)/10, p2=Math.round(Math.min(info.end,dur)/dur*1000)/10;
-  const track=`linear-gradient(90deg,var(--line) ${p1}%,var(--accent-soft) ${p1}%,var(--accent-soft) ${p2}%,var(--line) ${p2}%)`;
-  const following = AUD.here!==AUD.ch && AUD.here!=null;
+  const human=AUD.src==='human';
+  const p1=Math.round(info.start/dur*1000)/10, p2=Math.round(Math.min(info.end,dur)/dur*1000)/10;
+  const track=human?`linear-gradient(90deg,var(--line) ${p1}%,var(--accent-soft) ${p1}%,var(--accent-soft) ${p2}%,var(--line) ${p2}%)`:'var(--line)';
+  const following = human && AUD.here!==AUD.ch && AUD.here!=null;
   const nextIsNextChapter = following && AUD.here===AUD.ch+1 && state.view==='read' && window.BOOKS[state.book].name===AUD.book && state.chapter===AUD.ch;
+  const estimated = human && !info.exact && !info.fixed;
   bar.style.display='';
   bar.innerHTML=`<button class="ab-btn" onclick="audSkip(-15)" title="Back 15 seconds">⏪ 15</button>
     <button class="ab-btn" onclick="audSkip(30)" title="Forward 30 seconds">30 ⏩</button>
     <input type="range" class="ab-seek" id="abSeek" min="0" max="${Math.floor(dur)}" step="1" value="${Math.floor(t)}" style="--ab-track:${track}"
-      oninput="_audRenderTime(this.value)" onchange="audSeek(this.value)" title="This recording covers ${escHTML(info.file.book)} ${info.file.from}${info.file.to>info.file.from?'–'+info.file.to:''} — the shaded part is roughly ${escHTML(AUD.book)} ${AUD.ch}">
+      oninput="_audRenderTime(this.value)" onchange="audSeek(this.value)" title="${human?`This recording covers ${escHTML(info.file.book)} ${info.file.from}${info.file.to>info.file.from?'–'+info.file.to:''} — the shaded part is roughly ${escHTML(AUD.book)} ${AUD.ch}`:`${escHTML(AUD.book)} ${AUD.ch}`}">
     <span class="ab-time" id="abTime">${_fmtT(t)} / ${_fmtT(dur)}</span>
-    <button class="ab-btn${info.fixed?' on':''}" onclick="${info.fixed?'audUnmark()':'audMarkStart()'}" title="${info.fixed?'You marked the exact start of this chapter — tap to go back to the estimate':'Hearing the narrator begin this chapter? Tap to remember this as its exact start'}">📍 ${info.fixed?'Start saved':'Chapter starts here'}</button>
+    ${estimated||info.fixed?`<button class="ab-btn${info.fixed?' on':''}" onclick="${info.fixed?'audUnmark()':'audMarkStart()'}" title="${info.fixed?'You marked the exact start of this chapter — tap to go back to the estimate':'Hearing the narrator begin this chapter? Tap to remember this as its exact start'}">📍 ${info.fixed?'Start saved':'Chapter starts here'}</button>`:''}
     <span class="ab-lbl">${AUD.loading?'<span class="ab-buf">Loading narration…</span>':AUD.buffering?'<span class="ab-buf">Buffering…</span>':''}
-      🎧 <b>${escHTML(AUD.book)} ${AUD.ch}</b> · read by ${escHTML(A.reader)} · LibriVox (public domain)${info.fixed?'':' · start &amp; verse highlight are estimated — nudge with ⏪ ⏩, or open a verse’s ⋯ menu to say “narrator is here”'}
+      ${human?`🎧 <b>${escHTML(AUD.book)} ${AUD.ch}</b> · read by ${escHTML(info.reader||'Michael Armenta')} · LibriVox (public domain)${estimated?' · start &amp; highlight are estimated — nudge with ⏪ ⏩, or open a verse’s ⋯ menu to say “narrator is here”':''}`
+             :`🎙 <b>${escHTML(AUD.book)} ${AUD.ch}</b> · Studio voice · ${escHTML(info.reader||'George · Kokoro')}`}
       ${following?`<span>· narrator is now in <b>${escHTML(AUD.book)} ${AUD.here}</b></span>${nextIsNextChapter?`<button class="ab-follow" onclick="nextChapter()">Follow →</button>`:''}`:''}</span>`; }
 /* ---------- Text size ---------- */
 function applyFont(){ const f=parseFloat(localStorage.getItem('nok_fs')||'1'); document.documentElement.style.setProperty('--fs',f); }
@@ -1798,8 +1846,8 @@ function _ttsWelcome(btn){
 function renderRead(){
   if(state.compare && !(window.BIBLE&&window.BIBLE[state.compare])){ ensureVersion(state.compare, renderRead); }
   if(_rdState&&_rdState.key!==_rdKey()) stopReadAloud();   // moved to another chapter — keep the old place, stop reading
-  if(AUD.key&&AUD.key!==_rdKey()){                          // narration: same recording → keep playing, just retarget; else stop, keep place
-    const nm=window.BOOKS[state.book].name, ni=audInfo(nm,state.chapter);
+  if(AUD.key&&AUD.key!==_rdKey()){                          // narration: same LibriVox recording → keep playing, just retarget; else stop, keep place
+    const nm=window.BOOKS[state.book].name, ni=AUD.src==='human'?audInfoHuman(nm,state.chapter):null;
     if(ni&&AUD.info&&ni.n===AUD.info.n){ AUD.key=_rdKey(); AUD.book=nm; AUD.ch=state.chapter; AUD.info=ni; AUD.here=null; AUD.vlast=null; AUD.vcache=null;
       const a=AUD.el, t=a?a.currentTime:0;
       if(t<ni.start-1||t>ni.end+1){                          // jumped to a chapter the narrator isn't in — seek there
@@ -2072,9 +2120,10 @@ function tbMoreMenu(ev){ ev.stopPropagation(); closeVerseMenu();
   const dark=document.documentElement.dataset.theme==='dark';
   const rd=state.view==='read';
   const np=narrPref();
-  m.innerHTML=`${rd?`${window.AUDIO_KJV?`<div class="vm-sec">🎧 Listen with</div>
+  m.innerHTML=`${rd?`${(window.AUDIO_KJV||window.AUDIO_KOKORO)?`<div class="vm-sec">🎧 Listen with</div>
     <select class="btn vsel vm-voice" id="narrSel" onchange="setNarrPref(this.value)">
-      <option value="human" ${np==='human'?'selected':''}>Human narration — KJV, LibriVox</option>
+      ${window.AUDIO_KOKORO?`<option value="studio" ${np==='studio'?'selected':''}>Studio voice — George (clear, verse-exact)</option>`:''}
+      ${window.AUDIO_KJV?`<option value="human" ${np==='human'?'selected':''}>Human narration — LibriVox (Michael Armenta)</option>`:''}
       <option value="device" ${np==='device'?'selected':''}>Device voice (works offline)</option></select>`:''}
     <div class="vm-sec">🎙 Device voice</div>
     <select class="btn vsel vm-voice" id="voiceSel" onchange="setVoicePref(this.value)"></select>
@@ -2396,7 +2445,7 @@ function verseMenu(ev,name,ch,v){ ev.stopPropagation(); closeVerseMenu(); closeC
     <button onclick="vmDo(event,'google','${esc(name)}',${ch},${v})">🔎 Search on Google</button>
     <button onclick="vmDo(event,'compare','${esc(name)}',${ch},${v})">⇄ Compare versions</button>
     <button onclick="vmDo(event,'note','${esc(name)}',${ch},${v})">✎ Add a note</button>
-    ${AUD.key===name+'|'+ch&&AUD.el&&!AUD.el.paused?`<button onclick="closeVerseMenu();audAnchor(${v})" title="Tell the app the narrator is reading this verse right now — the highlight will follow more accurately">🎧 Narrator is on this verse now</button>`:''}`;
+    ${AUD.key===name+'|'+ch&&AUD.src==='human'&&AUD.el&&!AUD.el.paused&&!(AUD.info&&AUD.info.exact)?`<button onclick="closeVerseMenu();audAnchor(${v})" title="Tell the app the narrator is reading this verse right now — the highlight will follow more accurately">🎧 Narrator is on this verse now</button>`:''}`;
   document.body.appendChild(m);
   const r=anchor.getBoundingClientRect(); const mw=m.offsetWidth, mh=m.offsetHeight;
   let top=r.bottom+6; if(top+mh>window.innerHeight-8) top=Math.max(8,r.top-mh-6);

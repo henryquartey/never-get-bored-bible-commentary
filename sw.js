@@ -1,13 +1,13 @@
 /* Never Get Bored — service worker.
    Bump CACHE whenever the app shell changes so installed copies refresh. */
-const CACHE = 'ngb-v8';
+const CACHE = 'ngb-v9';
 const PRECACHE = [
   './', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png',
   './data/books.js', './data/versions.js', './data/KJV.js', './data/chronological.js', './data/audio_kjv.js',
   './data/commentary.js', './data/refined.js', './data/dict.js'
 ];
 /* Files that change often — always try the network first, fall back to cache offline. */
-const FRESH = /\/(index\.html|manifest\.webmanifest|data\/(commentary|refined|chronological|dict|books|versions)\.js|data\/commentary\.json)$/;
+const FRESH = /\/(index\.html|manifest\.webmanifest|data\/(commentary|refined|chronological|dict|books|versions|audio_kjv|audio_kokoro)\.js|data\/commentary\.json)$/;
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
