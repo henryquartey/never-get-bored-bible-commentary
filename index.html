@@ -19,10 +19,12 @@
   --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
 }
 html[data-theme="dark"]{
-  --bg:#15171a; --panel:#1d2024; --ink:#e7e9ec; --soft:#9aa3ad; --line:#2c3036;
+  --bg:#15171a; --panel:#1d2024; --ink:#f1f3f5; --soft:#a4adb7; --line:#2c3036;
   --accent:#b9a3e8; --accent-rgb:185,163,232; --accent-soft:#2a2440; --note-bg:#1d1a2b; --note-line:#453a63;
-  --scripture:#dfe2e6; --shadow:0 1px 3px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.4);
+  --scripture:#eef0f3; --shadow:0 1px 3px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.4);
 }
+html[data-theme="dark"] body{-webkit-font-smoothing:auto;-moz-osx-font-smoothing:auto}
+html[data-theme="dark"] .verse{color:var(--scripture)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
   -webkit-font-smoothing:antialiased;line-height:1.5}
@@ -2487,10 +2489,12 @@ if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('sw.js').then(reg=>{
       try{ reg.update(); setInterval(()=>reg.update(),30*60*1000); }catch(e){}
+      // A new version downloaded and waiting → offer it; the reader decides when to switch.
       reg.addEventListener('updatefound',()=>{ const nw=reg.installing; if(!nw) return;
-        nw.addEventListener('statechange',()=>{ if(nw.state==='installed'&&navigator.serviceWorker.controller){ try{ nw.postMessage('skipWaiting'); }catch(e){} } }); });
+        nw.addEventListener('statechange',()=>{ if(nw.state==='installed'&&navigator.serviceWorker.controller){ window._swWaiting=nw; if(!_updShown){ _updShown=true; _showUpdBar(); } } }); });
+      if(reg.waiting&&navigator.serviceWorker.controller){ window._swWaiting=reg.waiting; if(!_updShown){ _updShown=true; _showUpdBar(); } }
     }).catch(()=>{});
-    let _rl=false; navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_rl) return; _rl=true; location.reload(); });
+    let _rl=false; navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_rl||!window._updClicked) return; _rl=true; location.reload(); });
   });
 }
 /* ---- Update alert: tell the reader when a new version has been deployed ---- */
@@ -2511,7 +2515,9 @@ async function _showUpdBar(){ if(document.getElementById('updbar')) return;
     +'<button class="upd-x" onclick="document.getElementById(\'updbar\').remove()" title="Later">✕</button>';
   document.body.appendChild(b); }
 function _doUpdate(){
+  window._updClicked=true;
   const done=()=>location.reload();
+  if(window._swWaiting){ try{ window._swWaiting.postMessage('skipWaiting'); }catch(e){} setTimeout(done,1200); return; }
   if('serviceWorker' in navigator&&navigator.serviceWorker.getRegistration){
     navigator.serviceWorker.getRegistration().then(reg=>{ if(reg) return reg.update(); }).then(done,done);
   } else done(); }
