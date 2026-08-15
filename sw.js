@@ -1,9 +1,9 @@
 /* Never Get Bored — service worker.
    Bump CACHE whenever the app shell changes so installed copies refresh. */
-const CACHE = 'ngb-v6';
+const CACHE = 'ngb-v7';
 const PRECACHE = [
   './', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png',
-  './data/books.js', './data/versions.js', './data/KJV.js', './data/chronological.js',
+  './data/books.js', './data/versions.js', './data/KJV.js', './data/chronological.js', './data/audio_kjv.js',
   './data/commentary.js', './data/refined.js', './data/dict.js'
 ];
 /* Files that change often — always try the network first, fall back to cache offline. */

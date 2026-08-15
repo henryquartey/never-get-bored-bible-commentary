@@ -152,6 +152,26 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .vmenu .vm-div{height:1px;background:var(--line);margin:6px 4px}
 .readnav .rn-listen{flex:0 0 auto;background:var(--accent);color:#fff;border-color:var(--accent);border-radius:999px;padding:11px 22px}
 .readnav .rn-listen:hover:not(:disabled){color:#fff;border-color:var(--accent);opacity:.92}
+/* Human-narration player (LibriVox KJV) — sits above the chapter nav */
+.audbar{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;max-width:1080px;margin:0 auto;padding:9px 20px 0;font-family:var(--sans)}
+.audbar .ab-btn{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:6px 11px;font-size:12.5px;font-weight:700;cursor:pointer;flex:0 0 auto}
+.audbar .ab-btn:hover{border-color:var(--accent);color:var(--accent)}
+.audbar .ab-btn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.audbar .ab-seek{flex:1 1 160px;min-width:120px;height:22px;margin:0;accent-color:var(--accent);cursor:pointer;
+  -webkit-appearance:none;appearance:none;background:transparent}
+.audbar .ab-seek::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--ab-track,var(--line))}
+.audbar .ab-seek::-moz-range-track{height:6px;border-radius:3px;background:var(--ab-track,var(--line))}
+.audbar .ab-seek::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-5px;border-radius:50%;background:var(--accent);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.audbar .ab-seek::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid #fff}
+.audbar .ab-time{font-size:11.5px;color:var(--soft);font-variant-numeric:tabular-nums;flex:0 0 auto;min-width:92px;text-align:center}
+.audbar .ab-lbl{flex:1 1 100%;font-size:11.5px;color:var(--soft);display:flex;gap:8px;align-items:center;flex-wrap:wrap;line-height:1.35}
+.audbar .ab-lbl b{color:var(--ink);font-weight:700}
+.audbar .ab-lbl .ab-follow{background:var(--accent);color:#fff;border:0;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:pointer}
+.audbar .ab-buf{color:var(--accent);font-weight:700}
+.audnote{max-width:1080px;margin:0 auto;padding:9px 20px 0;font-family:var(--sans);font-size:12.5px;line-height:1.4;color:var(--ink)}
+.audnote > div{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:8px 12px;display:flex;gap:10px;align-items:flex-start}
+.audnote button{margin-left:auto;background:none;border:0;color:var(--soft);font-size:15px;cursor:pointer;line-height:1;padding:0 2px}
+@media (max-width:520px){ .audbar{padding:8px 12px 0} .audbar .ab-time{min-width:78px;font-size:11px} .audnote{padding:8px 12px 0} }
 .fabnotes{position:fixed;right:14px;bottom:118px;z-index:55;opacity:0;pointer-events:none;transform:translateY(8px);
   transition:opacity .25s ease,transform .25s ease;font-family:var(--sans);font-size:12.5px;font-weight:600;max-width:60vw;
   background:var(--panel);color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:10px 15px;
@@ -752,12 +772,13 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <script src="data/commentary.js"></script>
 <script src="data/refined.js"></script>
 <script src="data/chronological.js"></script>
+<script src="data/audio_kjv.js"></script>
 
 <script>
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.40.0', date:'15 Aug 2026'};
+const BUILD={v:'0.41.0', date:'15 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -1102,7 +1123,14 @@ function _rdSavePos(){ if(!_rdState) return; try{ const m=_rdPosAll();
 function _rdClearPos(key){ try{ const m=_rdPosAll(); delete m[key];
   localStorage.setItem('nok_rdpos',JSON.stringify(m)); }catch(e){} }
 function _rdKey(){ return window.BOOKS[state.book].name+'|'+state.chapter; }
+/* Listen button. Human narration (LibriVox KJV audio) is the default; the device voice
+   is used when the reader chooses it, or as a fallback when the audio can't load. */
 function readChapterAloud(){
+  if(_rdState){ if(_rdState.paused) resumeReadAloud(); else pauseReadAloud(); return; }
+  if(AUD.key){ if(AUD.el&&AUD.el.paused) audResume(); else audPause(); return; }
+  if(narrPref()==='human'&&window.AUDIO_KJV){ audPlay(window.BOOKS[state.book].name,state.chapter); return; }
+  readChapterTTS(); }
+function readChapterTTS(){
   if(_rdState){ if(_rdState.paused) resumeReadAloud(); else pauseReadAloud(); return; }
   if(!window.speechSynthesis){ toast('Read-aloud isn’t supported on this device'); return; }
   const name=window.BOOKS[state.book].name, ch=state.chapter;
@@ -1152,18 +1180,140 @@ function resumeReadAloud(){ if(!_rdState||!_rdState.paused) return;
 /* Called with no argument when the reader simply navigates away — the place is kept,
    so coming back and tapping Listen continues. The ⏹ button passes true to start over. */
 function stopReadAloud(reset){
+  if(AUD.key){ audStop(reset); }
   if(_rdState){ _rdState.seq++; if(reset) _rdClearPos(_rdState.key); else _rdSavePos(); }
+  const wasTTS=!!_rdState;
   _rdState=null; try{ speechSynthesis.cancel(); }catch(e){}
   document.querySelectorAll('.verse.reading').forEach(e=>e.classList.remove('reading'));
-  _rdSyncBtn(); if(reset) toast('Stopped — next time starts at verse 1'); }
+  if(reset&&AUD.note) AUD.note=null;
+  _rdSyncBtn(); if(reset&&wasTTS) toast('Stopped — next time starts at verse 1'); }
 function _rdSyncBtn(){
   const b=document.getElementById('readAloudBtn'), s=document.getElementById('rdStopBtn');
-  const on=!!_rdState;
-  if(b){ b.innerHTML = !on ? '▶︎ Listen' : (_rdState.paused ? '▶︎ Resume' : '❚❚ Pause');
-    b.classList.toggle('primary',on&&!_rdState.paused); }
+  const tts=!!_rdState, aud=!!AUD.key, on=tts||aud;
+  const paused = tts ? _rdState.paused : (aud ? !!(AUD.el&&AUD.el.paused&&!AUD.loading) : false);
+  if(b){ b.innerHTML = !on ? '▶︎ Listen' : (paused ? '▶︎ Resume' : (aud&&AUD.loading ? '… Loading' : '❚❚ Pause'));
+    b.classList.toggle('primary',on&&!paused); }
   if(s) s.style.display = on ? '' : 'none';
-  if(on&&_rdState.key===_rdKey()){ const el=document.getElementById('v'+_rdState.vs[_rdState.i]);
-    if(el) el.classList.add('reading'); } }
+  if(tts&&_rdState.key===_rdKey()){ const el=document.getElementById('v'+_rdState.vs[_rdState.i]);
+    if(el) el.classList.add('reading'); }
+  _audRender(); }
+
+/* ---------- Human narration: LibriVox "Bible (KJV), Complete", read by Michael Armenta (public domain) ----------
+   data/audio_kjv.js maps every chapter to one of 127 mp3s on archive.org. Each mp3 covers several
+   chapters, so the chapter's start time is an ESTIMATE from the KJV text length — the reader can
+   scrub, and 📍 "Chapter starts here" saves the true start for next time (nok_audfix). */
+const AUD={el:null,key:null,book:null,ch:0,info:null,loading:false,note:null,seekTo:null,timer:null,lastSave:0,here:null};
+function narrPref(){ try{ return localStorage.getItem('nok_narr')||'human'; }catch(e){ return 'human'; } }
+function setNarrPref(p){ try{ localStorage.setItem('nok_narr',p); }catch(e){}
+  stopReadAloud(); AUD.note=null; _audRender();
+  toast(p==='human'?'Listen will play human narration (LibriVox KJV)':'Listen will use your device’s voice'); }
+function _audFixAll(){ try{ return JSON.parse(localStorage.getItem('nok_audfix')||'{}'); }catch(e){ return {}; } }
+function _audPosAll(){ try{ return JSON.parse(localStorage.getItem('nok_audpos')||'{}'); }catch(e){ return {}; } }
+function _audSavePos(t){ if(!AUD.key) return; try{ const m=_audPosAll(); m[AUD.key]=Math.round(t*10)/10;
+  const k=Object.keys(m); if(k.length>60) delete m[k[0]]; localStorage.setItem('nok_audpos',JSON.stringify(m)); }catch(e){} }
+function _audClearPos(key){ try{ const m=_audPosAll(); delete m[key]; localStorage.setItem('nok_audpos',JSON.stringify(m)); }catch(e){} }
+/* Where a chapter lives: {n,url,start,end,dur,file,book,ch,fixed} — start/end are seconds into the mp3 */
+function audInfo(name,ch){ const A=window.AUDIO_KJV; if(!A||!A.chapters[name]) return null;
+  const c=A.chapters[name][String(ch)]; if(!c) return null; const f=A.files[c[0]]; if(!f) return null;
+  const fix=_audFixAll(); const key=name+'|'+ch;
+  const start = fix[key]!=null ? fix[key] : c[1];
+  let end=f.dur-3;
+  if(ch<f.to){ const n=A.chapters[name][String(ch+1)]; const nk=name+'|'+(ch+1); end = fix[nk]!=null ? fix[nk] : n[1]; }
+  return {n:c[0],url:A.base+A.file(c[0]),start:start,end:Math.max(end,start+5),dur:f.dur,file:f,book:name,ch:ch,fixed:fix[key]!=null}; }
+function _audEl(){ if(AUD.el) return AUD.el;
+  const a=document.createElement('audio'); a.preload='none'; a.style.display='none'; a.setAttribute('playsinline',''); document.body.appendChild(a);
+  a.addEventListener('loadedmetadata',()=>{ if(AUD.seekTo!=null){ try{ a.currentTime=AUD.seekTo; }catch(e){} AUD.seekTo=null; } });
+  a.addEventListener('playing',()=>{ AUD.loading=false; clearTimeout(AUD.timer); AUD.timer=null; AUD.buffering=false; _rdSyncBtn(); _audMedia(); });
+  a.addEventListener('waiting',()=>{ AUD.buffering=true; _audRender(); });
+  a.addEventListener('pause',()=>{ if(AUD.key){ _audSavePos(a.currentTime); _rdSyncBtn(); } });
+  a.addEventListener('timeupdate',()=>{ if(!AUD.key) return; _audTick(a.currentTime); });
+  a.addEventListener('ended',()=>{ if(!AUD.key) return; const k=AUD.key; audStop(false); _audClearPos(k);
+    toast('End of this recording — tap Next → and Listen to carry on'); });
+  a.addEventListener('error',()=>{ if(AUD.key) _audFallback('error'); });
+  a.addEventListener('stalled',()=>{ if(AUD.key&&AUD.loading&&!AUD.timer) AUD.timer=setTimeout(()=>_audFallback('timeout'),12000); });
+  return AUD.el=a; }
+function audPlay(name,ch){
+  const info=audInfo(name,ch);
+  if(!info){ _audFallback('nomap'); return; }
+  if(navigator.onLine===false){ _audFallback('offline'); return; }
+  if(_rdState){ _rdState.seq++; _rdState=null; try{ speechSynthesis.cancel(); }catch(e){} document.querySelectorAll('.verse.reading').forEach(e=>e.classList.remove('reading')); }
+  const a=_audEl(); const key=name+'|'+ch;
+  const saved=_audPosAll()[key];
+  let t=info.start; if(typeof saved==='number'&&saved>info.start+3&&saved<info.end-3){ t=saved; toast('Picking up where you left off'); }
+  AUD.key=key; AUD.book=name; AUD.ch=ch; AUD.info=info; AUD.loading=true; AUD.here=ch; AUD.note=null; AUD.buffering=false;
+  const sameFile = a.getAttribute('data-n')===String(info.n) && a.readyState>0;
+  if(sameFile){ try{ a.currentTime=Math.min(t,(a.duration||Infinity)-2); }catch(e){ AUD.seekTo=t; } }
+  else { a.setAttribute('data-n',String(info.n)); AUD.seekTo=t; a.src=info.url; a.load(); }
+  clearTimeout(AUD.timer); AUD.timer=setTimeout(()=>{ if(AUD.key===key&&AUD.loading) _audFallback('timeout'); },20000);
+  const p=a.play(); if(p&&p.catch) p.catch(err=>{ if(AUD.key===key&&AUD.loading&&!(err&&err.name==='AbortError')) _audFallback('error'); });
+  _rdSyncBtn(); }
+function audPause(){ const a=AUD.el; if(!a||!AUD.key) return; try{ a.pause(); }catch(e){} _audSavePos(a.currentTime); _rdSyncBtn();
+  toast('Paused — tap Resume to carry on from here'); }
+function audResume(){ const a=AUD.el; if(!a||!AUD.key) return; if(navigator.onLine===false){ toast('You’re offline — narration will resume when you reconnect'); }
+  const p=a.play(); if(p&&p.catch) p.catch(()=>{}); _rdSyncBtn(); }
+/* reset=true → forget the place (⏹); otherwise keep it so Listen picks up here later */
+function audStop(reset){ const a=AUD.el, key=AUD.key; if(!key) return;
+  clearTimeout(AUD.timer); AUD.timer=null;
+  if(a){ if(!reset&&!a.paused) _audSavePos(a.currentTime); try{ a.pause(); }catch(e){} }
+  if(reset){ _audClearPos(key); toast('Stopped — next time starts at the top of the chapter'); }
+  AUD.key=null; AUD.book=null; AUD.ch=0; AUD.info=null; AUD.loading=false; AUD.buffering=false; AUD.here=null;
+  try{ if(navigator.mediaSession) navigator.mediaSession.playbackState='none'; }catch(e){}
+  _audRender(); }
+function audSkip(d){ const a=AUD.el; if(!a||!AUD.key) return; try{ a.currentTime=Math.max(0,Math.min((a.duration||AUD.info.dur)-1,a.currentTime+d)); }catch(e){} _audRender(); }
+function audSeek(v){ const a=AUD.el; if(!a||!AUD.key) return; try{ a.currentTime=parseFloat(v)||0; }catch(e){ AUD.seekTo=parseFloat(v)||0; } _audRender(); }
+/* 📍 The reader has found the real start of the chapter — remember it (also fixes the previous chapter's end) */
+function audMarkStart(){ const a=AUD.el; if(!a||!AUD.key||!AUD.info) return;
+  const t=Math.round(a.currentTime*10)/10; const key=AUD.book+'|'+AUD.ch;
+  try{ const m=_audFixAll(); m[key]=t; localStorage.setItem('nok_audfix',JSON.stringify(m)); }catch(e){}
+  AUD.info=audInfo(AUD.book,AUD.ch); AUD.here=AUD.ch; _audRender();
+  toast('Saved — '+AUD.book+' '+AUD.ch+' now starts at '+_fmtT(t)); }
+function audUnmark(){ if(!AUD.key) return; const key=AUD.book+'|'+AUD.ch;
+  try{ const m=_audFixAll(); delete m[key]; localStorage.setItem('nok_audfix',JSON.stringify(m)); }catch(e){}
+  AUD.info=audInfo(AUD.book,AUD.ch); _audRender(); toast('Back to the estimated chapter start'); }
+function _audTick(t){ const now=Date.now(); if(now-AUD.lastSave>4000){ AUD.lastSave=now; _audSavePos(t); }
+  // which chapter is the narrator (probably) in right now?
+  const A=window.AUDIO_KJV, f=AUD.info.file; let here=AUD.ch;
+  for(let c=f.from;c<=f.to;c++){ const i=(c===AUD.ch)?AUD.info:audInfo(AUD.book,c); if(i&&t>=i.start-0.5) here=c; }
+  if(here!==AUD.here){ AUD.here=here; _audRender(); } else _audRenderTime(t); }
+function _audFallback(reason){
+  const name=AUD.book||window.BOOKS[state.book].name, ch=AUD.ch||state.chapter;
+  if(AUD.key){ const a=AUD.el; clearTimeout(AUD.timer); AUD.timer=null; try{ a.pause(); a.removeAttribute('src'); a.removeAttribute('data-n'); a.load(); }catch(e){}
+    AUD.key=null; AUD.info=null; AUD.loading=false; AUD.here=null; }
+  AUD.note = reason==='offline' ? 'You’re offline, so the human narration can’t stream right now — your device’s voice is reading instead. Narration comes back when you reconnect.'
+           : reason==='nomap'  ? 'There’s no recording for this chapter, so your device’s voice is reading instead.'
+           : 'The human narration couldn’t be loaded just now (slow connection, or archive.org is busy) — your device’s voice is reading instead. Tap ⏹ and Listen again to retry.';
+  if(state.view==='read'&&window.BOOKS[state.book].name===name&&state.chapter===ch){ readChapterTTS(); }
+  _rdSyncBtn(); }
+function _fmtT(s){ s=Math.max(0,Math.floor(s||0)); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60;
+  return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0'); }
+function _audMedia(){ try{ if(!navigator.mediaSession||!AUD.key) return;
+  navigator.mediaSession.metadata=new MediaMetadata({title:AUD.book+' '+AUD.ch+' (KJV)',artist:'Read by Michael Armenta · LibriVox',album:'Never Get Bored — Nii Okai’s Journal'});
+  navigator.mediaSession.setActionHandler('play',()=>audResume()); navigator.mediaSession.setActionHandler('pause',()=>audPause());
+  navigator.mediaSession.setActionHandler('seekbackward',()=>audSkip(-15)); navigator.mediaSession.setActionHandler('seekforward',()=>audSkip(30));
+  navigator.mediaSession.playbackState='playing'; }catch(e){} }
+function _audRenderTime(t){ const el=document.getElementById('abTime'), r=document.getElementById('abSeek');
+  if(el) el.textContent=_fmtT(t)+' / '+_fmtT((AUD.el&&AUD.el.duration)||AUD.info.dur);
+  if(r&&document.activeElement!==r) r.value=t; }
+/* The player strip + fallback note live in #audbar / #audnote inside the reading footer */
+function _audRender(){ const bar=document.getElementById('audbar'), nt=document.getElementById('audnote');
+  if(nt){ nt.innerHTML = AUD.note ? `<div><span>🎧 ${AUD.note}</span><button onclick="AUD.note=null;_audRender()" title="Dismiss">✕</button></div>` : ''; nt.style.display=AUD.note?'':'none'; }
+  if(!bar) return;
+  if(!AUD.key||!AUD.info){ bar.innerHTML=''; bar.style.display='none'; return; }
+  const a=AUD.el, info=AUD.info, dur=(a&&a.duration)||info.dur, t=a?a.currentTime:info.start;
+  const A=window.AUDIO_KJV; const p1=Math.round(info.start/dur*1000)/10, p2=Math.round(Math.min(info.end,dur)/dur*1000)/10;
+  const track=`linear-gradient(90deg,var(--line) ${p1}%,var(--accent-soft) ${p1}%,var(--accent-soft) ${p2}%,var(--line) ${p2}%)`;
+  const following = AUD.here!==AUD.ch && AUD.here!=null;
+  const nextIsNextChapter = following && AUD.here===AUD.ch+1 && state.view==='read' && window.BOOKS[state.book].name===AUD.book && state.chapter===AUD.ch;
+  bar.style.display='';
+  bar.innerHTML=`<button class="ab-btn" onclick="audSkip(-15)" title="Back 15 seconds">⏪ 15</button>
+    <button class="ab-btn" onclick="audSkip(30)" title="Forward 30 seconds">30 ⏩</button>
+    <input type="range" class="ab-seek" id="abSeek" min="0" max="${Math.floor(dur)}" step="1" value="${Math.floor(t)}" style="--ab-track:${track}"
+      oninput="_audRenderTime(this.value)" onchange="audSeek(this.value)" title="This recording covers ${escHTML(info.file.book)} ${info.file.from}${info.file.to>info.file.from?'–'+info.file.to:''} — the shaded part is roughly ${escHTML(AUD.book)} ${AUD.ch}">
+    <span class="ab-time" id="abTime">${_fmtT(t)} / ${_fmtT(dur)}</span>
+    <button class="ab-btn${info.fixed?' on':''}" onclick="${info.fixed?'audUnmark()':'audMarkStart()'}" title="${info.fixed?'You marked the exact start of this chapter — tap to go back to the estimate':'Hearing the narrator begin this chapter? Tap to remember this as its exact start'}">📍 ${info.fixed?'Start saved':'Chapter starts here'}</button>
+    <span class="ab-lbl">${AUD.loading?'<span class="ab-buf">Loading narration…</span>':AUD.buffering?'<span class="ab-buf">Buffering…</span>':''}
+      🎧 <b>${escHTML(AUD.book)} ${AUD.ch}</b> · read by ${escHTML(A.reader)} · LibriVox (public domain)${info.fixed?'':' · start is estimated — nudge with ⏪ ⏩'}
+      ${following?`<span>· narrator is now in <b>${escHTML(AUD.book)} ${AUD.here}</b></span>${nextIsNextChapter?`<button class="ab-follow" onclick="nextChapter()">Follow →</button>`:''}`:''}</span>`; }
 /* ---------- Text size ---------- */
 function applyFont(){ const f=parseFloat(localStorage.getItem('nok_fs')||'1'); document.documentElement.style.setProperty('--fs',f); }
 function setFont(d){ let f=parseFloat(localStorage.getItem('nok_fs')||'1');
@@ -1585,6 +1735,7 @@ function _karStart(a){ if(state.view!=='about') return; _karPrep();
   a.addEventListener('ended',_karClear,{once:true}); }
 function playWelcomeAudio(){
   const a=document.getElementById('welcomeAudio'), btn=document.getElementById('welcomeAudioBtn');
+  if(AUD.key&&AUD.el&&!AUD.el.paused) audPause();           // don't talk over the chapter narration
   if(window.speechSynthesis&&speechSynthesis.speaking){ speechSynthesis.cancel(); if(btn)btn.textContent='▶︎ Listen in Nii Okai’s voice'; return; }
   if(a){ if(!a.paused){ a.pause(); a.currentTime=0; _karClear(); if(btn)btn.textContent='▶︎ Listen in Nii Okai’s voice'; return; }
     const onPlay=()=>{ if(btn)btn.textContent='❚❚ Pause'; _karStart(a); a.onended=()=>{ if(btn)btn.textContent='▶︎ Listen in Nii Okai’s voice'; }; };
@@ -1605,6 +1756,15 @@ function _ttsWelcome(btn){
 function renderRead(){
   if(state.compare && !(window.BIBLE&&window.BIBLE[state.compare])){ ensureVersion(state.compare, renderRead); }
   if(_rdState&&_rdState.key!==_rdKey()) stopReadAloud();   // moved to another chapter — keep the old place, stop reading
+  if(AUD.key&&AUD.key!==_rdKey()){                          // narration: same recording → keep playing, just retarget; else stop, keep place
+    const nm=window.BOOKS[state.book].name, ni=audInfo(nm,state.chapter);
+    if(ni&&AUD.info&&ni.n===AUD.info.n){ AUD.key=_rdKey(); AUD.book=nm; AUD.ch=state.chapter; AUD.info=ni; AUD.here=null;
+      const a=AUD.el, t=a?a.currentTime:0;
+      if(t<ni.start-1||t>ni.end+1){                          // jumped to a chapter the narrator isn't in — seek there
+        const sv=_audPosAll()[AUD.key]; const tt=(typeof sv==='number'&&sv>ni.start+3&&sv<ni.end-3)?sv:ni.start;
+        try{ a.currentTime=Math.min(tt,(a.duration||Infinity)-2); }catch(e){ AUD.seekTo=tt; } }
+      _audMedia(); }
+    else audStop(false); }
   const book=window.BOOKS[state.book], name=book.name, ch=state.chapter;
   const nch=book.chapters.length;
   document.getElementById('crumb').innerHTML=`${name} ${ch} <span class="caret">▾</span>`;
@@ -1684,7 +1844,7 @@ function renderRead(){
       <button onclick="nextChapter()" ${state.book===window.BOOKS.length-1&&ch===nch?'disabled':''}>Next →</button></div>`;
   }
   const r=document.getElementById('reader'); r.innerHTML=html; r.scrollTop=0;
-  const foot=document.getElementById('readfoot'); foot.innerHTML=nav; foot.style.display='';
+  const foot=document.getElementById('readfoot'); foot.innerHTML=`<div class="audnote" id="audnote" style="display:none"></div><div class="audbar" id="audbar" style="display:none"></div>`+nav; foot.style.display='';
   fillVoiceSel(); _rdSyncBtn();
   if(typeof _fabSync==='function')_fabSync();
   buildBookList();
@@ -1868,7 +2028,12 @@ function tbMoreMenu(ev){ ev.stopPropagation(); closeVerseMenu();
   const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu';
   const dark=document.documentElement.dataset.theme==='dark';
   const rd=state.view==='read';
-  m.innerHTML=`${rd?`<div class="vm-sec">🎙 Reading voice</div>
+  const np=narrPref();
+  m.innerHTML=`${rd?`${window.AUDIO_KJV?`<div class="vm-sec">🎧 Listen with</div>
+    <select class="btn vsel vm-voice" id="narrSel" onchange="setNarrPref(this.value)">
+      <option value="human" ${np==='human'?'selected':''}>Human narration — KJV, LibriVox</option>
+      <option value="device" ${np==='device'?'selected':''}>Device voice (works offline)</option></select>`:''}
+    <div class="vm-sec">🎙 Device voice</div>
     <select class="btn vsel vm-voice" id="voiceSel" onchange="setVoicePref(this.value)"></select>
     <div class="vm-sec">Text size</div>
     <div class="vm-row"><button onclick="setFont(-0.08)">A−</button><button onclick="setFont(0.08)">A+</button></div>
