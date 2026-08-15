@@ -755,7 +755,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.32.0', date:'30 Jul 2026'};
+const BUILD={v:'0.40.0', date:'15 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -2271,6 +2271,24 @@ function discSend(){ const el=document.getElementById('discQ'); const t=(el&&el.
     const sel=window.getSelection&&window.getSelection(); if(sel&&!sel.isCollapsed) return;
     if(dx<0) nextChapter(); else prevChapter(); },{passive:true});
 })();
+/* Desktop: two-finger horizontal swipe on a trackpad, or ← → keys, change chapter */
+(function(){ const rd=document.getElementById('reader'); if(!rd) return;
+  let acc=0,lock=0,tmr=0;
+  rd.addEventListener('wheel',e=>{
+    if(state.view!=='read'||state.plan) return;
+    if(Math.abs(e.deltaX)<=Math.abs(e.deltaY)*1.5) { acc=0; return; }   // mostly vertical → normal scroll
+    const now=Date.now(); if(now<lock) return;
+    acc+=e.deltaX; clearTimeout(tmr); tmr=setTimeout(()=>{acc=0;},220);
+    if(Math.abs(acc)>=160){ lock=now+900; acc=0; if(e.deltaX>0) nextChapter(); else prevChapter(); }
+  },{passive:true});
+  document.addEventListener('keydown',e=>{
+    if(state.view!=='read'||state.plan) return;
+    const t=e.target; if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    if(e.key==='ArrowRight'){ nextChapter(); e.preventDefault(); }
+    else if(e.key==='ArrowLeft'){ prevChapter(); e.preventDefault(); }
+  });
+})();
 /* Floating pill — appears once you scroll into a commented chapter, stays until you
    leave, and flips label with the commentary state. */
 function _fabSync(){ const f=document.getElementById('fabNotes'); if(!f) return;
@@ -2466,7 +2484,14 @@ window.addEventListener('load',()=>{ setTimeout(()=>{
 </script>
 <script>
 if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').then(reg=>{
+      try{ reg.update(); setInterval(()=>reg.update(),30*60*1000); }catch(e){}
+      reg.addEventListener('updatefound',()=>{ const nw=reg.installing; if(!nw) return;
+        nw.addEventListener('statechange',()=>{ if(nw.state==='installed'&&navigator.serviceWorker.controller){ try{ nw.postMessage('skipWaiting'); }catch(e){} } }); });
+    }).catch(()=>{});
+    let _rl=false; navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_rl) return; _rl=true; location.reload(); });
+  });
 }
 /* ---- Update alert: tell the reader when a new version has been deployed ---- */
 let _updTag=null,_updShown=false;
