@@ -779,7 +779,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.43.0', date:'15 Aug 2026'};
+const BUILD={v:'0.44.0', date:'15 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -1210,26 +1210,38 @@ function _rdSyncBtn(){
    • "device" — speechSynthesis (readChapterTTS), also the fallback when audio can't load.           */
 const AUD={el:null,src:null,key:null,book:null,ch:0,info:null,loading:false,note:null,seekTo:null,timer:null,lastSave:0,here:null,vlast:null,vcache:null,buffering:false};
 function narrPref(){ try{ return localStorage.getItem('nok_narr')||'studio'; }catch(e){ return 'studio'; } }
-function setNarrPref(p){ try{ localStorage.setItem('nok_narr',p); }catch(e){}
+/* Studio voice choice: 'george' (default, male) | 'emma' (female) — whichever the map actually has */
+function studioVoicePref(){ const K=window.AUDIO_KOKORO; let v='george'; try{ v=localStorage.getItem('nok_studio_voice')||(K&&K.defaultVoice)||'george'; }catch(e){}
+  return v; }
+function studioVoices(){ const K=window.AUDIO_KOKORO; return (K&&K.voices)?Object.keys(K.voices):[]; }
+function studioVoiceName(v){ const K=window.AUDIO_KOKORO; const m=K&&K.voices&&K.voices[v]; return m?m.name:(v||'').replace(/^./,c=>c.toUpperCase()); }
+function setNarrPref(p){ let voice=null; if(p.indexOf('studio:')===0){ voice=p.slice(7); p='studio'; }
+  try{ localStorage.setItem('nok_narr',p); if(voice) localStorage.setItem('nok_studio_voice',voice); }catch(e){}
   stopReadAloud(); AUD.note=null; _audRender();
-  toast(p==='studio'?'Listen will use the Studio voice (George)':p==='human'?'Listen will play the human narration (LibriVox)':'Listen will use your device’s voice'); }
-function studioHas(name,ch){ const K=window.AUDIO_KOKORO; return !!(K&&K.chapters&&K.chapters[name]&&K.chapters[name][String(ch)]); }
+  toast(p==='studio'?'Listen will use the Studio voice — '+studioVoiceName(voice||studioVoicePref()):p==='human'?'Listen will play the human narration (LibriVox)':'Listen will use your device’s voice'); }
+function studioHas(name,ch,voice){ const K=window.AUDIO_KOKORO; if(!K||!K.voices) return false;
+  const V=K.voices[voice||studioVoicePref()]; return !!(V&&V.chapters&&V.chapters[name]&&V.chapters[name][String(ch)]); }
+/* The studio voice to use for this chapter: the preferred one if it has the chapter, else any voice that does */
+function studioVoiceFor(name,ch){ const p=studioVoicePref(); if(studioHas(name,ch,p)) return p;
+  for(const v of studioVoices()){ if(studioHas(name,ch,v)) return v; } return null; }
 /* Which recorded source Listen should use for this chapter, honouring the preference and what exists */
 function narrSourceFor(name,ch){ const p=narrPref();
   if(p==='device') return 'device';
-  if(p==='studio'&&studioHas(name,ch)) return 'studio';
+  if(p==='studio'&&studioVoiceFor(name,ch)) return 'studio';
   if(window.AUDIO_KJV&&audInfoHuman(name,ch)) return 'human';
-  if(studioHas(name,ch)) return 'studio';
+  if(studioVoiceFor(name,ch)) return 'studio';
   return 'device'; }
 function _audFixAll(){ try{ return JSON.parse(localStorage.getItem('nok_audfix')||'{}'); }catch(e){ return {}; } }
 function _audPosAll(){ try{ return JSON.parse(localStorage.getItem('nok_audpos')||'{}'); }catch(e){ return {}; } }
-function _audSavePos(t){ if(!AUD.key) return; try{ const m=_audPosAll(); m[AUD.src+':'+AUD.key]=Math.round(t*10)/10;
+function _posKey(src,key,voice){ return src+(src==='studio'&&voice?'-'+voice:'')+':'+key; }
+function _audSavePos(t){ if(!AUD.key) return; try{ const m=_audPosAll(); m[_posKey(AUD.src,AUD.key,AUD.voice)]=Math.round(t*10)/10;
   const k=Object.keys(m); if(k.length>80) delete m[k[0]]; localStorage.setItem('nok_audpos',JSON.stringify(m)); }catch(e){} }
-function _audClearPos(src,key){ try{ const m=_audPosAll(); delete m[src+':'+key]; localStorage.setItem('nok_audpos',JSON.stringify(m)); }catch(e){} }
+function _audClearPos(src,key,voice){ try{ const m=_audPosAll(); delete m[_posKey(src,key,voice)]; localStorage.setItem('nok_audpos',JSON.stringify(m)); }catch(e){} }
 /* Studio voice: {src:'studio', url, start:0, end:dur, dur, exact:[verse starts], book, ch} */
-function audInfoStudio(name,ch){ const K=window.AUDIO_KOKORO; if(!studioHas(name,ch)) return null;
-  const c=K.chapters[name][String(ch)]; const dur=c[0]/10;
-  return {src:'studio',n:null,url:K.base+K.tag(name)+'/'+K.file(name,ch),start:0,end:dur,dur:dur,file:null,book:name,ch:ch,fixed:false,exact:c[1].map(x=>x/10),reader:(K.voice||'George')+' · '+(K.engine||'Kokoro')}; }
+function audInfoStudio(name,ch,voice){ const K=window.AUDIO_KOKORO; voice=voice||studioVoiceFor(name,ch); if(!voice||!studioHas(name,ch,voice)) return null;
+  const V=K.voices[voice], c=V.chapters[name][String(ch)]; const dur=c[0]/10;
+  return {src:'studio',voice:voice,n:null,url:K.base+K.tag(voice,name)+'/'+K.file(name,ch),start:0,end:dur,dur:dur,file:null,book:name,ch:ch,fixed:false,exact:c[1].map(x=>x/10),
+          reader:V.name+' ('+(V.gender==='female'?'female':'male')+') · '+(K.engine||'Kokoro')}; }
 /* Human narration: where a chapter lives inside its LibriVox mp3 — start/end are seconds into the file */
 function audInfoHuman(name,ch){ const A=window.AUDIO_KJV; if(!A||!A.chapters[name]) return null;
   const c=A.chapters[name][String(ch)]; if(!c) return null; const f=A.files[c[0]]; if(!f) return null;
@@ -1259,10 +1271,11 @@ function audPlay(name,ch,src){
   if(navigator.onLine===false){ _audFallback('offline'); return; }
   if(_rdState){ _rdState.seq++; _rdState=null; try{ speechSynthesis.cancel(); }catch(e){} document.querySelectorAll('.verse.reading').forEach(e=>e.classList.remove('reading')); }
   const a=_audEl(); const key=name+'|'+ch;
-  const saved=_audPosAll()[src+':'+key];
+  const saved=_audPosAll()[_posKey(src,key,info.voice)];
   let t=info.start; if(typeof saved==='number'&&saved>info.start+3&&saved<info.end-3){ t=saved; toast('Picking up where you left off'); }
   if(narrPref()==='studio'&&src==='human'&&!AUD.note) AUD.note='The Studio voice isn’t ready for this chapter yet — playing the human narration (LibriVox) instead.';
-  AUD.src=src; AUD.key=key; AUD.book=name; AUD.ch=ch; AUD.info=info; AUD.loading=true; AUD.here=ch; AUD.buffering=false; AUD.vlast=null; AUD.vcache=null;
+  if(src==='studio'&&info.voice!==studioVoicePref()&&!AUD.note) AUD.note=studioVoiceName(studioVoicePref())+' hasn’t reached this chapter yet — '+studioVoiceName(info.voice)+' is reading it instead.';
+  AUD.src=src; AUD.voice=info.voice||null; AUD.key=key; AUD.book=name; AUD.ch=ch; AUD.info=info; AUD.loading=true; AUD.here=ch; AUD.buffering=false; AUD.vlast=null; AUD.vcache=null;
   const sameFile = a.getAttribute('data-src')===info.url && a.readyState>0;
   if(sameFile){ try{ a.currentTime=Math.min(t,(a.duration||Infinity)-2); }catch(e){ AUD.seekTo=t; } }
   else { a.setAttribute('data-src',info.url); AUD.seekTo=t>0?t:null; a.src=info.url; a.load(); }
@@ -1278,16 +1291,25 @@ function audResume(){ const a=AUD.el; if(!a||!AUD.key) return; if(navigator.onLi
 function audStop(reset){ const a=AUD.el, key=AUD.key, src=AUD.src; if(!key) return;
   clearTimeout(AUD.timer); AUD.timer=null;
   if(a){ if(!reset&&!a.paused) _audSavePos(a.currentTime); try{ a.pause(); }catch(e){} }
-  if(reset){ _audClearPos(src,key); toast('Stopped — next time starts at the top of the chapter'); }
-  AUD.src=null; AUD.key=null; AUD.book=null; AUD.ch=0; AUD.info=null; AUD.loading=false; AUD.buffering=false; AUD.here=null; AUD.vlast=null; AUD.vcache=null;
+  if(reset){ _audClearPos(src,key,AUD.voice); toast('Stopped — next time starts at the top of the chapter'); }
+  AUD.src=null; AUD.voice=null; AUD.key=null; AUD.book=null; AUD.ch=0; AUD.info=null; AUD.loading=false; AUD.buffering=false; AUD.here=null; AUD.vlast=null; AUD.vcache=null;
   document.querySelectorAll('.verse.reading').forEach(e=>e.classList.remove('reading'));
   try{ if(navigator.mediaSession) navigator.mediaSession.playbackState='none'; }catch(e){}
   _audRender(); }
 function audSkip(d){ const a=AUD.el; if(!a||!AUD.key) return; try{ a.currentTime=Math.max(0,Math.min((a.duration||AUD.info.dur)-1,a.currentTime+d)); }catch(e){} _audRender(); }
 function audSeek(v){ const a=AUD.el; if(!a||!AUD.key) return; try{ a.currentTime=parseFloat(v)||0; }catch(e){ AUD.seekTo=parseFloat(v)||0; } _audRender(); }
+/* ↔ swap George/Emma mid-chapter, landing on the same verse */
+function audSwitchVoice(){ if(AUD.src!=='studio'||!AUD.info) return; const other=studioVoices().find(v=>v!==AUD.voice); if(!other) return;
+  const name=AUD.book, ch=AUD.ch, t=AUD.el?AUD.el.currentTime:0; const v=_audVerseAt(t)||1;
+  try{ localStorage.setItem('nok_studio_voice',other); }catch(e){}
+  if(!studioHas(name,ch,other)){ toast(studioVoiceName(other)+' hasn’t reached this chapter yet — it will be used from the next chapter that has it'); _audRender(); return; }
+  const ni=audInfoStudio(name,ch,other); const tt=ni.exact[Math.max(0,v-1)]||0;
+  audStop(false); _audClearPos('studio',name+'|'+ch,other);
+  try{ const m=_audPosAll(); m[_posKey('studio',name+'|'+ch,other)]=Math.round(tt*10)/10; localStorage.setItem('nok_audpos',JSON.stringify(m)); }catch(e){}
+  audPlay(name,ch,'studio'); toast('Switched to '+studioVoiceName(other)); }
 /* End of a file: studio → straight on to the next chapter; human → the LibriVox section ended, carry on with the next chapter's file */
-function _audEnded(){ const src=AUD.src, key=AUD.key, book=AUD.book, ch=AUD.ch;
-  audStop(false); _audClearPos(src,key);
+function _audEnded(){ const src=AUD.src, key=AUD.key, book=AUD.book, ch=AUD.ch, voice=AUD.voice;
+  audStop(false); _audClearPos(src,key,voice);
   if(state.view!=='read'||state.plan||window.BOOKS[state.book].name!==book||state.chapter!==ch){ toast('Chapter finished'); return; }
   const last = state.book===window.BOOKS.length-1 && ch===window.BOOKS[state.book].chapters.length;
   if(last){ toast('You have reached the end of Revelation'); return; }
@@ -1361,7 +1383,7 @@ function _audFollowVerse(t,here,force){
 function _audFallback(reason){
   const name=AUD.book||window.BOOKS[state.book].name, ch=AUD.ch||state.chapter, src=AUD.src;
   if(AUD.key){ const a=AUD.el; clearTimeout(AUD.timer); AUD.timer=null; try{ a.pause(); a.removeAttribute('src'); a.removeAttribute('data-src'); a.load(); }catch(e){}
-    AUD.src=null; AUD.key=null; AUD.info=null; AUD.loading=false; AUD.here=null; AUD.vlast=null; }
+    AUD.src=null; AUD.voice=null; AUD.key=null; AUD.info=null; AUD.loading=false; AUD.here=null; AUD.vlast=null; }
   // Studio voice failed for a reason other than being offline → try the human narration before giving up on audio
   if(src==='studio'&&reason!=='offline'&&window.AUDIO_KJV&&audInfoHuman(name,ch)&&state.view==='read'&&window.BOOKS[state.book].name===name&&state.chapter===ch){
     AUD.note='The Studio voice couldn’t be loaded just now — playing the human narration (LibriVox) instead.';
@@ -1374,7 +1396,7 @@ function _audFallback(reason){
 function _fmtT(s){ s=Math.max(0,Math.floor(s||0)); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60;
   return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0'); }
 function _audMedia(){ try{ if(!navigator.mediaSession||!AUD.key) return;
-  navigator.mediaSession.metadata=new MediaMetadata({title:AUD.book+' '+AUD.ch+' (KJV)',artist:AUD.src==='studio'?'Studio voice · George (Kokoro)':'Read by Michael Armenta · LibriVox',album:'Never Get Bored — Nii Okai’s Journal'});
+  navigator.mediaSession.metadata=new MediaMetadata({title:AUD.book+' '+AUD.ch+' (KJV)',artist:AUD.src==='studio'?'Studio voice · '+studioVoiceName(AUD.voice)+' (Kokoro)':'Read by Michael Armenta · LibriVox',album:'Never Get Bored — Nii Okai’s Journal'});
   navigator.mediaSession.setActionHandler('play',()=>audResume()); navigator.mediaSession.setActionHandler('pause',()=>audPause());
   navigator.mediaSession.setActionHandler('seekbackward',()=>audSkip(-15)); navigator.mediaSession.setActionHandler('seekforward',()=>audSkip(30));
   navigator.mediaSession.playbackState='playing'; }catch(e){} }
@@ -1396,6 +1418,7 @@ function _audRender(){ const bar=document.getElementById('audbar'), nt=document.
   bar.style.display='';
   bar.innerHTML=`<button class="ab-btn" onclick="audSkip(-15)" title="Back 15 seconds">⏪ 15</button>
     <button class="ab-btn" onclick="audSkip(30)" title="Forward 30 seconds">30 ⏩</button>
+    ${!human&&studioVoices().length>1?(()=>{ const o=studioVoices().find(v=>v!==AUD.voice)||AUD.voice, V=window.AUDIO_KOKORO.voices[o]; return `<button class="ab-btn" onclick="audSwitchVoice()" title="Switch to the ${V.gender==='female'?'female':'male'} Studio voice (${escHTML(V.name)}) — carries on at the same verse">${V.gender==='female'?'👩':'👨'} ${escHTML(V.name)}</button>`; })():''}
     <input type="range" class="ab-seek" id="abSeek" min="0" max="${Math.floor(dur)}" step="1" value="${Math.floor(t)}" style="--ab-track:${track}"
       oninput="_audRenderTime(this.value)" onchange="audSeek(this.value)" title="${human?`This recording covers ${escHTML(info.file.book)} ${info.file.from}${info.file.to>info.file.from?'–'+info.file.to:''} — the shaded part is roughly ${escHTML(AUD.book)} ${AUD.ch}`:`${escHTML(AUD.book)} ${AUD.ch}`}">
     <span class="ab-time" id="abTime">${_fmtT(t)} / ${_fmtT(dur)}</span>
@@ -2122,7 +2145,7 @@ function tbMoreMenu(ev){ ev.stopPropagation(); closeVerseMenu();
   const np=narrPref();
   m.innerHTML=`${rd?`${(window.AUDIO_KJV||window.AUDIO_KOKORO)?`<div class="vm-sec">🎧 Listen with</div>
     <select class="btn vsel vm-voice" id="narrSel" onchange="setNarrPref(this.value)">
-      ${window.AUDIO_KOKORO?`<option value="studio" ${np==='studio'?'selected':''}>Studio voice — George (clear, verse-exact)</option>`:''}
+      ${studioVoices().map(v=>{ const V=window.AUDIO_KOKORO.voices[v]; return `<option value="studio:${v}" ${np==='studio'&&studioVoicePref()===v?'selected':''}>Studio voice — ${escHTML(V.name)} (${V.gender==='female'?'female':'male'}, verse-exact)</option>`; }).join('')}
       ${window.AUDIO_KJV?`<option value="human" ${np==='human'?'selected':''}>Human narration — LibriVox (Michael Armenta)</option>`:''}
       <option value="device" ${np==='device'?'selected':''}>Device voice (works offline)</option></select>`:''}
     <div class="vm-sec">🎙 Device voice</div>
