@@ -782,7 +782,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.50.0', date:'21 Aug 2026'};
+const BUILD={v:'0.51.0', date:'21 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -1135,6 +1135,7 @@ function readChapterAloud(ev){
   listenMenu(ev); }
 /* Nothing playing yet → let the reader pick a voice (the choice is remembered) */
 function listenMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
+  if(window._vClosedFor==='listen') return;                                  // the tap that closed it also triggered this
   const ex=document.getElementById('vmenu');
   if(ex&&ex.dataset.vfor==='listen'){ closeVerseMenu(); return; }            // Listen tapped again → close the picker
   closeVerseMenu();
@@ -1147,7 +1148,7 @@ function listenMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
   KNOWN.forEach(k=>{ const V=window.AUDIO_KOKORO&&window.AUDIO_KOKORO.voices&&window.AUDIO_KOKORO.voices[k.key];
     list.push(V?{key:k.key,name:V.name,gender:V.gender,have:true}:{key:k.key,name:k.name,gender:k.gender,have:false}); seen[k.key]=1; });
   studioVoices().forEach(vc=>{ if(!seen[vc]){ const V=window.AUDIO_KOKORO.voices[vc]; list.push({key:vc,name:V.name,gender:V.gender,have:true}); } });
-  if(window.AUDIO_KOKORO) list.forEach(V=>{
+  list.forEach(V=>{
     const tag = !V.have ? ' <span style="color:var(--soft);font-size:11px">(coming soon)</span>'
               : (studioHas(nm,ch,V.key)?'':' <span style="color:var(--soft);font-size:11px">(not this chapter yet)</span>');
     h+=`<button onclick="listenStart(event,'studio:${V.key}')">${V.gender==='female'?'👩':'👨'} Studio voice — ${escHTML(V.name)}${np==='studio'&&sv===V.key?' ✓':''}${tag}</button>`; });
@@ -1163,9 +1164,13 @@ function listenMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
 function listenStart(ev,p){ if(ev&&ev.stopPropagation) ev.stopPropagation(); closeVerseMenu();
   let voice=null; if(p.indexOf('studio:')===0){ voice=p.slice(7); p='studio'; }
   try{ localStorage.setItem('nok_narr',p); if(voice) localStorage.setItem('nok_studio_voice',voice); }catch(e){}
-  const nm=window.BOOKS[state.book].name, ch=state.chapter;
-  const src=narrSourceFor(nm,ch);
-  if(src==='device') readChapterTTS(); else audPlay(nm,ch); }
+  const go=()=>{ const nm=window.BOOKS[state.book].name, ch=state.chapter;
+    const src=narrSourceFor(nm,ch);
+    if(src==='device') readChapterTTS(); else audPlay(nm,ch); };
+  if(p==='studio'&&!window.AUDIO_KOKORO){                                    // map script never loaded (stale cache) — fetch it now
+    const sc=document.createElement('script'); sc.src='data/audio_kokoro.js?r='+Date.now();
+    sc.onload=go; sc.onerror=go; document.head.appendChild(sc); return; }
+  go(); }
 function readChapterTTS(){
   if(_rdState){ if(_rdState.paused) resumeReadAloud(); else pauseReadAloud(); return; }
   if(!window.speechSynthesis){ toast('Read-aloud isn’t supported on this device'); return; }
@@ -1177,11 +1182,22 @@ function readChapterTTS(){
   const key=name+'|'+ch, saved=_rdPosAll()[key];
   let i=0,off=0;
   if(saved&&saved.i>0&&saved.i<vs.length){ i=saved.i; off=saved.off||0; }
-  _rdState={i:i,off:off,vs:vs,verses:verses,key:key,paused:false,seq:0};
+  _rdState={i:i,off:off,vs:vs,verses:verses,key:key,paused:false,seq:0,
+    notes:(typeof DATA!=='undefined'&&DATA[name]&&DATA[name][String(ch)])||{}};
   if(i>0) toast('Picking up where you left off — verse '+vs[i]);
   _rdSyncBtn(); _rdNext(); }
+/* Make journal text speakable: drop links, markdown marks and emoji; soften ALL-CAPS words */
+function _ttsClean(t){ t=String(t||'');
+  t=t.replace(/https?:\/\/\S+/g,' ');
+  t=t.replace(/[\*_#>`~^|]+/g,' ').replace(/[\[\]{}<>]/g,' ');
+  t=t.replace(/LORD/g,'Lord').replace(/\bGOD\b/g,'God').replace(/\b([A-Z]{3,})\b/g,w=>w.charAt(0)+w.slice(1).toLowerCase());
+  t=t.replace(/[\u{1F000}-\u{1FAFF}\u{2190}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu,' ');
+  return t.replace(/\s+/g,' ').trim(); }
 function _rdVerseText(){ const v=_rdState.vs[_rdState.i];
-  return String(_rdState.verses[String(v)]||'').replace(/[\[\]]/g,'').replace(/\s+/g,' ').trim(); }
+  let t=String(_rdState.verses[String(v)]||'').replace(/[\[\]]/g,'').replace(/\s+/g,' ').trim();
+  const arr=(_rdState.notes&&_rdState.notes[String(v)])||[];
+  arr.forEach(nt=>{ const body=_ttsClean(nt&&nt.text); if(body) t+='. Nii Okai’s commentary: '+body; });
+  return t; }
 function _rdNext(){ if(!_rdState||_rdState.paused) return;
   if(_rdState.i>=_rdState.vs.length){ const k=_rdState.key; stopReadAloud(); _rdClearPos(k);
     toast('Chapter finished'); return; }
@@ -1959,7 +1975,7 @@ function renderRead(){
       const txt=verses[String(v)]||'';
       const notes=chData[String(v)]||[];
       const hasRef = state.journal==='modern' && refinedFor(name,ch,v);
-      const mark=notes.length?`<span class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" ontouchend="event.stopPropagation();event.preventDefault();toggleVerse(${v})" title="Tap to show / hide Nii Okai’s commentary on this verse">Commentary</span>`:'';
+      const mark=notes.length?`<span class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" ontouchend="event.stopPropagation();event.preventDefault();toggleVerse(${v})" title="Tap to show / hide Nii Okai’s commentary on this verse">Read Commentary</span>`:'';
       const ncTier=notes.length?(notes.length>=3?' nc3':notes.length===2?' nc2':' nc1'):'';
       const hlc=hlGet(name,ch,v);
       html+=`<div class="verse ${notes.length?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${notes.length?1:0})" ${notes.length?`title="Tap for options · double-tap to read Nii Okai’s note"`:`title="Tap for options · double-tap to write a note"`}>
@@ -2018,8 +2034,10 @@ let _vTapT=null;
 function vTap(ev,name,ch,v){
   if(ev.target&&ev.target.closest&&ev.target.closest('.vn,.cmark,.vmenu-btn,a,button,select,input,textarea')) return;
   try{ const sel=window.getSelection(); if(sel&&String(sel).length) return; }catch(e){}   // they're highlighting text, not tapping
+  const key=name+'|'+ch+'|'+v;
+  if(window._vClosedFor===key){ clearTimeout(_vTapT); return; }                           // this tap already closed it (touch path)
   const ex=document.getElementById('vmenu');
-  if(ex&&ex.dataset.vfor===name+'|'+ch+'|'+v){ clearTimeout(_vTapT); return; }            // second tap → the click itself closes the menu
+  if(ex&&ex.dataset.vfor===key){ clearTimeout(_vTapT); closeVerseMenu(); return; }        // second tap → close
   const t=ev.currentTarget;
   clearTimeout(_vTapT);
   _vTapT=setTimeout(()=>{ verseMenu({stopPropagation(){},currentTarget:t},name,ch,v); },280); }
@@ -2509,8 +2527,16 @@ function copyVerse(name,ch,v){ const t=verseText(name,ch,v); if(!t){ toast('No t
 /* floating verse action menu — Copy / Share / Search Google / Add note */
 function closeVerseMenu(){ const m=document.getElementById('vmenu'); if(m) m.remove(); }
 document.addEventListener('click',closeVerseMenu);
+/* On phones a tap on plain text never becomes a document 'click', so close menus on touchstart too.
+   Remember what was closed for ~0.7 s so the same tap's click doesn't immediately reopen it. */
+document.addEventListener('touchstart',e=>{ const m=document.getElementById('vmenu'); if(!m) return;
+  if(m.contains(e.target)) return;
+  window._vClosedFor=m.dataset.vfor||''; clearTimeout(window._vClosedT);
+  window._vClosedT=setTimeout(()=>{ window._vClosedFor=null; },700);
+  closeVerseMenu(); },{passive:true});
 window.addEventListener('scroll',closeVerseMenu,true);
 function verseMenu(ev,name,ch,v){ ev.stopPropagation();
+  if(window._vClosedFor===name+'|'+ch+'|'+v) return;                                      // the tap that closed it also triggered this
   const ex=document.getElementById('vmenu');
   if(ex&&ex.dataset.vfor===name+'|'+ch+'|'+v){ closeVerseMenu(); return; }   // same verse again → just close
   closeVerseMenu(); closeCopyMenus();
