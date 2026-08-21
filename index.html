@@ -782,7 +782,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.49.0', date:'21 Aug 2026'};
+const BUILD={v:'0.50.0', date:'21 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -1134,10 +1134,13 @@ function readChapterAloud(ev){
   if(AUD.key){ if(AUD.el&&AUD.el.paused) audResume(); else audPause(); return; }
   listenMenu(ev); }
 /* Nothing playing yet → let the reader pick a voice (the choice is remembered) */
-function listenMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation(); closeVerseMenu();
+function listenMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
+  const ex=document.getElementById('vmenu');
+  if(ex&&ex.dataset.vfor==='listen'){ closeVerseMenu(); return; }            // Listen tapped again → close the picker
+  closeVerseMenu();
   const nm=window.BOOKS[state.book].name, ch=state.chapter;
   const np=narrPref(), sv=studioVoicePref();
-  const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu'; m.style.minWidth='250px';
+  const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu'; m.style.minWidth='250px'; m.dataset.vfor='listen';
   let h='<div class="vm-sec">🎧 Read this chapter with</div>';
   const KNOWN=[{key:'emma',name:'Emma',gender:'female'},{key:'george',name:'George',gender:'male'}];   // female voice listed first (Henry's request)
   const seen={}; const list=[];
@@ -1956,7 +1959,7 @@ function renderRead(){
       const txt=verses[String(v)]||'';
       const notes=chData[String(v)]||[];
       const hasRef = state.journal==='modern' && refinedFor(name,ch,v);
-      const mark=notes.length?`<span class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" title="Click to hide / show Nii Okai’s commentary on this verse">Commentary${notes.length>1?' · '+notes.length:''}</span>`:'';
+      const mark=notes.length?`<span class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" ontouchend="event.stopPropagation();event.preventDefault();toggleVerse(${v})" title="Tap to show / hide Nii Okai’s commentary on this verse">Commentary</span>`:'';
       const ncTier=notes.length?(notes.length>=3?' nc3':notes.length===2?' nc2':' nc1'):'';
       const hlc=hlGet(name,ch,v);
       html+=`<div class="verse ${notes.length?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${notes.length?1:0})" ${notes.length?`title="Tap for options · double-tap to read Nii Okai’s note"`:`title="Tap for options · double-tap to write a note"`}>
@@ -2015,6 +2018,8 @@ let _vTapT=null;
 function vTap(ev,name,ch,v){
   if(ev.target&&ev.target.closest&&ev.target.closest('.vn,.cmark,.vmenu-btn,a,button,select,input,textarea')) return;
   try{ const sel=window.getSelection(); if(sel&&String(sel).length) return; }catch(e){}   // they're highlighting text, not tapping
+  const ex=document.getElementById('vmenu');
+  if(ex&&ex.dataset.vfor===name+'|'+ch+'|'+v){ clearTimeout(_vTapT); return; }            // second tap → the click itself closes the menu
   const t=ev.currentTarget;
   clearTimeout(_vTapT);
   _vTapT=setTimeout(()=>{ verseMenu({stopPropagation(){},currentTarget:t},name,ch,v); },280); }
@@ -2505,9 +2510,12 @@ function copyVerse(name,ch,v){ const t=verseText(name,ch,v); if(!t){ toast('No t
 function closeVerseMenu(){ const m=document.getElementById('vmenu'); if(m) m.remove(); }
 document.addEventListener('click',closeVerseMenu);
 window.addEventListener('scroll',closeVerseMenu,true);
-function verseMenu(ev,name,ch,v){ ev.stopPropagation(); closeVerseMenu(); closeCopyMenus();
+function verseMenu(ev,name,ch,v){ ev.stopPropagation();
+  const ex=document.getElementById('vmenu');
+  if(ex&&ex.dataset.vfor===name+'|'+ch+'|'+v){ closeVerseMenu(); return; }   // same verse again → just close
+  closeVerseMenu(); closeCopyMenus();
   const anchor=ev.currentTarget||ev.target;
-  const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu';
+  const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu'; m.dataset.vfor=name+'|'+ch+'|'+v;
   m.innerHTML=`<div class="hlrow"><span class="hlbl">Highlight</span>
       <span class="hld hd-y" onclick="vmHl(event,'${esc(name)}',${ch},${v},'y')"></span>
       <span class="hld hd-g" onclick="vmHl(event,'${esc(name)}',${ch},${v},'g')"></span>
