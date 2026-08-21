@@ -5,25 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Never Get Bored — Nii Okai's Journal Through Scripture</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#8B5E34">
+<meta name="theme-color" content="#FAF7F2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Nii Okai's Bible Journal">
 <style>
 :root{
-  --bg:#f8f4ec; --panel:#fffdf8; --ink:#262016; --soft:#8b7f6e; --line:#e9e0cf;
-  --accent:#8B5E34; --accent-rgb:139,94,52; --accent-soft:#f2e7d4; --note-bg:#faf5ea; --note-line:#d9c39d;
-  --accent-deep:#6f4a28; --on-accent:#fffdf8;
-  --scripture:#2c261b; --shadow:0 1px 3px rgba(60,45,20,.07),0 8px 24px rgba(60,45,20,.06);
+  --bg:#FAF7F2; --panel:#FFFFFF; --ink:#1E1B16; --soft:#8A8175; --line:#E8E2D8;
+  --accent:#9D7142; --accent-rgb:157,113,66; --accent-soft:#F5EEE3; --note-bg:#F6EFE6; --note-line:#CBA470;
+  --accent-deep:#7C5730; --on-accent:#FFFFFF;
+  --scripture:#22201B; --shadow:0 1px 3px rgba(60,45,20,.06),0 8px 24px rgba(60,45,20,.05);
   --serif:Georgia,'Iowan Old Style','Times New Roman',serif;
   --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
 }
 html[data-theme="dark"]{
-  --bg:#171310; --panel:#201b15; --ink:#ece4d4; --soft:#a4977f; --line:#342c21;
-  --accent:#C9A15E; --accent-rgb:201,161,94; --accent-soft:#33291a; --note-bg:#251e15; --note-line:#5c4a2d;
-  --accent-deep:#93702f; --on-accent:#1d1610;
-  --scripture:#f0e9da; --shadow:0 1px 3px rgba(0,0,0,.35),0 8px 28px rgba(0,0,0,.45);
+  --bg:#191510; --panel:#221D16; --ink:#EDE6DA; --soft:#A1957F; --line:#332B20;
+  --accent:#C2A05C; --accent-rgb:194,160,92; --accent-soft:#2E2617; --note-bg:#251F16; --note-line:#5E4B2C;
+  --accent-deep:#8F6E33; --on-accent:#1C1610;
+  --scripture:#F0EADD; --shadow:0 1px 3px rgba(0,0,0,.35),0 8px 28px rgba(0,0,0,.45);
 }
 html[data-theme="dark"] body{-webkit-font-smoothing:auto;-moz-osx-font-smoothing:auto}
 html[data-theme="dark"] .verse{color:var(--scripture)}
@@ -781,7 +781,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.45.0', date:'20 Aug 2026'};
+const BUILD={v:'0.46.0', date:'21 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -2695,9 +2695,11 @@ function mergeCommentary(obj){
 
 /* ---------- Misc ---------- */
 function markDirty(){ state.dirty=true; }
+function _syncThemeColor(){ try{ const m=document.querySelector('meta[name="theme-color"]');
+  if(m) m.content = document.documentElement.dataset.theme==='dark' ? '#191510' : '#FAF7F2'; }catch(e){} }
 function toggleTheme(){ const d=document.documentElement;
   d.dataset.theme=d.dataset.theme==='dark'?'light':'dark';
-  document.getElementById('themeBtn').textContent=d.dataset.theme==='dark'?'☀':'☾'; savePrefs(); }
+  document.getElementById('themeBtn').textContent=d.dataset.theme==='dark'?'☀':'☾'; _syncThemeColor(); savePrefs(); }
 function toggleDates(){ document.documentElement.classList.toggle('show-dates');
   document.getElementById('dateBtn').classList.toggle('active',document.documentElement.classList.contains('show-dates'));
   savePrefs(); }
@@ -2762,6 +2764,7 @@ window.addEventListener('beforeunload',e=>{ if(state.dirty){ e.preventDefault();
 
 init();
 /* Heavy data (Bible text, spell dictionary) loads in the background after first paint */
+_syncThemeColor();
 window.addEventListener('load',()=>{ setTimeout(()=>{
   ensureVersion(state.version,()=>{ if(state.view==='read') render(); });
   const d=document.createElement('script'); d.src='data/dict.js';
