@@ -138,7 +138,7 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .verse .vn{font-size:11px;font-weight:700;color:var(--soft);vertical-align:super;margin-right:5px;
   font-family:var(--sans);cursor:pointer;user-select:none}
 .verse:hover{background:var(--accent-soft)}
-.verse.has-note{background:var(--note-bg);border-left:3px solid var(--accent);padding-left:12px}
+.verse.has-note{background:var(--note-bg)}
 .verse.has-note:hover{background:var(--accent-soft)}
 /* hover-only tone deepens with the number of notes on the verse */
 .verse.nc1:hover{background:rgba(var(--accent-rgb),.10)}
@@ -184,9 +184,9 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
    some mobile browsers leave a tapped verse stuck in its hover colour. Desktop
    keeps the full tint and hover behaviour. */
 @media(pointer:coarse){
-  .verse.has-note{background:none;border-left-width:2px;padding-left:10px}
+  .verse.has-note{background:none}
   .verse:hover{background:none}
-  .verse.has-note:hover,.verse.nc1:hover,.verse.nc2:hover,.verse.nc3:hover{background:none;border-left-width:2px}
+  .verse.has-note:hover,.verse.nc1:hover,.verse.nc2:hover,.verse.nc3:hover{background:none}
 }
 /* floating verse action menu */
 .vmenu{position:fixed;z-index:210;min-width:180px;background:var(--panel);border:1px solid var(--line);
@@ -781,7 +781,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.47.0', date:'21 Aug 2026'};
+const BUILD={v:'0.48.0', date:'21 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -1128,12 +1128,33 @@ function _rdClearPos(key){ try{ const m=_rdPosAll(); delete m[key];
 function _rdKey(){ return window.BOOKS[state.book].name+'|'+state.chapter; }
 /* Listen button. Human narration (LibriVox KJV audio) is the default; the device voice
    is used when the reader chooses it, or as a fallback when the audio can't load. */
-function readChapterAloud(){
+function readChapterAloud(ev){
   if(_rdState){ if(_rdState.paused) resumeReadAloud(); else pauseReadAloud(); return; }
   if(AUD.key){ if(AUD.el&&AUD.el.paused) audResume(); else audPause(); return; }
+  listenMenu(ev); }
+/* Nothing playing yet → let the reader pick a voice (the choice is remembered) */
+function listenMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation(); closeVerseMenu();
   const nm=window.BOOKS[state.book].name, ch=state.chapter;
-  if(narrSourceFor(nm,ch)!=='device'){ audPlay(nm,ch); return; }
-  readChapterTTS(); }
+  const np=narrPref(), sv=studioVoicePref();
+  const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu'; m.style.minWidth='250px';
+  let h='<div class="vm-sec">🎧 Read this chapter with</div>';
+  studioVoices().forEach(vc=>{ const V=window.AUDIO_KOKORO.voices[vc];
+    h+=`<button onclick="listenStart(event,'studio:${vc}')">${V.gender==='female'?'👩':'👨'} Studio voice — ${escHTML(V.name)}${np==='studio'&&sv===vc?' ✓':''}${studioHas(nm,ch,vc)?'':' <span style="color:var(--soft);font-size:11px">(not this chapter yet)</span>'}</button>`; });
+  if(window.AUDIO_KJV) h+=`<button onclick="listenStart(event,'human')">🎧 Human narration — LibriVox${np==='human'?' ✓':''}</button>`;
+  h+=`<button onclick="listenStart(event,'device')">📱 Your device’s voice${np==='device'?' ✓':''}</button>`;
+  m.innerHTML=h; document.body.appendChild(m);
+  const b=(ev&&(ev.currentTarget||ev.target))||document.getElementById('readAloudBtn');
+  const r=b?b.getBoundingClientRect():{top:window.innerHeight-80,bottom:window.innerHeight-40,left:window.innerWidth/2,width:0};
+  const mw=m.offsetWidth, mh=m.offsetHeight;
+  let top=r.top-mh-8; if(top<8) top=r.bottom+8;
+  let left=r.left+(r.width||0)/2-mw/2; left=Math.max(8,Math.min(left,window.innerWidth-mw-8));
+  m.style.top=top+'px'; m.style.left=left+'px'; }
+function listenStart(ev,p){ if(ev&&ev.stopPropagation) ev.stopPropagation(); closeVerseMenu();
+  let voice=null; if(p.indexOf('studio:')===0){ voice=p.slice(7); p='studio'; }
+  try{ localStorage.setItem('nok_narr',p); if(voice) localStorage.setItem('nok_studio_voice',voice); }catch(e){}
+  const nm=window.BOOKS[state.book].name, ch=state.chapter;
+  const src=narrSourceFor(nm,ch);
+  if(src==='device') readChapterTTS(); else audPlay(nm,ch); }
 function readChapterTTS(){
   if(_rdState){ if(_rdState.paused) resumeReadAloud(); else pauseReadAloud(); return; }
   if(!window.speechSynthesis){ toast('Read-aloud isn’t supported on this device'); return; }
@@ -1930,7 +1951,7 @@ function renderRead(){
       const mark=notes.length?`<span class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" title="Click to hide / show Nii Okai’s commentary on this verse">${ICONS.chat}${hasRef?'':' '+notes.length+(notes.length>1?' notes':' note')}</span>`:'';
       const ncTier=notes.length?(notes.length>=3?' nc3':notes.length===2?' nc2':' nc1'):'';
       const hlc=hlGet(name,ch,v);
-      html+=`<div class="verse ${notes.length?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" ondblclick="dblAddNote('${esc(name)}',${ch},${v})" ${notes.length?`title="Double-click to write a note here · the 💬 button hides / shows Nii Okai’s commentary · highlight text or use ⋯ for options"`:`title="Double-click to write a note · highlight text, or use ⋯ for options"`}>
+      html+=`<div class="verse ${notes.length?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${notes.length?1:0})" ${notes.length?`title="Tap for options · double-tap to read Nii Okai’s note"`:`title="Tap for options · double-tap to write a note"`}>
         <span class="vn" onclick="event.stopPropagation();openEditor('${esc(name)}',${ch},${v})" title="Add a note">${v}</span>${txt||'<i style="color:var(--soft)">(verse not in this translation)</i>'}${mark}
         <button class="add vmenu-btn" onclick="event.stopPropagation();verseMenu(event,'${esc(name)}',${ch},${v})" title="Copy · Share · Search · Compare · Note">⋯</button></div>`;
       if(notes.length){
@@ -1948,14 +1969,14 @@ function renderRead(){
   if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]); const last=state.plan.ci>=chaps.length-1;
     nav=`<div class="readnav planmode">
       <button onclick="planNav(-1)" ${state.plan.day===0&&state.plan.ci===0?'disabled':''}>← Prev</button>
-      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud()">▶︎ Listen</button>
+      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud(event)">▶︎ Listen</button>
       <button class="rn-listen" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">⏹</button>
       <span class="rn-mid">Day ${state.plan.day+1} · ${state.plan.ci+1}/${chaps.length}</span>
       <button class="rn-next" onclick="planNav(1)">${last?'Finish day ✓':'Next →'}</button></div>`;
   } else {
     nav=`<div class="readnav">
       <button onclick="prevChapter()" ${state.book===0&&ch===1?'disabled':''}>← Previous</button>
-      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud()">▶︎ Listen</button>
+      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud(event)">▶︎ Listen</button>
       <button class="rn-listen" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">⏹</button>
       <button onclick="nextChapter()" ${state.book===window.BOOKS.length-1&&ch===nch?'disabled':''}>Next →</button></div>`;
   }
@@ -1980,6 +2001,25 @@ function dblToggleVerse(v){ try{ const s=window.getSelection(); if(s&&s.removeAl
 /* double-click a verse to write a note on it */
 function dblAddNote(name,ch,v){ try{ const s=window.getSelection(); if(s&&s.removeAllRanges) s.removeAllRanges(); }catch(e){}
   if(typeof closeSelMenu==='function') closeSelMenu(); openEditor(name,ch,v); }
+/* One tap on a verse → the options menu. Double-tap → read the note (or write one if there isn't any).
+   The single-tap action waits 280 ms so a double-tap can cancel it. */
+let _vTapT=null;
+function vTap(ev,name,ch,v){
+  if(ev.target&&ev.target.closest&&ev.target.closest('.vn,.cmark,.vmenu-btn,a,button,select,input,textarea')) return;
+  try{ const sel=window.getSelection(); if(sel&&String(sel).length) return; }catch(e){}   // they're highlighting text, not tapping
+  const t=ev.currentTarget;
+  clearTimeout(_vTapT);
+  _vTapT=setTimeout(()=>{ verseMenu({stopPropagation(){},currentTarget:t},name,ch,v); },280); }
+function vDbl(ev,name,ch,v,hasNote){ clearTimeout(_vTapT); closeVerseMenu();
+  try{ const s=window.getSelection(); if(s&&s.removeAllRanges) s.removeAllRanges(); }catch(e){}
+  if(typeof closeSelMenu==='function') closeSelMenu();
+  if(hasNote) toggleVerse(v); else openEditor(name,ch,v); }
+/* menu → 'Read Nii Okai's note': make sure it's open, then bring it into view */
+function vmReadNote(ev,v){ ev.stopPropagation(); closeVerseMenu();
+  const el=document.getElementById('v'+v); if(!el) return;
+  const hidden = document.documentElement.classList.contains('hide-notes') ? !el.classList.contains('revealed') : el.classList.contains('collapsed');
+  if(hidden) toggleVerse(v);
+  const nw=document.getElementById('nw'+v); if(nw) setTimeout(()=>nw.scrollIntoView({behavior:'smooth',block:'center'}),60); }
 function setJournalMode(m){ state.journal=m; savePrefs();
   if(state.view==='mine') renderMine(); else if(state.view==='read') renderRead(); }
 function setTrkM(btn,m){ const t=btn.closest('.trk'); t.dataset.m=m;
@@ -2467,7 +2507,8 @@ function verseMenu(ev,name,ch,v){ ev.stopPropagation(); closeVerseMenu(); closeC
       <span class="hld hd-p" onclick="vmHl(event,'${esc(name)}',${ch},${v},'p')"></span>
       <span class="hld hd-x" onclick="vmHl(event,'${esc(name)}',${ch},${v},'')">✕</span></div>
     <button onclick="vmDo(event,'copy','${esc(name)}',${ch},${v})">📋 Copy verse</button>
-    <button onclick="vmDo(event,'share','${esc(name)}',${ch},${v})">🔗 Share</button>
+    <button onclick="vmDo(event,'share','${esc(name)}',${ch},${v})"><svg width="13" height="15" viewBox="0 0 14 17" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:1px"><path d="M7 1v10"/><path d="M3.8 4.2 7 1l3.2 3.2"/><path d="M4.2 7H2.6v9h8.8V7H9.8"/></svg> Share</button>
+    ${document.getElementById('nw'+v)?`<button onclick="vmReadNote(event,${v})">💬 Read Nii Okai’s note</button>`:''}
     <button onclick="vmDo(event,'google','${esc(name)}',${ch},${v})">🔎 Search on Google</button>
     <button onclick="vmDo(event,'compare','${esc(name)}',${ch},${v})">⇄ Compare versions</button>
     <button onclick="vmDo(event,'note','${esc(name)}',${ch},${v})">✎ Add a note</button>
