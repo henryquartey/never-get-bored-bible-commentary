@@ -175,7 +175,7 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .audnote button{margin-left:auto;background:none;border:0;color:var(--soft);font-size:15px;cursor:pointer;line-height:1;padding:0 2px}
 @media (max-width:520px){ .audbar{padding:8px 12px 0} .audbar .ab-time{min-width:78px;font-size:11px} .audnote{padding:8px 12px 0} }
 .fabnotes{position:fixed;right:14px;bottom:118px;z-index:55;opacity:0;pointer-events:none;transform:translateY(8px);
-  transition:opacity .25s ease,transform .25s ease;font-family:var(--sans);font-size:12.5px;font-weight:600;max-width:60vw;
+  transition:opacity .25s ease,transform .25s ease;font-family:var(--sans);font-size:12.5px;font-weight:600;max-width:70vw;white-space:nowrap;
   background:var(--panel);color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:10px 15px;
   box-shadow:0 6px 20px rgba(0,0,0,.2);cursor:pointer}
 .fabnotes.show{opacity:1;pointer-events:auto;transform:none}
@@ -735,7 +735,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
   </div>
 </div>
 
-<button class="fabnotes" id="fabNotes" onclick="toggleNotes()">Scripture only</button>
+<button class="fabnotes" id="fabNotes" onclick="toggleNotes()">Hide all commentary</button>
 <nav class="bottomnav" id="bottomnav">
   <button data-view="home" data-ico="home" onclick="setView('home')">Home</button>
   <button data-view="plan" data-ico="cal" onclick="setView('plan')">Plans</button>
@@ -782,7 +782,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.51.0', date:'21 Aug 2026'};
+const BUILD={v:'0.52.0', date:'21 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -1965,7 +1965,7 @@ function renderRead(){
       html+=`<div class="chapindex">
         <div class="lbl-row">
           <div class="lbl">${ICONS.chat} To view commentary — tap a verse</div>
-          <button class="ci-toggle" onclick="toggleNotes()">${off?'Show all commentary':'Hide all (scripture only)'}</button>
+          <button class="ci-toggle" onclick="toggleNotes()">${off?'Show all commentary':'Hide all commentary'}</button>
         </div>
         <div class="chips">${noted.map(v=>`<span class="chip" onclick="jumpVerse(${v})">v${v}</span>`).join('')}</div></div>`;
     }
@@ -2664,7 +2664,7 @@ function _fabSync(){ const f=document.getElementById('fabNotes'); if(!f) return;
   const rd=document.getElementById('reader');
   const hidden=document.documentElement.classList.contains('hide-notes');
   const show=state.view==='read'&&window._chapHasNotes&&rd&&rd.scrollTop>420;
-  f.textContent=hidden?'Show commentary':'Read verses only';
+  f.textContent=hidden?'Show all commentary':'Hide all commentary';
   f.classList.toggle('show',!!show); }
 (function(){ const rd=document.getElementById('reader'); if(rd) rd.addEventListener('scroll',_fabSync,{passive:true}); })();
 /* ---------- Install the app (PWA) ---------- */
