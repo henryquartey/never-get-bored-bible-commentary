@@ -184,6 +184,13 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .sheading.s2{font-size:15.5px;color:var(--soft)}
 .verse+.sheading,.notewrap+.sheading{margin-top:28px}
 .cmpwrap .sheading{margin:18px 0 6px}
+.cmprow .cmpv{display:flex;flex-direction:column;align-items:center;gap:3px}
+.cmprow .cmark{display:inline-block;font-size:12px;background:transparent;border:none;cursor:pointer;padding:1px 4px}
+.cmprow .vmenu-btn{background:transparent;color:var(--soft);border:1px solid var(--line);font-weight:700;line-height:1;padding:1px 6px;border-radius:8px;cursor:pointer;font-size:11px}
+.cmprow .vmenu-btn:hover{color:var(--accent);border-color:var(--accent)}
+.cmprow.collapsed + .notewrap{display:none}
+html.hide-notes .cmprow.revealed + .notewrap,
+html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
 .notetools .corrlink{background:none;border:none;color:var(--soft);font-family:var(--sans);font-size:12px;cursor:pointer;padding:6px 8px;border-radius:8px;vertical-align:middle}
 .notetools .corrlink:hover{color:var(--accent);background:var(--accent-soft)}
 /* On phones and tablets a commented verse is marked by its badge and a hairline
@@ -790,7 +797,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.53.0', date:'23 Aug 2026'};
+const BUILD={v:'0.54.0', date:'23 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -1969,12 +1976,23 @@ function renderRead(){
   if(state.compare){
     const bibB=(window.BIBLE[state.compare]||{})[name]||{}; const vB=bibB[String(ch)]||{};
     html+=`<div class="cmpwrap">`;
+    window._chapHasNotes=Object.keys(chData).some(k=>k!=='0'&&chData[k].length);
     for(let v=1;v<=vcount;v++){
       const hs=(((window.HEADINGS||{})[name]||{})[String(ch)]||{})[String(v)];
       if(hs) hs.forEach(h=>{ html+=`<div class="sheading s${h[0]}">${escHTML(h[1])}</div>`; });
-      html+=`<div class="cmprow"><div class="cmpv">${v}</div>
+      const notes=chData[String(v)]||[];
+      html+=`<div class="cmprow${notes.length?' has-note':''}" id="v${v}" data-v="${v}">
+        <div class="cmpv">${v}${notes.length?`<button class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" title="Show / hide Nii Okai’s commentary">💬</button>`:''}
+          <button class="vmenu-btn" onclick="event.stopPropagation();verseMenu(event,'${esc(name)}',${ch},${v})" title="Copy · Share · Note">⋯</button></div>
         <div class="cmpcol">${(verses[String(v)]||'—')}</div>
         <div class="cmpcol cmpb">${(vB[String(v)]||'—')}</div></div>`;
+      if(notes.length){
+        html+=`<div class="notewrap" id="nw${v}">`;
+        const r=state.journal==='modern'?refinedFor(name,ch,v):null;
+        if(r){ html+=modernNoteHTML(name,ch,v,r); }
+        else { notes.forEach(nt=>{ html+=noteHTML(nt,name,ch,v); }); }
+        html+=`</div>`;
+      }
     }
     html+=`</div>`;
   } else {
