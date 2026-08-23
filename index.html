@@ -179,6 +179,11 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
   background:var(--panel);color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:10px 15px;
   box-shadow:0 6px 20px rgba(0,0,0,.2);cursor:pointer}
 .fabnotes.show{opacity:1;pointer-events:auto;transform:none}
+.sheading{font-family:var(--serif);font-weight:700;margin:22px 0 8px;color:var(--ink);line-height:1.35}
+.sheading.s1{font-size:19px}
+.sheading.s2{font-size:15.5px;color:var(--soft)}
+.verse+.sheading,.notewrap+.sheading{margin-top:28px}
+.cmpwrap .sheading{margin:18px 0 6px}
 .notetools .corrlink{background:none;border:none;color:var(--soft);font-family:var(--sans);font-size:12px;cursor:pointer;padding:6px 8px;border-radius:8px;vertical-align:middle}
 .notetools .corrlink:hover{color:var(--accent);background:var(--accent-soft)}
 /* On phones and tablets a commented verse is marked by its badge and a hairline
@@ -777,6 +782,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <script src="data/commentary.js"></script>
 <script src="data/refined.js"></script>
 <script src="data/chronological.js"></script>
+<script src="data/headings.js" onerror="window.HEADINGS=null"></script>
 <script src="data/audio_kjv.js"></script>
 <script src="data/audio_kokoro.js" onerror="window.AUDIO_KOKORO=null"></script>
 
@@ -784,7 +790,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.52.0', date:'21 Aug 2026'};
+const BUILD={v:'0.53.0', date:'23 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -1964,6 +1970,8 @@ function renderRead(){
     const bibB=(window.BIBLE[state.compare]||{})[name]||{}; const vB=bibB[String(ch)]||{};
     html+=`<div class="cmpwrap">`;
     for(let v=1;v<=vcount;v++){
+      const hs=(((window.HEADINGS||{})[name]||{})[String(ch)]||{})[String(v)];
+      if(hs) hs.forEach(h=>{ html+=`<div class="sheading s${h[0]}">${escHTML(h[1])}</div>`; });
       html+=`<div class="cmprow"><div class="cmpv">${v}</div>
         <div class="cmpcol">${(verses[String(v)]||'—')}</div>
         <div class="cmpcol cmpb">${(vB[String(v)]||'—')}</div></div>`;
@@ -1984,6 +1992,8 @@ function renderRead(){
     const chNotes=chData['0']||[];
     chNotes.forEach(nt=>{ html+=noteHTML(nt,name,ch,'0','Chapter note'); });
     for(let v=1;v<=vcount;v++){
+      const hs=(((window.HEADINGS||{})[name]||{})[String(ch)]||{})[String(v)];
+      if(hs) hs.forEach(h=>{ html+=`<div class="sheading s${h[0]}">${escHTML(h[1])}</div>`; });
       const txt=verses[String(v)]||'';
       const notes=chData[String(v)]||[];
       const hasRef = state.journal==='modern' && refinedFor(name,ch,v);
