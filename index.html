@@ -431,7 +431,7 @@ html.show-dates .mc-item .mc-date{display:inline}
 .cmpwrap{max-width:820px}
 .cmprow{display:grid;grid-template-columns:28px 1fr 1fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-family:var(--serif);font-size:16px;line-height:1.6}
 .cmprow .cmpv{font-family:var(--sans);font-size:11px;font-weight:700;color:var(--accent);padding-top:4px}
-.cmpcol.cmpb{color:var(--soft)}
+.cmpcol.cmpb{color:var(--scripture)}
 @media(max-width:700px){.cmprow{grid-template-columns:24px 1fr}.cmprow .cmpb{grid-column:2;border-top:1px dashed var(--line);padding-top:6px}}
 /* Search results */
 .sr-item{padding:12px 16px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer;background:var(--panel)}
@@ -797,7 +797,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.54.0', date:'23 Aug 2026'};
+const BUILD={v:'0.54.1', date:'23 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -903,14 +903,27 @@ function buildVersionSelect(){
   sel.innerHTML=Object.entries(window.VERSIONS).map(([c,n])=>
     `<option value="${c}" title="${n}" ${c===state.version?'selected':''}>${c}</option>`).join('');
 }
+let _verLoading={};
 function ensureVersion(v,cb){
   if(window.BIBLE&&window.BIBLE[v])return cb();
+  if(_verLoading[v]){ _verLoading[v].push(cb); return; }   // already fetching — just queue
+  _verLoading[v]=[cb];
   if(state.view==='read'){ const rd=document.getElementById('reader');
     if(rd&&!rd.querySelector('.verse')) rd.innerHTML='<div class="empty"><div class="big">📖</div>Loading Scripture…</div>'; }
-  const s=document.createElement('script');
-  s.src='data/'+v+'.js'; s.onload=cb;
-  s.onerror=()=>{toast('Could not load '+v);cb();};
-  document.head.appendChild(s);
+  const fire=()=>{ const q=_verLoading[v]||[]; delete _verLoading[v]; q.forEach(f=>{ try{f();}catch(e){} }); };
+  const attempt=(left)=>{
+    const sc=document.createElement('script');
+    sc.src='data/'+v+'.js?r='+(left); sc.onload=fire;
+    sc.onerror=()=>{ sc.remove();
+      if(left>0){ setTimeout(()=>attempt(left-1),900); return; }
+      toast('Could not load '+v+' — check your connection');
+      const rd=document.getElementById('reader');
+      if(state.view==='read'&&rd&&!rd.querySelector('.verse'))
+        rd.innerHTML='<div class="empty"><div class="big">📖</div>Could not load '+v
+          +'<br><button class="btn primary" style="margin-top:12px" onclick="ensureVersion(\''+v+'\',render)">↻ Try again</button></div>';
+      fire(); };
+    document.head.appendChild(sc); };
+  attempt(1);
 }
 function setVersion(v){
   state.version=v; savePrefs();
