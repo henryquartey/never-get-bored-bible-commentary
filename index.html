@@ -179,6 +179,8 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
   background:var(--panel);color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:10px 15px;
   box-shadow:0 6px 20px rgba(0,0,0,.2);cursor:pointer}
 .fabnotes.show{opacity:1;pointer-events:auto;transform:none}
+.notetools .corrlink{background:none;border:none;color:var(--soft);font-family:var(--sans);font-size:12px;cursor:pointer;padding:6px 8px;border-radius:8px;vertical-align:middle}
+.notetools .corrlink:hover{color:var(--accent);background:var(--accent-soft)}
 /* On phones and tablets a commented verse is marked by its badge and a hairline
    only. The block tint reads as clutter while scrolling on a small screen, and
    some mobile browsers leave a tapped verse stuck in its hover colour. Desktop
@@ -1698,6 +1700,11 @@ function renderHome(){
       </div>
       <audio id="welcomeAudio" preload="none"><source src="audio/welcome.mp3" type="audio/mpeg"><source src="audio/welcome.m4a" type="audio/mp4"></audio>
     </div>
+    ${(()=>{ const bk=window.BOOKS[state.book]; if(!bk) return '';
+      return `<div class="hcard" style="cursor:pointer" onclick="setView('read')">
+        <div class="hk">📖 Continue reading</div>
+        <h3 style="margin:4px 0 2px">${escHTML(bk.name)} ${state.chapter} →</h3>
+        <p class="soft" style="margin:0">Pick up right where you left off</p></div>`; })()}
     ${(()=>{const st=_streakStats();return `<div class="hcard">
       <div class="hk">${ICONS.flame} Your Streak</div>
       <div class="streakrow">
@@ -2489,7 +2496,8 @@ function _noteParts(btn){ const n=btn.closest('.note'); const b=n.dataset.book,c
   const verse=v==='0'?'':verseText(b,ch,v);
   const body=(n.querySelector('.body')?n.querySelector('.body').textContent:'').trim();
   return {b,ch,v,ref,verse,body}; }
-function _composeNote(p,mode){
+function _composeNote(p,mode){ return _composeNoteBase(p,mode)+'\nbible.getwordwisdom.com'; }
+function _composeNoteBase(p,mode){
   if(mode==='verse') return p.verse?`${p.ref} (${state.version})\n${p.verse}`:p.ref;
   if(mode==='note')  return `${p.ref}\n${p.body}`;
   return (p.verse?`${p.ref} (${state.version})\n${p.verse}\n\n`:`${p.ref}\n`)+`📝 ${p.body}\n\n— Nii Okai · Never Get Bored`; }
@@ -2504,6 +2512,23 @@ function _clipFallback(t,msg){ const ta=document.createElement('textarea'); ta.v
   ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.focus(); ta.select();
   try{ document.execCommand('copy'); toast(msg||'Copied'); }catch(e){ toast('Copy failed'); }
   document.body.removeChild(ta); }
+function corrMenu(ev,btn){ ev.stopPropagation(); closeVerseMenu(); closeCopyMenus();
+  const pp=_noteParts(btn); window._corrRef=pp.ref||''; 
+  try{ window._corrSnip=(_composeNote(pp,'note')||'').split('\n').filter(Boolean)[0].slice(0,90); }catch(e){ window._corrSnip=''; }
+  const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu'; m.style.minWidth='240px';
+  m.innerHTML=`<div class="vm-sec">Help improve this note</div>
+    <button onclick="closeVerseMenu();corrMail('Typo')">✏️ Report a typo</button>
+    <button onclick="closeVerseMenu();corrMail('Doctrinal concern')">📖 Raise a doctrinal concern</button>
+    <button onclick="closeVerseMenu();corrMail('Suggestion')">💡 Make a suggestion</button>
+    <div class="vm-div"></div>
+    <button onclick="closeVerseMenu();setView('discourse')">💬 Discuss in Discourse instead</button>`;
+  document.body.appendChild(m);
+  const r=ev.currentTarget.getBoundingClientRect(); const mw=m.offsetWidth;
+  m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(8,Math.min(r.left,window.innerWidth-mw-8))+'px'; }
+function corrMail(kind){
+  const ref=window._corrRef||'', snip=window._corrSnip||'';
+  location.href='mailto:henryquarteyministries@gmail.com?subject='+encodeURIComponent(kind+' — '+ref+' (Never Get Bored)')
+    +'&body='+encodeURIComponent('Note: "'+snip+'…"\n\nMy '+kind.toLowerCase()+':\n\n\n— sent from bible.getwordwisdom.com'); }
 function noteActionsHTML(v){ const hasV=v!=='0'; return `<div class="notetools">
   <div class="copymenu">
     <button class="copytrig" onclick="toggleCopyMenu(event,this)" title="Copy or share">📋 Copy ▾</button>
@@ -2514,7 +2539,8 @@ function noteActionsHTML(v){ const hasV=v!=='0'; return `<div class="notetools">
       <div class="cp-sep"></div>
       <button onclick="pickShare(this)">🔗 Share</button>
     </div>
-  </div></div>`; }
+  </div>
+  <button class="corrlink" onclick="corrMenu(event,this)" title="Spotted a typo or want to suggest something? It reaches Nii Okai directly">✎ Suggest a correction</button></div>`; }
 function toggleCopyMenu(e,btn){ e.stopPropagation(); const pop=btn.nextElementSibling;
   const open=pop.classList.contains('show'); closeCopyMenus(); if(!open) pop.classList.add('show'); }
 function closeCopyMenus(){ document.querySelectorAll('.copypop.show').forEach(p=>p.classList.remove('show')); }
@@ -2523,7 +2549,7 @@ function pickCopy(btn,mode){ closeCopyMenus(); copyThing(btn,mode); }
 function pickShare(btn){ closeCopyMenus(); shareThing(btn); }
 /* one-tap copy for a plain verse (no note) */
 function copyVerse(name,ch,v){ const t=verseText(name,ch,v); if(!t){ toast('No text to copy'); return; }
-  _clip(`${name} ${ch}:${v} (${state.version})\n${t}`,'Verse copied'); }
+  _clip(`${name} ${ch}:${v} (${state.version})\n${t}\nbible.getwordwisdom.com`,'Verse copied'); }
 /* floating verse action menu — Copy / Share / Search Google / Add note */
 function closeVerseMenu(){ const m=document.getElementById('vmenu'); if(m) m.remove(); }
 document.addEventListener('click',closeVerseMenu);
@@ -2616,7 +2642,7 @@ function onReaderSelect(){
 function selAct(ev,action,book,ch,v){ ev.stopPropagation();
   const text=(window.getSelection().toString()||'').trim();
   const inRead=state.view==='read'; const ref=inRead?`${window.BOOKS[state.book].name} ${state.chapter} (${state.version})`:'';
-  const withRef=ref?`${text}\n— ${ref}`:text;
+  const withRef=(ref?`${text}\n— ${ref}`:text)+'\nbible.getwordwisdom.com';
   if(action==='copy'){ _clip(withRef,'Copied'); }
   else if(action==='share'){ if(navigator.share) navigator.share({title:ref||'Note',text:withRef}).catch(()=>{}); else _clip(withRef,'Copied — paste to share'); }
   else if(action==='google'){ window.open('https://www.google.com/search?q='+encodeURIComponent(text),'_blank','noopener'); }
@@ -2711,6 +2737,17 @@ function doSearch(q){
   document.getElementById('chapselWrap').style.display='none';
   document.getElementById('readfoot').style.display='none';
   const ql=q.toLowerCase();
+  // A typed reference ("jer 22:19", "psalm 23", "1 kings 2") becomes a jump card
+  let refRow='';
+  { const m=q.match(/^([1-3]?\s?[a-z]+(?:\s+[a-z]+)*?)\.?\s+(\d+)(?:\s*[:.]\s*(\d+))?$/i);
+    if(m&&window.BOOKS){ const bq=m[1].replace(/\s+/g,' ').trim().toLowerCase();
+      const hit=window.BOOKS.find(b=>b.name.toLowerCase()===bq)
+        ||window.BOOKS.find(b=>b.name.toLowerCase().startsWith(bq))
+        ||window.BOOKS.find(b=>b.name.toLowerCase().replace(/\s/g,'').startsWith(bq.replace(/\s/g,'')));
+      if(hit){ const chn=Math.max(1,Math.min(hit.chapters.length,parseInt(m[2],10)));
+        const vn=m[3]?parseInt(m[3],10):0;
+        refRow=`<div class="hcard" style="cursor:pointer;margin-bottom:14px" onclick="openChapter('${esc(hit.name)}',${chn})${vn?`;setTimeout(()=>jumpVerse(${vn}),500)`:''}">
+          <div class="hk">📖 Go to</div><h3 style="margin:4px 0 0">${escHTML(hit.name)} ${chn}${vn?':'+vn:''} →</h3></div>`; } } }
   // commentary results
   let comm=[];
   for(const bk in DATA)for(const ch in DATA[bk])for(const v in DATA[bk][ch])
@@ -2722,6 +2759,7 @@ function doSearch(q){
     const t=bib[bk][ch][v]; if(t&&t.toLowerCase().includes(ql)){ scrip.push({bk,ch,v,text:t});
       if(scrip.length>=150)break outer; } } } }
   let html=`<div class="page">
+    ${refRow}
     <div class="mc-head"><h2>“${escHTML(q)}”</h2><span class="mc-count">${comm.length} in commentary · ${scrip.length}${scrip.length>=150?'+':''} in ${state.version}</span></div>`;
   if(comm.length){ html+='<div class="book-group" style="padding-left:0">Your commentary</div>';
     comm.slice(0,80).forEach(r=>{ const ref=r.v==='0'?`${r.bk} ${r.ch}`:`${r.bk} ${r.ch}:${r.v}`;
