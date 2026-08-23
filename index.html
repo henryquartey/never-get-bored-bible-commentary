@@ -819,6 +819,10 @@ function init(){
     if(p.hideNotes===true){ document.documentElement.classList.add('hide-notes'); } // default: MY journal is shown
     if(p.journal==='original'||p.journal==='modern') state.journal=p.journal;
     if(p.refcomm) state.refcomm=true;
+    if(['read','plan','home','discourse','menu','mine'].includes(p.view)) state.view=p.view;
+    if(p.plan&&typeof p.plan.day==='number') state.plan=p.plan;
+    if(p.planResume&&typeof p.planResume.day==='number') planResume=p.planResume;
+    if(typeof p.planSel==='number') planSel=p.planSel;
   }catch(e){}
   if(state.refcomm){ ensureRefIndex(()=>{}); } _syncRefUI();
   document.getElementById('themeBtn').textContent=document.documentElement.dataset.theme==='dark'?'☀':'☾';
@@ -876,7 +880,8 @@ function savePrefs(){localStorage.setItem(LS_PREFS,JSON.stringify({
   theme:document.documentElement.dataset.theme||'light',
   showDates:document.documentElement.classList.contains('show-dates'),
   hideNotes:document.documentElement.classList.contains('hide-notes'),
-  journal:state.journal,refcomm:state.refcomm}))}
+  journal:state.journal,refcomm:state.refcomm,
+  view:state.view,plan:state.plan,planResume:planResume,planSel:planSel}))}
 function persist(){localStorage.setItem(LS_KEY,JSON.stringify(DATA));}
 
 /* ---------- Version loading ---------- */
@@ -1042,7 +1047,7 @@ function renderPlan(){
 }
 /* open a chapter as a normal (whole-Bible) read */
 function openChapter(book,ch){ const bi=window.BOOKS.findIndex(b=>b.name===book); if(bi<0)return;
-  state.plan=null; planResume=null; state.book=bi; state.chapter=ch; state.view='read'; setViewTabs(); savePrefs();
+  state.plan=null; state.book=bi; state.chapter=ch; state.view='read'; setViewTabs(); savePrefs();
   ensureVersion(state.version, renderRead); toggleSidebar(false); }
 /* read a chapter WITHIN the plan — scoped to the day, stays in the plan.
    NOTE: opening a chapter does NOT mark it read. It's ticked only when you move on (Next) or tick the circle. */
