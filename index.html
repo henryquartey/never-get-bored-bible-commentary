@@ -797,7 +797,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.54.1', date:'23 Aug 2026'};
+const BUILD={v:'0.55.0', date:'24 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -1021,7 +1021,7 @@ function planBodyHTML(si){ const C=getPlan(); const d=chDone(); const N=C.length
   const sel=C[si]||{t:'',r:[['Genesis',1,1]]}; const chaps=readingChapters(sel); let rows='';
   if(sel.catchup){ rows=`<div class="restday">☕ <b>Rest / catch-up day.</b> No new passage today — use it to catch up on any missed days or reflect.</div>`; }
   else chaps.forEach(([b,c],ci)=>{ const cd=!!d[b+' '+c];
-    rows+=`<div class="passrow ${cd?'done':''}">
+    rows+=`<div class="passrow ${cd?'done':''}" onclick="planRead(${si},${ci})" style="cursor:pointer">
       <span class="passchk" onclick="event.stopPropagation();toggleChapter('${esc(b)}',${c})">${cd?'✅':'⭕'}</span>
       <div class="passmain" onclick="planRead(${si},${ci})"><span class="passref">${escHTML(b)} ${c}</span></div>
       <span class="passchev" onclick="planRead(${si},${ci})">›</span></div>`; });
@@ -1994,7 +1994,7 @@ function renderRead(){
       const hs=(((window.HEADINGS||{})[name]||{})[String(ch)]||{})[String(v)];
       if(hs) hs.forEach(h=>{ html+=`<div class="sheading s${h[0]}">${escHTML(h[1])}</div>`; });
       const notes=chData[String(v)]||[];
-      html+=`<div class="cmprow${notes.length?' has-note':''}" id="v${v}" data-v="${v}">
+      html+=`<div class="cmprow${notes.length?' has-note':''}" id="v${v}" data-v="${v}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${notes.length?1:0})">
         <div class="cmpv">${v}${notes.length?`<button class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" title="Show / hide Nii Okai’s commentary">💬</button>`:''}
           <button class="vmenu-btn" onclick="event.stopPropagation();verseMenu(event,'${esc(name)}',${ch},${v})" title="Copy · Share · Note">⋯</button></div>
         <div class="cmpcol">${(verses[String(v)]||'—')}</div>
@@ -2085,7 +2085,10 @@ function dblAddNote(name,ch,v){ try{ const s=window.getSelection(); if(s&&s.remo
    The single-tap action waits 280 ms so a double-tap can cancel it. */
 let _vTapT=null;
 function vTap(ev,name,ch,v){
-  if(ev.target&&ev.target.closest&&ev.target.closest('.vn,.cmark,.vmenu-btn,a,button,select,input,textarea')) return;
+  if(IS_TOUCH) return;                                     // touch has its own tap controller
+  if(ev.target&&ev.target.closest&&ev.target.closest('.vn,.cmark,.vmenu-btn,.corrlink,a,button,select,input,textarea')) return;
+  { const open=document.getElementById('vmenu')||document.getElementById('selmenu');
+    if(open&&open.dataset.vfor!==name+'|'+ch+'|'+v){ closeVerseMenu(); if(typeof closeSelMenu==='function')closeSelMenu(); return; } }
   try{ const sel=window.getSelection(); if(sel&&String(sel).length) return; }catch(e){}   // they're highlighting text, not tapping
   const key=name+'|'+ch+'|'+v;
   if(window._vClosedFor===key){ clearTimeout(_vTapT); return; }                           // this tap already closed it (touch path)
@@ -2094,7 +2097,7 @@ function vTap(ev,name,ch,v){
   const t=ev.currentTarget;
   clearTimeout(_vTapT);
   _vTapT=setTimeout(()=>{ verseMenu({stopPropagation(){},currentTarget:t},name,ch,v); },280); }
-function vDbl(ev,name,ch,v,hasNote){ clearTimeout(_vTapT); closeVerseMenu();
+function vDbl(ev,name,ch,v,hasNote){ if(IS_TOUCH) return; clearTimeout(_vTapT); closeVerseMenu();
   try{ const s=window.getSelection(); if(s&&s.removeAllRanges) s.removeAllRanges(); }catch(e){}
   if(typeof closeSelMenu==='function') closeSelMenu();
   if(hasNote) toggleVerse(v); else openEditor(name,ch,v); }
@@ -2611,7 +2614,7 @@ function verseMenu(ev,name,ch,v){ ev.stopPropagation();
   if(window._vClosedFor===name+'|'+ch+'|'+v) return;                                      // the tap that closed it also triggered this
   const ex=document.getElementById('vmenu');
   if(ex&&ex.dataset.vfor===name+'|'+ch+'|'+v){ closeVerseMenu(); return; }   // same verse again → just close
-  closeVerseMenu(); closeCopyMenus();
+  closeVerseMenu(); closeCopyMenus(); if(typeof closeSelMenu==='function') closeSelMenu();
   const anchor=ev.currentTarget||ev.target;
   const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu'; m.dataset.vfor=name+'|'+ch+'|'+v;
   m.innerHTML=`<div class="hlrow"><span class="hlbl">Highlight</span>
@@ -2673,7 +2676,7 @@ function onReaderSelect(){
     // which verse did the selection start in?
     let el=anc.nodeType===3?anc.parentNode:anc; while(el&&el!==reader&&!(el.classList&&el.classList.contains('verse'))) el=el.parentNode;
     const vAttr=(el&&el.dataset&&el.dataset.v)?el.dataset.v:null;
-    closeSelMenu(); const m=document.createElement('div'); m.className='vmenu'; m.id='selmenu';
+    closeSelMenu(); closeVerseMenu(); const m=document.createElement('div'); m.className='vmenu'; m.id='selmenu';
     const b=esc(window.BOOKS[state.book].name), ch=state.chapter;
     m.innerHTML=`<button onclick="selAct(event,'copy')">📋 Copy</button>
       <button onclick="selAct(event,'share')">🔗 Share</button>
@@ -2701,6 +2704,34 @@ function discSend(){ const el=document.getElementById('discQ'); const t=(el&&el.
   if(t.length<5){ toast('Type your question first'); return; }
   location.href='mailto:henryquarteyministries@gmail.com?subject='+encodeURIComponent('Bible Discourse — a question')
     +'&body='+encodeURIComponent(t+'\n\n— sent from Never Get Bored (bible.getwordwisdom.com)'); }
+/* Touch tap controller: single tap opens the verse menu (or just dismisses an open one);
+   a quick double tap opens the note / editor. Replaces click+dblclick on touch devices. */
+document.addEventListener('touchstart',()=>{ window._menuWasOpen=!!(document.getElementById('vmenu')||document.getElementById('selmenu')); },{capture:true,passive:true});
+(function(){ const rd=document.getElementById('reader'); if(!rd) return;
+  let lastKey='',lastT=0,timer=0;
+  rd.addEventListener('touchend',e=>{
+    if(!IS_TOUCH) return;
+    const t=e.target;
+    if(t.closest&&t.closest('.vn,.cmark,.vmenu-btn,.corrlink,a,button,select,input,textarea,.note,.notewrap,.vmenu,.copypop')) return;
+    const row=t.closest&&t.closest('.verse,.cmprow'); if(!row||!row.dataset.v) return;
+    if(state.view!=='read') return;
+    const name=window.BOOKS[state.book].name, ch=state.chapter, v=+row.dataset.v;
+    const key=name+'|'+ch+'|'+v, now=Date.now();
+    const sel=window.getSelection&&window.getSelection(); if(sel&&String(sel).length) return;
+    if(key===lastKey&&now-lastT<320){                       // double tap → the note
+      clearTimeout(timer); lastKey='';
+      const has=row.classList.contains('has-note');
+      closeVerseMenu(); if(typeof closeSelMenu==='function')closeSelMenu();
+      if(has) toggleVerse(v); else openEditor(name,ch,v);
+      return; }
+    lastKey=key; lastT=now;
+    clearTimeout(timer);
+    timer=setTimeout(()=>{
+      if(window._menuWasOpen){ closeVerseMenu(); if(typeof closeSelMenu==='function')closeSelMenu(); return; }   // tap only dismisses
+      verseMenu({stopPropagation(){},currentTarget:row},name,ch,v);
+    },330);
+  },{passive:true});
+})();
 /* Swipe left / right in the Bible view to change chapter (phones and tablets) */
 (function(){ const rd=document.getElementById('reader'); if(!rd) return;
   let sx=0,sy=0,st=0,go=false;
