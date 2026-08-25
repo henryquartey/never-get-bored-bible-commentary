@@ -179,6 +179,9 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
   background:var(--panel);color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:10px 15px;
   box-shadow:0 6px 20px rgba(0,0,0,.2);cursor:pointer}
 .fabnotes.show{opacity:1;pointer-events:auto;transform:none}
+.readprog{height:3px;background:var(--line);display:none;flex:0 0 auto}
+.readprog .fill{height:100%;width:0;background:var(--accent);transition:width .15s linear}
+.readnav .rn-armed{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
 .sheading{font-family:var(--serif);font-weight:700;margin:22px 0 8px;color:var(--ink);line-height:1.35}
 .sheading.s1{font-size:19px}
 .sheading.s2{font-size:15.5px;color:var(--soft)}
@@ -736,6 +739,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
       <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">☾</button>
       <button class="icon-btn rc" id="tbMore" data-ico="dots" onclick="tbMoreMenu(event)" title="More"></button>
     </div>
+    <div class="readprog" id="readprog"><div class="fill" id="readprogFill"></div></div>
     <div class="reader" id="reader"></div>
     <div class="readfoot" id="readfoot" style="display:none"></div>
   </main>
@@ -797,7 +801,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.55.0', date:'24 Aug 2026'};
+const BUILD={v:'0.56.0', date:'25 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -1086,12 +1090,25 @@ function planRead(day,ci){ const C=getPlan(); const rd=C[day]; if(!rd)return; co
 }
 function _markPlanChapterRead(day,ci){ const C=getPlan(); const chaps=readingChapters(C[day]); const cc=chaps[ci];
   if(cc){ const d=chDone(); d[cc[0]+' '+cc[1]]=true; saveChDone(d); } }
+let _planArm=null,_planArmT=0;
+function _armCross(btnId,label,key){                        // first tap: the button itself asks; second tap crosses
+  const b=document.getElementById(btnId); if(!b) return true;
+  if(_planArm===key){ _planArm=null; clearTimeout(_planArmT); return true; }
+  _planArm=key; const was=b.innerHTML; b.innerHTML=label; b.classList.add('rn-armed');
+  clearTimeout(_planArmT);
+  _planArmT=setTimeout(()=>{ _planArm=null; if(document.body.contains(b)){ b.innerHTML=was; b.classList.remove('rn-armed'); } },2400);
+  return false; }
 function planNav(delta){ if(!state.plan)return; const C=getPlan(); const chaps=readingChapters(C[state.plan.day]);
-  if(delta>0) _markPlanChapterRead(state.plan.day, state.plan.ci);   // finished this chapter → now tick it
   const ni=state.plan.ci+delta;
+  if(delta<0 && ni<0 && state.plan.day>0){                  // stepping back into the previous day
+    const pd=state.plan.day-1;
+    if(!_armCross('rnPrev',`← Back to Day ${pd+1}?`,'p'+pd)) return;
+    const pc=readingChapters(C[pd]); planRead(pd,pc.length-1);
+    toast(`Day ${pd+1} · ${dateLabel(pd)}${readingDone(C[pd],chDone())?' — already completed':''}`);
+    return; }
+  if(delta>0) _markPlanChapterRead(state.plan.day, state.plan.ci);   // finished this chapter → now tick it
   if(ni>=0 && ni<chaps.length) planRead(state.plan.day,ni);
   else if(ni>=chaps.length) planDayComplete();
-  else if(ni<0 && state.plan.day>0){ const pd=state.plan.day-1; const pc=readingChapters(C[pd]); planRead(pd,pc.length-1); }
 }
 function planDayComplete(){ if(!state.plan)return; const C=getPlan(); const day=state.plan.day;
   const nextDay=day+1; const hasNext=nextDay<C.length;
@@ -2048,11 +2065,11 @@ function renderRead(){
   let nav;
   if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]); const last=state.plan.ci>=chaps.length-1;
     nav=`<div class="readnav planmode">
-      <button onclick="planNav(-1)" ${state.plan.day===0&&state.plan.ci===0?'disabled':''}>← Prev</button>
+      <button id="rnPrev" onclick="planNav(-1)" ${state.plan.day===0&&state.plan.ci===0?'disabled':''}>← Prev</button>
       <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud(event)">▶︎ Listen</button>
       <button class="rn-listen" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">⏹</button>
       <span class="rn-mid">Day ${state.plan.day+1} · ${state.plan.ci+1}/${chaps.length}</span>
-      <button class="rn-next" onclick="planNav(1)">${last?'Finish day ✓':'Next →'}</button></div>`;
+      <button class="rn-next" id="rnNext" onclick="planNav(1)">${last?'Finish day ✓':'Next →'}</button></div>`;
   } else {
     nav=`<div class="readnav">
       <button onclick="prevChapter()" ${state.book===0&&ch===1?'disabled':''}>← Previous</button>
@@ -2065,6 +2082,7 @@ function renderRead(){
   fillVoiceSel(); _rdSyncBtn();
   if(AUD.key===_rdKey()&&AUD.el&&!AUD.el.paused){ AUD.vlast=null; _audFollowVerse(AUD.el.currentTime,AUD.here,true); }
   if(typeof _fabSync==='function')_fabSync();
+  if(typeof _progSync==='function')_progSync();
   buildBookList();
 }
 function jumpVerse(v){ const el=document.getElementById('v'+v); if(!el)return;
@@ -2770,6 +2788,14 @@ function _fabSync(){ const f=document.getElementById('fabNotes'); if(!f) return;
   f.textContent=hidden?'Show all commentary':'Hide all commentary';
   f.classList.toggle('show',!!show); }
 (function(){ const rd=document.getElementById('reader'); if(rd) rd.addEventListener('scroll',_fabSync,{passive:true}); })();
+/* Chapter reading progress bar */
+function _progSync(){ const tr=document.getElementById('readprog'), f=document.getElementById('readprogFill'), rd=document.getElementById('reader');
+  if(!tr||!f||!rd) return;
+  if(state.view!=='read'){ tr.style.display='none'; return; }
+  tr.style.display='block';
+  const max=rd.scrollHeight-rd.clientHeight;
+  f.style.width=(max>40?Math.min(100,Math.round(rd.scrollTop/max*100)):100)+'%'; }
+(function(){ const rd=document.getElementById('reader'); if(rd) rd.addEventListener('scroll',_progSync,{passive:true}); })();
 /* ---------- Install the app (PWA) ---------- */
 let _bip=null;
 window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); _bip=e; });
