@@ -293,6 +293,10 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
 .note{background:var(--note-bg);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;
   margin:10px 0 16px;padding:14px 16px;box-shadow:var(--shadow);font-family:var(--sans);font-size:calc(1em*var(--fs,1))}
 .note .meta{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.note.nhl-y{border-left-color:#ca8a04}.note.nhl-y .who.mine{color:#ca8a04}
+.note.nhl-g{border-left-color:#16a34a}.note.nhl-g .who.mine{color:#16a34a}
+.note.nhl-b{border-left-color:#2563eb}.note.nhl-b .who.mine{color:#2563eb}
+.note.nhl-p{border-left-color:#db2777}.note.nhl-p .who.mine{color:#db2777}
 .note .vref{font-size:12px;font-weight:700;color:var(--accent);font-family:var(--sans)}
 .note .badge{font-size:10px;background:var(--accent-soft);color:var(--accent);padding:2px 7px;border-radius:20px;font-weight:600}
 .note .date{font-size:11px;color:var(--soft);margin-left:auto}
@@ -801,7 +805,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.56.0', date:'25 Aug 2026'};
+const BUILD={v:'0.57.0', date:'26 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -2048,7 +2052,7 @@ function renderRead(){
       const mark=notes.length?`<span class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" ontouchend="event.stopPropagation();event.preventDefault();toggleVerse(${v})" title="Tap to show / hide Nii Okai’s commentary on this verse">Read Commentary</span>`:'';
       const ncTier=notes.length?(notes.length>=3?' nc3':notes.length===2?' nc2':' nc1'):'';
       const hlc=hlGet(name,ch,v);
-      html+=`<div class="verse ${notes.length?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${notes.length?1:0})" ${notes.length?`title="Tap for options · double-tap to read Nii Okai’s note"`:`title="Tap for options · double-tap to write a note"`}>
+      html+=`<div class="verse ${notes.length?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${notes.length?1:0})">
         <span class="vn" onclick="event.stopPropagation();openEditor('${esc(name)}',${ch},${v})" title="Add a note">${v}</span>${txt||'<i style="color:var(--soft)">(verse not in this translation)</i>'}${mark}
         <button class="add vmenu-btn" onclick="event.stopPropagation();verseMenu(event,'${esc(name)}',${ch},${v})" title="Copy · Share · Search · Compare · Note">⋯</button></div>`;
       if(notes.length){
@@ -2154,7 +2158,8 @@ function noteHTML(nt,name,ch,v,label){
   const ref=v==='0'?`${name} ${ch}`:`${name} ${ch}:${v}`;
   const seedV=(((window.COMMENTARY_SEED||{})[name]||{})[String(ch)]||{})[String(v)];
   const own=!(seedV&&seedV.some&&seedV.some(x=>x.id===nt.id));
-  return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
+  let nhl=''; try{ if(own&&v!=='0'){ const c=hlGet(name,ch,v); if(c) nhl=' nhl-'+c; } }catch(e){}
+  return `<div class="note${nhl}" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
     <div class="meta"><span class="who ${own?'mine':''}">${own?'MY NOTE':'NII OKAI'}</span><span class="vref">${ref}</span>
       ${label?`<span class="badge">${label}</span>`:''}
       ${nt.src==='import'?'<span class="badge">imported</span>':''}
@@ -2542,7 +2547,8 @@ function spellChip(ev,word){ ev.stopPropagation(); closeSpellPop();
       :'<div style="padding:8px 11px;color:var(--soft);font-size:13px">No suggestion found</div>')
     +'<div class="cp-sep"></div>'
     +`<button onclick="spellIgnore('${esc(word)}')">🚫 Ignore this time</button>`
-    +`<button onclick="spellAdd('${esc(word)}')">➕ Add to my dictionary</button>`;
+    +`<button onclick="spellAdd('${esc(word)}')">➕ Add to my dictionary</button>`
+    +`<button onclick="closeSpellPop();window.open('https://www.google.com/search?q='+encodeURIComponent('define ${esc(word)}'),'_blank','noopener')">📖 What does “${escHTML(word)}” mean?</button>`;
   document.body.appendChild(pop);
   const r=ev.currentTarget.getBoundingClientRect(); const mh=pop.offsetHeight, mw=pop.offsetWidth;
   let top=r.top-mh-6; if(top<8) top=r.bottom+6; let left=r.left; if(left+mw>window.innerWidth-8) left=window.innerWidth-mw-8;
@@ -2753,30 +2759,31 @@ document.addEventListener('touchstart',()=>{ window._menuWasOpen=!!(document.get
 /* Swipe left / right in the Bible view to change chapter (phones and tablets) */
 (function(){ const rd=document.getElementById('reader'); if(!rd) return;
   let sx=0,sy=0,st=0,go=false;
-  rd.addEventListener('touchstart',e=>{ if(state.view!=='read'||state.plan||e.touches.length!==1){go=false;return;}
+  rd.addEventListener('touchstart',e=>{ if(state.view!=='read'||e.touches.length!==1){go=false;return;}
     go=true; sx=e.touches[0].clientX; sy=e.touches[0].clientY; st=Date.now(); },{passive:true});
   rd.addEventListener('touchend',e=>{ if(!go) return; go=false;
     const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
     if(Date.now()-st>600||Math.abs(dx)<70||Math.abs(dy)>60) return;
     const sel=window.getSelection&&window.getSelection(); if(sel&&!sel.isCollapsed) return;
-    if(dx<0) nextChapter(); else prevChapter(); },{passive:true});
+    if(dx<0){ state.plan?planNav(1):nextChapter(); } else { state.plan?planNav(-1):prevChapter(); } },{passive:true});
 })();
 /* Desktop: two-finger horizontal swipe on a trackpad, or ← → keys, change chapter */
 (function(){ const rd=document.getElementById('reader'); if(!rd) return;
   let acc=0,lock=0,tmr=0;
   rd.addEventListener('wheel',e=>{
-    if(state.view!=='read'||state.plan) return;
+    if(state.view!=='read') return;
     if(Math.abs(e.deltaX)<=Math.abs(e.deltaY)*1.5) { acc=0; return; }   // mostly vertical → normal scroll
     const now=Date.now(); if(now<lock) return;
     acc+=e.deltaX; clearTimeout(tmr); tmr=setTimeout(()=>{acc=0;},220);
-    if(Math.abs(acc)>=160){ lock=now+900; acc=0; if(e.deltaX>0) nextChapter(); else prevChapter(); }
+    if(Math.abs(acc)>=160){ lock=now+900; acc=0;
+      if(e.deltaX>0){ state.plan?planNav(1):nextChapter(); } else { state.plan?planNav(-1):prevChapter(); } }
   },{passive:true});
   document.addEventListener('keydown',e=>{
-    if(state.view!=='read'||state.plan) return;
+    if(state.view!=='read') return;
     const t=e.target; if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)) return;
     if(e.metaKey||e.ctrlKey||e.altKey) return;
-    if(e.key==='ArrowRight'){ nextChapter(); e.preventDefault(); }
-    else if(e.key==='ArrowLeft'){ prevChapter(); e.preventDefault(); }
+    if(e.key==='ArrowRight'){ state.plan?planNav(1):nextChapter(); e.preventDefault(); }
+    else if(e.key==='ArrowLeft'){ state.plan?planNav(-1):prevChapter(); e.preventDefault(); }
   });
 })();
 /* Floating pill — appears once you scroll into a commented chapter, stays until you
