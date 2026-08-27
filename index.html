@@ -182,6 +182,18 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .readprog{height:3px;background:var(--line);display:none;flex:0 0 auto}
 .readprog .fill{height:100%;width:0;background:var(--accent);transition:width .15s linear}
 .readnav .rn-armed{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.vhint{position:fixed;z-index:240;pointer-events:none;opacity:0;transition:opacity .18s ease;
+  background:var(--panel);color:var(--soft);border:1px solid var(--line);border-radius:8px;
+  padding:5px 10px;font-family:var(--sans);font-size:11.5px;box-shadow:var(--shadow);white-space:nowrap}
+.vhint.show{opacity:1}
+.ed-colours{display:flex;align-items:center;gap:7px;margin:10px 0 2px;font-family:var(--sans)}
+.ed-colours .lbl{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--soft);margin-right:2px}
+.ed-colours .sw{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.ed-colours .sw-y{background:#facc15}.ed-colours .sw-g{background:#4ade80}
+.ed-colours .sw-b{background:#60a5fa}.ed-colours .sw-p{background:#f472b6}
+.ed-colours .sw-none{background:transparent;color:var(--soft);font-size:11px;line-height:1;box-shadow:inset 0 0 0 1px var(--line)}
+.ed-colours .sw.on{border-color:var(--ink)}
 .sheading{font-family:var(--serif);font-weight:700;margin:22px 0 8px;color:var(--ink);line-height:1.35}
 .sheading.s1{font-size:19px}
 .sheading.s2{font-size:15.5px;color:var(--soft)}
@@ -777,6 +789,14 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
     </div>
     <div class="mb">
       <textarea id="edText" placeholder="Share your thoughts on this verse…" spellcheck="true" autocapitalize="sentences" autocorrect="on" oninput="noteAutocorrect(event)"></textarea>
+      <div class="ed-colours" id="edColours" title="Colour this note — it also highlights the verse. Stays on this device only.">
+        <span class="lbl">Colour</span>
+        <button class="sw sw-none" data-c="" onclick="edSetColour('')" title="No colour">✕</button>
+        <button class="sw sw-y" data-c="y" onclick="edSetColour('y')" title="Yellow"></button>
+        <button class="sw sw-g" data-c="g" onclick="edSetColour('g')" title="Green"></button>
+        <button class="sw sw-b" data-c="b" onclick="edSetColour('b')" title="Blue"></button>
+        <button class="sw sw-p" data-c="p" onclick="edSetColour('p')" title="Pink"></button>
+      </div>
       <div class="ed-opts"><label title="Fixes obvious typos & capitalisation as you type — leaves your spelling & style alone"><input type="checkbox" id="edAuto" checked> Auto-correct</label>
         <span class="ed-hint">Flagged words show below — click one to fix, ignore, or add to your dictionary</span></div>
       <div class="ed-spell" id="edSpell" style="display:none"></div>
@@ -805,7 +825,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.57.0', date:'26 Aug 2026'};
+const BUILD={v:'0.58.0', date:'27 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -2049,10 +2069,11 @@ function renderRead(){
       const txt=verses[String(v)]||'';
       const notes=chData[String(v)]||[];
       const hasRef = state.journal==='modern' && refinedFor(name,ch,v);
-      const mark=notes.length?`<span class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" ontouchend="event.stopPropagation();event.preventDefault();toggleVerse(${v})" title="Tap to show / hide Nii Okai’s commentary on this verse">Read Commentary</span>`:'';
+      const _openNow=!document.documentElement.classList.contains('hide-notes');
+      const mark=notes.length?`<span class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" ontouchend="event.stopPropagation();event.preventDefault();toggleVerse(${v})" title="Show or hide the commentary on this verse">${_openNow?'Hide Commentary':'Read Commentary'}</span>`:'';
       const ncTier=notes.length?(notes.length>=3?' nc3':notes.length===2?' nc2':' nc1'):'';
       const hlc=hlGet(name,ch,v);
-      html+=`<div class="verse ${notes.length?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${notes.length?1:0})">
+      html+=`<div class="verse ${notes.length?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" data-hint="${notes.length?'Click for options · double-click to read the note':'Click for options · double-click to write a note'}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${notes.length?1:0})">
         <span class="vn" onclick="event.stopPropagation();openEditor('${esc(name)}',${ch},${v})" title="Add a note">${v}</span>${txt||'<i style="color:var(--soft)">(verse not in this translation)</i>'}${mark}
         <button class="add vmenu-btn" onclick="event.stopPropagation();verseMenu(event,'${esc(name)}',${ch},${v})" title="Copy · Share · Search · Compare · Note">⋯</button></div>`;
       if(notes.length){
@@ -2094,9 +2115,15 @@ function jumpVerse(v){ const el=document.getElementById('v'+v); if(!el)return;
   el.scrollIntoView({behavior:'smooth',block:'center'});
   const o=el.style.background; el.style.transition='background .3s'; el.style.background='var(--note-line)';
   setTimeout(()=>el.style.background=o,1000); }
+function _syncCmark(v){ const el=document.getElementById('v'+v); if(!el) return;
+  const m=el.querySelector('.cmark'); if(!m) return;
+  const hidden=document.documentElement.classList.contains('hide-notes');
+  const shown=hidden ? el.classList.contains('revealed') : !el.classList.contains('collapsed');
+  m.textContent=shown?'Hide Commentary':'Read Commentary'; }
 function toggleVerse(v){ const el=document.getElementById('v'+v); if(!el)return;
   if(document.documentElement.classList.contains('hide-notes')) el.classList.toggle('revealed'); // commentary globally off → reveal just this verse
-  else el.classList.toggle('collapsed'); }                                                      // commentary on → hide just this verse
+  else el.classList.toggle('collapsed');                                                        // commentary on → hide just this verse
+  _syncCmark(v); }
 /* double-click a verse to hide/show its commentary — clear the word the double-click selected so the highlight menu doesn't pop */
 function dblToggleVerse(v){ try{ const s=window.getSelection(); if(s&&s.removeAllRanges) s.removeAllRanges(); }catch(e){}
   if(typeof closeSelMenu==='function') closeSelMenu(); toggleVerse(v); }
@@ -2340,6 +2367,7 @@ function openEditor(name,ch,v){
   document.getElementById('edText').value='';
   document.getElementById('edDelete').style.display='none';
   _lastAuto=null; updateSpellStrip(document.getElementById('edText'));
+  _edLoadColour();
   document.getElementById('overlay').classList.add('show');
   setTimeout(()=>document.getElementById('edText').focus(),50);
 }
@@ -2351,6 +2379,7 @@ function editNote(name,ch,v,id){
   document.getElementById('edText').value=nt.text;
   document.getElementById('edDelete').style.display='';
   _lastAuto=null; updateSpellStrip(document.getElementById('edText'));
+  _edLoadColour();
   document.getElementById('overlay').classList.add('show');
   setTimeout(()=>document.getElementById('edText').focus(),50);
 }
@@ -2361,6 +2390,12 @@ function showVerseInEditor(name,ch,v){
   const txt=(bib[String(ch)]||{})[String(v)]||'';
   el.innerHTML=`<b>${name} ${ch}:${v}</b> &nbsp;<span style="color:var(--soft)">${state.version}</span><br>${txt}`;
 }
+let _edColour='';
+function edSetColour(c){ _edColour=c; _edSyncColour(); }
+function _edSyncColour(){ document.querySelectorAll('#edColours .sw').forEach(b=>
+  b.classList.toggle('on',(b.dataset.c||'')===(_edColour||''))); }
+function _edLoadColour(){ try{ const {book,ch,v}=editing;
+  _edColour=(v&&v!=='0')?hlGet(book,ch,v):''; }catch(e){ _edColour=''; } _edSyncColour(); }
 function saveEditor(){
   const text=sacredCase(document.getElementById('edText').value.trim());
   if(!text){ toast('Nothing to save'); return; }
@@ -2370,6 +2405,9 @@ function saveEditor(){
   const arr=DATA[book][String(ch)][String(v)];
   if(id){ const nt=arr.find(n=>n.id===id); nt.text=text; nt.date=nt.date||new Date().toISOString(); nt.edited=new Date().toISOString(); }
   else{ arr.push({id:Math.random().toString(36).slice(2,12),text:text,date:new Date().toISOString(),src:'user'}); }
+  if(v&&v!=='0'){ const h=_hl(), k=book+'|'+ch+'|'+v;
+    if(_edColour) h[k]=_edColour; else delete h[k];
+    try{ localStorage.setItem('nok_hl',JSON.stringify(h)); }catch(e){} }
   const jv=(v==='0')?1:parseInt(v,10);
   persist(); closeEditor(); markDirty();
   if(state.view==='mine') renderMine();
@@ -2656,8 +2694,11 @@ function verseMenu(ev,name,ch,v){ ev.stopPropagation();
     ${AUD.key===name+'|'+ch&&AUD.src==='human'&&AUD.el&&!AUD.el.paused&&!(AUD.info&&AUD.info.exact)?`<button onclick="closeVerseMenu();audAnchor(${v})" title="Tell the app the narrator is reading this verse right now — the highlight will follow more accurately">🎧 Narrator is on this verse now</button>`:''}`;
   document.body.appendChild(m);
   const r=anchor.getBoundingClientRect(); const mw=m.offsetWidth, mh=m.offsetHeight;
-  let top=r.bottom+6; if(top+mh>window.innerHeight-8) top=Math.max(8,r.top-mh-6);
-  let left=r.left; if(left+mw>window.innerWidth-8) left=window.innerWidth-mw-8;
+  const pt=window._vPoint;                                  // where the tap/click actually landed
+  const near=pt&&Math.abs(Date.now()-pt.t)<1500&&pt.y>=r.top-4&&pt.y<=r.bottom+4;
+  const ax=near?pt.x:r.left, ay=near?pt.y:r.bottom;
+  let top=ay+8; if(top+mh>window.innerHeight-8) top=Math.max(8,ay-mh-8);
+  let left=near?ax-24:r.left; if(left+mw>window.innerWidth-8) left=window.innerWidth-mw-8;
   m.style.top=top+'px'; m.style.left=Math.max(8,left)+'px';
 }
 function vmDo(ev,action,name,ch,v){ ev.stopPropagation(); closeVerseMenu();
@@ -2730,11 +2771,46 @@ function discSend(){ const el=document.getElementById('discQ'); const t=(el&&el.
     +'&body='+encodeURIComponent(t+'\n\n— sent from Never Get Bored (bible.getwordwisdom.com)'); }
 /* Touch tap controller: single tap opens the verse menu (or just dismisses an open one);
    a quick double tap opens the note / editor. Replaces click+dblclick on touch devices. */
-document.addEventListener('touchstart',()=>{ window._menuWasOpen=!!(document.getElementById('vmenu')||document.getElementById('selmenu')); },{capture:true,passive:true});
+document.addEventListener('touchstart',e=>{ window._menuWasOpen=!!(document.getElementById('vmenu')||document.getElementById('selmenu'));
+  const t=e.touches&&e.touches[0]; if(t) window._vPoint={x:t.clientX,y:t.clientY,t:Date.now()}; },{capture:true,passive:true});
+document.addEventListener('mousedown',e=>{ window._vPoint={x:e.clientX,y:e.clientY,t:Date.now()}; },{capture:true,passive:true});
+/* Hover hint — one bubble the app owns, so it can never linger between verses */
+(function(){ if(IS_TOUCH) return;
+  const rd=document.getElementById('reader'); if(!rd) return;
+  let el=null,cur=null,tmr=0;
+  const hide=()=>{ clearTimeout(tmr); cur=null; if(el) el.classList.remove('show'); };
+  rd.addEventListener('mouseover',e=>{
+    const v=e.target.closest&&e.target.closest('.verse[data-hint]');
+    if(!v){ hide(); return; }
+    if(v===cur) return;
+    cur=v; clearTimeout(tmr);
+    tmr=setTimeout(()=>{
+      if(cur!==v||document.getElementById('vmenu')||document.getElementById('selmenu')) return;
+      if(!el){ el=document.createElement('div'); el.className='vhint'; document.body.appendChild(el); }
+      el.textContent=v.dataset.hint;
+      const r=v.getBoundingClientRect();
+      el.style.top=Math.max(6,r.top-30)+'px';
+      el.style.left=Math.min(window.innerWidth-el.offsetWidth-10,Math.max(8,r.left+14))+'px';
+      el.classList.add('show');
+      clearTimeout(tmr); tmr=setTimeout(hide,2600);
+    },550);
+  });
+  rd.addEventListener('mouseleave',hide);
+  rd.addEventListener('scroll',hide,{passive:true});
+  document.addEventListener('mousedown',hide,{capture:true});
+})();
 (function(){ const rd=document.getElementById('reader'); if(!rd) return;
   let lastKey='',lastT=0,timer=0;
+  rd.addEventListener('touchstart',e=>{ const t=e.touches&&e.touches[0];
+    if(t) window._tStart={x:t.clientX,y:t.clientY,t:Date.now()}; },{passive:true});
+  rd.addEventListener('touchmove',e=>{ const st=window._tStart, t=e.touches&&e.touches[0];
+    if(st&&t&&(Math.abs(t.clientX-st.x)>8||Math.abs(t.clientY-st.y)>8)) window._tMoved=true; },{passive:true});
   rd.addEventListener('touchend',e=>{
     if(!IS_TOUCH) return;
+    const st=window._tStart, moved=window._tMoved; window._tMoved=false;
+    const ct=e.changedTouches&&e.changedTouches[0];
+    if(st&&ct&&(moved||Math.abs(ct.clientX-st.x)>10||Math.abs(ct.clientY-st.y)>10||Date.now()-st.t>700)){
+      clearTimeout(timer); lastKey=''; return; }        // a scroll or a long press, not a tap
     const t=e.target;
     if(t.closest&&t.closest('.vn,.cmark,.vmenu-btn,.corrlink,a,button,select,input,textarea,.note,.notewrap,.vmenu,.copypop')) return;
     const row=t.closest&&t.closest('.verse,.cmprow'); if(!row||!row.dataset.v) return;
