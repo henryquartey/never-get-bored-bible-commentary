@@ -509,7 +509,7 @@ html.show-dates .mc-item .mc-date{display:inline}
 .toast.show{opacity:1}
 .unsaved-dot{display:inline-block;width:8px;height:8px;background:#e0a020;border-radius:50%;margin-left:5px;vertical-align:middle}
 
-.updbar{position:fixed;left:12px;right:12px;bottom:14px;z-index:200;background:var(--accent);color:var(--on-accent);
+.updbar{position:fixed;left:12px;right:12px;bottom:calc(66px + env(safe-area-inset-bottom));z-index:200;background:var(--accent);color:var(--on-accent);
   border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;
   box-shadow:0 6px 24px rgba(0,0,0,.3);font-family:var(--sans);font-size:14px;font-weight:600}
 .updbar button{background:var(--on-accent);color:var(--accent);border:none;border-radius:20px;padding:6px 14px;font-weight:700;cursor:pointer;font-family:inherit}
@@ -828,7 +828,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.59.0', date:'28 Aug 2026'};
+const BUILD={v:'0.60.0', date:'28 Aug 2026'};
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
@@ -1853,6 +1853,7 @@ function renderMenu(){
     ${item(ICONS.library,'Matthew Henry’s Commentary','The classic commentary, shown alongside your reading','menuMHC()')}
     ${item(ICONS.audio,'Welcome Message','Read or listen to the welcome — and unlock the reader’s gift',"setView('about')")}
     ${item('📲','Install the App','Put it on your home screen — opens full-screen, works offline','installApp()')}
+    ${item('🔄','Check for Updates',`You are on version ${BUILD.v} — tap to look for a newer one`,'checkForUpdates()')}
     ${BLOG_URL?item(ICONS.pen,'Blog','Reflections and essays from Nii Okai',`window.open(BLOG_URL,'_blank','noopener')`):item(ICONS.pen,'Blog Posts','Reflections and essays from Nii Okai','',true)}
     ${item(ICONS.book,'Verse Guides','Deep-dive guides through key verses','',true)}
     ${item(ICONS.pray,'Prayer Guides','Guided prayers to carry you through the day','',true)}
@@ -3162,6 +3163,19 @@ async function _showUpdBar(){ if(document.getElementById('updbar')) return;
     +'<button class="upd-btn" onclick="_doUpdate()">Update</button>'
     +'<button class="upd-x" onclick="document.getElementById(\'updbar\').remove()" title="Later">✕</button>';
   document.body.appendChild(b); }
+/* Manual update check — tells you either way, so the app is never silently stale */
+async function checkForUpdates(){
+  toast('Checking…');
+  let latest=null;
+  try{ const t=await (await fetch('index.html?ts='+Date.now(),{cache:'no-store'})).text();
+    const m=t.match(/BUILD=\{v:'([\d.]+)'/); if(m) latest=m[1]; }catch(e){}
+  if(!latest){ toast('Could not check — are you online?'); return; }
+  const cmp=(a,b)=>{ const A=a.split('.').map(Number), B=b.split('.').map(Number);
+    for(let i=0;i<3;i++){ if((A[i]||0)!==(B[i]||0)) return (A[i]||0)-(B[i]||0); } return 0; };
+  if(cmp(latest,BUILD.v)>0){ _updShown=true; _showUpdBar(); toast('Version '+latest+' is ready'); }
+  else{ try{ const r=await navigator.serviceWorker.getRegistration(); if(r) r.update(); }catch(e){}
+    toast('You are up to date — version '+BUILD.v); }
+}
 function _doUpdate(){
   window._updClicked=true;
   const done=()=>location.reload();
