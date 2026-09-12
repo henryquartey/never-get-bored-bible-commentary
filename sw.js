@@ -1,9 +1,9 @@
 /* Never Get Bored — service worker.
    Bump CACHE whenever the app shell changes so installed copies refresh. */
-const CACHE = 'ngb-v19';
+const CACHE = 'ngb-v33';
 const PRECACHE = [
   './', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png',
-  './data/books.js', './data/versions.js', './data/KJV.js', './data/chronological.js', './data/audio_kjv.js',
+  './data/books.js', './data/versions.js', './data/KJV.js', './data/chronological.js', './data/headings.js', './data/audio_kjv.js',
   './data/commentary.js', './data/refined.js', './data/dict.js'
 ];
 /* Files that change often — always try the network first, fall back to cache offline. */
@@ -37,7 +37,7 @@ self.addEventListener('fetch', e => {
   }
   /* Bible translations, Matthew Henry, audio, icons: rarely change — cache first. */
   e.respondWith(
-    caches.match(req).then(hit => hit || fetch(req).then(res => {
+    caches.match(req, {ignoreSearch: true}).then(hit => hit || fetch(req).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
       return res;
     }))
