@@ -544,7 +544,7 @@ html.show-dates .mc-item .mc-date{display:inline}
 .ycard.ms{display:flex;gap:12px;align-items:center}
 .yempty{color:var(--soft);font-family:var(--sans);text-align:center;padding:30px 10px;line-height:1.5}
 .ymore{display:block;margin:6px auto 24px}
-body[data-view="read"] #youBtn,body[data-view="search"] #youBtn{display:none}
+@media (max-width:760px){ body[data-view="read"] #youBtn,body[data-view="search"] #youBtn{display:none} }
 #youBtn .acav{width:26px;height:26px;font-size:12px}
 .mhead{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
   color:var(--soft);margin:20px 6px 8px}
@@ -879,7 +879,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.72.0', date:'12 Sep 2026'};
+const BUILD={v:'0.72.1', date:'12 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
