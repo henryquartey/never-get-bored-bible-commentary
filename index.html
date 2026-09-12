@@ -853,7 +853,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.70.0', date:'11 Sep 2026'};
+const BUILD={v:'0.71.0', date:'12 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -879,6 +879,7 @@ function init(){
   // load commentary: localStorage overrides seed
   try{ const s=localStorage.getItem(LS_KEY); DATA=s?JSON.parse(s):deepCopy(window.COMMENTARY_SEED||{}); }
   catch(e){ DATA=deepCopy(window.COMMENTARY_SEED||{}); }
+  try{ _seedMerge(); }catch(e){}   // notes published since this device last saved
   // prefs
   try{ const p=JSON.parse(localStorage.getItem(LS_PREFS)||'{}');
     if(p.version&&window.VERSIONS[p.version]) state.version=p.version;
@@ -952,7 +953,7 @@ function savePrefs(){localStorage.setItem(LS_PREFS,JSON.stringify({
   hideNotes:document.documentElement.classList.contains('hide-notes'),
   journal:state.journal,refcomm:state.refcomm,
   view:state.view,plan:state.plan,planResume:planResume,planSel:planSel}))}
-function persist(){localStorage.setItem(LS_KEY,JSON.stringify(DATA));}
+function persist(){localStorage.setItem(LS_KEY,JSON.stringify(DATA)); try{ _nsSchedule(); }catch(e){} }
 
 /* ---------- Version loading ---------- */
 function buildVersionSelect(){
@@ -2478,6 +2479,7 @@ function deleteCurrent(){
   if(!confirm('Delete this note?'))return;
   const arr=DATA[book][String(ch)][String(v)];
   const i=arr.findIndex(n=>n.id===id); if(i>=0)arr.splice(i,1);
+  try{ _nsTombAdd(id,book); }catch(e){}
   if(!arr.length){ delete DATA[book][String(ch)][String(v)];
     if(!Object.keys(DATA[book][String(ch)]).length) delete DATA[book][String(ch)]; }
   persist(); closeEditor(true); markDirty();
@@ -3291,8 +3293,9 @@ function accountMenu(){
   const ov=document.createElement('div'); ov.className='bkov'; ov.id='acOv';
   ov.innerHTML='<div class="bkcard">'
     +'<div class="achead"><span class="acav">'+_acLetter()+'</span><b>'+escHTML(u.email||'Signed in')+'</b></div>'
-    +'<button class="btn primary" onclick="closeAccountMenu();fbPull()">Sync now</button>'
-    +'<p>Brings in anything saved on your other devices, and sends up whatever is new here.</p>'
+    +'<button class="btn primary" onclick="closeAccountMenu();fbPull();nsSync(true)">Sync now</button>'
+    +'<p>Brings in notes, highlights and your place from your other devices, and sends up whatever is new here.</p>'
+    +'<p id="acNsLine" style="margin-top:8px">'+_nsStatusLine()+'</p>'
     +'<button class="btn" onclick="closeAccountMenu();fbSignOutNow()">Sign out</button>'
     +'<p>Stops syncing on this device. Nothing already here is deleted.</p>'
     +'<button class="btn" onclick="closeAccountMenu()">Cancel</button></div>';
@@ -3305,9 +3308,9 @@ function backupMenu(){
   closeBackupMenu();
   const ov=document.createElement('div'); ov.className='bkov'; ov.id='bkOv';
   ov.innerHTML='<div class="bkcard"><h3>Your journal</h3>'
-    +'<button class="btn primary" onclick="closeBackupMenu();backupJournal()">\U0001F4BE Back up to a file</button>'
+    +'<button class="btn primary" onclick="closeBackupMenu();backupJournal()">💾 Back up to a file</button>'
     +'<p>Saves your highlights, your notes and your reading place to one file you can keep, or move to another device.</p>'
-    +'<button class="btn" onclick="closeBackupMenu();restoreJournal()">\U0001F4E5 Restore from a file</button>'
+    +'<button class="btn" onclick="closeBackupMenu();restoreJournal()">📥 Restore from a file</button>'
     +'<p>Brings a journal file back in. Nothing already on this device is deleted — it only ever adds.</p>'
     +'<button class="btn" onclick="closeBackupMenu()">Cancel</button></div>';
   ov.addEventListener('click',e=>{ if(e.target===ov) closeBackupMenu(); });
@@ -3425,7 +3428,7 @@ function fbOnAuth(u){
   if(!u) return;
   window._fbLastPos=_fbPosKey();
   try{ localStorage.setItem('nok_seen_signin','1'); }catch(e){}   // the invitation has done its job
-  fbPull();
+  fbPull(); nsSync();
 }
 async function fbPull(){
   const u=fbUser(); if(!u){ toast('You are not signed in'); return; }
@@ -3484,7 +3487,104 @@ async function fbPush(){
 }
 setInterval(()=>{ if(!fbUser()) return;
   const s=JSON.stringify(_fbSnap()); if(s!==window._fbLastSnap) fbPush(); },20000);
-document.addEventListener('visibilitychange',()=>{ if(document.hidden&&fbUser()) fbPush(); });
+document.addEventListener('visibilitychange',()=>{ if(!fbUser()) return; if(document.hidden){ fbPush(); nsPush(); } else nsSync(); });
+
+/* ---------- Notes follow your account ----------
+   What travels is only what is YOURS: notes the published journal does not have, edits you made to
+   published notes, and deletions (as tombstones). Stored one document per book so nothing can hit
+   Firestore's size limit. Nii Okai's own account writes to /published/<book>, which the website
+   reads every few minutes and folds into the journal — no Mac needed. Everyone else writes to
+   /users/<uid>/notes/<book>, private to them. */
+const NS_OWNER_EMAILS=['quarteyjr@gmail.com','quarteyjnr@gmail.com'];
+const NS_TOMB='nok_note_x';
+let _nsTimer=null, _nsSent={}, _nsBusy=false, _nsLast='';
+function _nsIsOwner(u){ return !!(u&&u.email&&NS_OWNER_EMAILS.indexOf(String(u.email).toLowerCase())>=0); }
+function _nsPath(u){ return _nsIsOwner(u)?['published']:['users',u.uid,'notes']; }
+function _nsTomb(){ try{ const t=JSON.parse(localStorage.getItem(NS_TOMB)||'{}'); return (t&&typeof t==='object')?t:{}; }catch(e){ return {}; } }
+function _nsTombAdd(id,book){ const t=_nsTomb(); t[id]={t:new Date().toISOString(),b:book}; localStorage.setItem(NS_TOMB,JSON.stringify(t)); }
+function _nsIndex(obj){ const ix={};
+  Object.keys(obj||{}).forEach(b=>Object.keys(obj[b]).forEach(ch=>Object.keys(obj[b][ch]).forEach(v=>(obj[b][ch][v]||[]).forEach(nt=>{ if(nt&&nt.id) ix[nt.id]={b:b,ch:ch,v:v,nt:nt}; }))));
+  return ix; }
+function _nsStamp(nt){ return String(nt.edited||nt.date||''); }
+/* Bring in anything published since this device last saved. Published corrections win over an
+   unedited local copy; a note you edited yourself keeps your edit; deleted notes stay deleted. */
+function _seedMerge(){
+  const seed=window.COMMENTARY_SEED||{}; if(!Object.keys(seed).length) return;
+  const tomb=_nsTomb(), ix=_nsIndex(DATA); let changed=false;
+  Object.keys(seed).forEach(b=>Object.keys(seed[b]).forEach(ch=>Object.keys(seed[b][ch]).forEach(v=>(seed[b][ch][v]||[]).forEach(sn=>{
+    if(!sn||!sn.id||tomb[sn.id]) return;
+    const loc=ix[sn.id];
+    if(!loc){ DATA[b]=DATA[b]||{}; DATA[b][ch]=DATA[b][ch]||{}; DATA[b][ch][v]=DATA[b][ch][v]||[]; DATA[b][ch][v].push(deepCopy(sn)); changed=true; }
+    else if(!loc.nt.edited && loc.nt.text!==sn.text){ loc.nt.text=sn.text; if(sn.date) loc.nt.date=sn.date; changed=true; }
+  }))));
+  if(changed) localStorage.setItem(LS_KEY,JSON.stringify(DATA));
+}
+/* What this device has that the published journal does not, per book. */
+function _nsDelta(){
+  const seedIx=_nsIndex(window.COMMENTARY_SEED||{}), tomb=_nsTomb(), out={};
+  const put=(b,id,rec)=>{ out[b]=out[b]||{n:{},x:{}}; out[b].n[id]=rec; };
+  Object.keys(DATA).forEach(b=>Object.keys(DATA[b]).forEach(ch=>Object.keys(DATA[b][ch]).forEach(v=>(DATA[b][ch][v]||[]).forEach(nt=>{
+    if(!nt||!nt.id) return;
+    const sd=seedIx[nt.id];
+    if(!sd || sd.nt.text!==nt.text || nt.edited){
+      const rec={c:String(ch),v:String(v),t:nt.text,d:nt.date||''}; if(nt.edited) rec.e=nt.edited; if(nt.src) rec.s=nt.src;
+      put(b,nt.id,rec);
+    }
+  }))));
+  Object.keys(tomb).forEach(id=>{ const tb=tomb[id]||{}; const b=tb.b||(seedIx[id]&&seedIx[id].b); if(!b||!tb.t) return;
+    out[b]=out[b]||{n:{},x:{}}; out[b].x[id]=tb.t; });
+  return out;
+}
+function _nsSchedule(){ if(!fbUser()) return; clearTimeout(_nsTimer); _nsTimer=setTimeout(()=>nsPush(),2500); }
+/* Send up: merge-only writes, so one device can never erase what another one added. */
+async function nsPush(){
+  const u=fbUser(); if(!u||!window.FB||!window.FB.setPath) return;
+  const delta=_nsDelta(), path=_nsPath(u);
+  for(const b of Object.keys(delta)){
+    const s=JSON.stringify(delta[b]); if(_nsSent[b]===s) continue;
+    try{ await window.FB.setPath(path.concat([b]),{n:delta[b].n,x:delta[b].x,u:Date.now(),email:u.email||''}); _nsSent[b]=s; }catch(e){}
+  }
+  _nsLast=new Date().toISOString();
+}
+/* Bring down: apply every note from the account, newest edit wins, tombstones delete. */
+async function nsPull(){
+  const u=fbUser(); if(!u||!window.FB||!window.FB.col) return 0;
+  let docs; try{ docs=await window.FB.col(_nsPath(u)); }catch(e){ return -1; }
+  const ix=_nsIndex(DATA), tomb=_nsTomb(); let changed=0;
+  docs.forEach(d=>{ const b=d.id, n=d.data.n||{}, x=d.data.x||{};
+    Object.keys(n).forEach(id=>{ const r=n[id]; if(!r||!r.t) return;
+      const dead=x[id]&&x[id]>String(r.e||r.d||''); if(dead) return;
+      const loc=ix[id];
+      if(loc){ if(String(r.e||'')>_nsStamp(loc.nt) && loc.nt.text!==r.t){ loc.nt.text=r.t; loc.nt.edited=r.e; changed++; } }
+      else if(!tomb[id]){ const ch=String(r.c), v=String(r.v);
+        DATA[b]=DATA[b]||{}; DATA[b][ch]=DATA[b][ch]||{}; DATA[b][ch][v]=DATA[b][ch][v]||[];
+        const nt={id:id,text:r.t,date:r.d||new Date().toISOString(),src:r.s||'user'}; if(r.e) nt.edited=r.e;
+        DATA[b][ch][v].push(nt); ix[id]={b:b,ch:ch,v:v,nt:nt}; changed++; }
+    });
+    Object.keys(x).forEach(id=>{ const loc=ix[id]; if(!loc) return;
+      if(loc.nt.edited && String(loc.nt.edited)>x[id]) return;      // edited here after it was deleted elsewhere: keep
+      const arr=DATA[loc.b][loc.ch][loc.v]; const i=arr.findIndex(q=>q.id===id); if(i>=0){ arr.splice(i,1); changed++; }
+      if(!arr.length){ delete DATA[loc.b][loc.ch][loc.v]; if(!Object.keys(DATA[loc.b][loc.ch]).length) delete DATA[loc.b][loc.ch]; }
+      delete ix[id]; if(!tomb[id]){ tomb[id]={t:x[id],b:b}; } });
+  });
+  if(changed){ localStorage.setItem(NS_TOMB,JSON.stringify(tomb)); localStorage.setItem(LS_KEY,JSON.stringify(DATA)); }
+  return changed;
+}
+async function nsSync(say){
+  if(_nsBusy||!fbUser()) return; _nsBusy=true;
+  try{
+    const got=await nsPull();
+    if(got<0){ if(say) toast('Could not reach your account — are you online?'); return; }
+    await nsPush();
+    if(got>0){ if(state.view==='read') renderRead(); else if(state.view==='mine'&&typeof renderMine==='function') renderMine(); }
+    if(say) toast(got>0?('Notes synced — '+got+' brought in'):'Notes synced — everything is up to date');
+    const l=document.getElementById('acNsLine'); if(l) l.textContent=_nsStatusLine();
+  } finally{ _nsBusy=false; }
+}
+function _nsStatusLine(){ const d=_nsDelta(); let n=0; Object.keys(d).forEach(b=>{ n+=Object.keys(d[b].n).length; });
+  const u=fbUser(); const where=_nsIsOwner(u)?'the website folds them into the journal within minutes':'kept in your own account';
+  return (n?('Your own notes: '+n+' synced — '):'No notes of your own yet — ')+where+(_nsLast?(' · last sync '+new Date(_nsLast).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})):''); }
+setInterval(()=>{ if(fbUser()&&!document.hidden) nsSync(); },300000);
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show');
   clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3200); }
 function esc(s){ return String(s).replace(/'/g,"\\'"); }
@@ -3562,7 +3662,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/fireba
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
          signOut, onAuthStateChanged, setPersistence,
          indexedDBLocalPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDUrX-Z90fK6-8yfuR5Niw9dXN_09QStlA",
   authDomain: "nii-okai-bible-commentary.firebaseapp.com",
@@ -3597,7 +3697,9 @@ try{
     },
     signOut: () => signOut(auth),
     get: async uid => { const snap = await getDoc(doc(db, 'users', uid)); return snap.exists() ? snap.data() : null; },
-    put: (uid, data) => setDoc(doc(db, 'users', uid), data, { merge: true })
+    put: (uid, data) => setDoc(doc(db, 'users', uid), data, { merge: true }),
+    col: async path => { const q = await getDocs(collection(db, ...path)); const out = []; q.forEach(d => out.push({ id: d.id, data: d.data() })); return out; },
+    setPath: (path, data) => setDoc(doc(db, ...path), data, { merge: true })
   };
   getRedirectResult(auth).catch(() => {});
   onAuthStateChanged(auth, u => { window.FB.user = u; if (window.fbOnAuth) window.fbOnAuth(u); });
