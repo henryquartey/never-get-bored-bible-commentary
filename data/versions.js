@@ -1,0 +1,1 @@
+window.VERSIONS={"KJV": "King James Version", "NHEB": "New Heart English Bible (modern)", "AKJV": "American King James (modern spelling)", "WEB": "World English Bible", "ASV": "American Standard Version", "GNV": "Geneva Bible 1599", "DARBY": "Darby Translation", "DRA": "Douay-Rheims", "BBE": "Bible in Basic English", "YLT": "Young's Literal Translation"};
