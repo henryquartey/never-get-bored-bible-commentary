@@ -1,1 +1,27 @@
-
+# Folds notes Nii Okai writes in the app (synced through his Google account) into the
+# published journal, every 10 minutes, on GitHub's own servers — no Mac needed.
+name: Fold in notes from the app
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: notes
+  cancel-in-progress: false
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bring in notes from the account
+        run: python3 .github/cloud_notes_merge.py data/commentary.js || echo "account not reachable yet"
+      - name: Publish if anything changed
+        run: |
+          if git diff --quiet -- data/commentary.js; then echo "nothing new"; exit 0; fi
+          git config user.name "Nii Okai's journal"
+          git config user.email "quarteyjr@gmail.com"
+          git add data/commentary.js
+          git commit -m "Notes from the app $(date -u '+%Y-%m-%d %H:%M')"
+          git push
