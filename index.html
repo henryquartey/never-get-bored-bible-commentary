@@ -521,6 +521,31 @@ html.show-dates .mc-item .mc-date{display:inline}
 .bkcard h3{margin:0 0 4px;font-size:17px}
 .bkcard .btn{display:block;width:100%;margin:10px 0 0}
 .bkcard p{font-size:12px;line-height:1.45;margin:6px 2px 0;color:var(--soft)}
+.you-head{display:flex;align-items:center;gap:14px;margin:4px 0 14px;font-family:var(--sans)}
+.you-head .acav{width:48px;height:48px;font-size:20px;flex:0 0 48px}
+.you-head .yn{font-family:var(--serif);font-size:20px;font-weight:600}
+.you-head .ys{color:var(--soft);font-size:13px;margin-top:2px}
+.you-head .gear{margin-left:auto;background:transparent;border:1px solid var(--line);border-radius:50%;width:36px;height:36px;color:var(--ink);font-size:17px;flex:0 0 36px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none;font-family:var(--sans)}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600}
+.chip.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.ycard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow);font-family:var(--sans);cursor:pointer}
+.ycard .yt{display:flex;align-items:flex-start;gap:10px}
+.ycard .yi{flex:0 0 34px;height:34px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:16px}
+.ycard .yi svg{width:17px;height:17px}
+.ycard .yl{flex:1;font-size:15px;line-height:1.35;padding-top:6px}
+.ycard .yw{color:var(--soft);font-size:12px;white-space:nowrap;margin-left:8px;padding-top:8px}
+.ycard .yq{font-family:var(--serif);font-size:15.5px;line-height:1.5;margin:10px 0 0;padding-left:12px;border-left:3px solid var(--accent);color:var(--ink)}
+.ycard .yq .yr{display:block;font-family:var(--sans);font-size:12px;font-weight:700;color:var(--soft);margin-top:4px}
+.ycard .yn{background:var(--note-bg);border-radius:12px;padding:10px 12px;margin-top:10px;font-size:14px;line-height:1.45;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.ycard .ybar{height:6px;border-radius:3px;background:var(--line);margin-top:10px;overflow:hidden}
+.ycard .ybar i{display:block;height:100%;background:var(--accent)}
+.ycard.ms{display:flex;gap:12px;align-items:center}
+.yempty{color:var(--soft);font-family:var(--sans);text-align:center;padding:30px 10px;line-height:1.5}
+.ymore{display:block;margin:6px auto 24px}
+body[data-view="read"] #youBtn,body[data-view="search"] #youBtn{display:none}
+#youBtn .acav{width:26px;height:26px;font-size:12px}
 .mhead{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
   color:var(--soft);margin:20px 6px 8px}
 .menulist .mhead:first-child{margin-top:6px}
@@ -779,6 +804,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
       <button class="icon-btn rc" id="cmpBtn" onclick="toggleCompare()" title="Compare two translations side by side">⇄</button>
       <button class="icon-btn rc" id="notesBtn" onclick="toggleNotes()" title="Show ALL of Nii Okai’s commentary / hide all (scripture only)">💬</button>
       <button class="icon-btn rc" id="refBtn" onclick="toggleRefComm()" title="Show / hide Matthew Henry's classic commentary (public domain)">📚</button>
+      <button class="icon-btn" id="youBtn" onclick="setView('you')" title="You — your notes, highlights and progress">👤</button>
       <button class="icon-btn rc" id="dateBtn" onclick="toggleDates()" title="Show / hide the dates notes were written" style="display:none">📅</button>
       <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">☾</button>
       <button class="icon-btn rc" id="tbMore" data-ico="dots" onclick="tbMoreMenu(event)" title="More"></button>
@@ -853,7 +879,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.71.0', date:'12 Sep 2026'};
+const BUILD={v:'0.72.0', date:'12 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -890,7 +916,7 @@ function init(){
     if(p.hideNotes===true){ document.documentElement.classList.add('hide-notes'); } // default: MY journal is shown
     if(p.journal==='original'||p.journal==='modern') state.journal=p.journal;
     if(p.refcomm) state.refcomm=true;
-    if(['read','plan','home','discourse','menu','mine'].includes(p.view)) state.view=p.view;
+    if(['read','plan','home','discourse','menu','mine','you'].includes(p.view)) state.view=p.view;
     if(p.plan&&typeof p.plan.day==='number') state.plan=p.plan;
     if(p.planResume&&typeof p.planResume.day==='number') planResume=p.planResume;
     if(typeof p.planSel==='number') planSel=p.planSel;
@@ -1027,6 +1053,7 @@ function render(){
   if(state.view==='about') return renderAbout();
   if(state.view==='plan') return renderPlan();
   if(state.view==='mine') return renderMine();
+  if(state.view==='you') return renderYou();
   ensureVersion(state.version, renderRead);
 }
 /* ---------- Chronological reading plan ---------- */
@@ -1165,6 +1192,7 @@ function planNav(delta){ if(!state.plan)return; const C=getPlan(); const chaps=r
   else if(ni>=chaps.length) planDayComplete();
 }
 function planDayComplete(){ if(!state.plan)return; const C=getPlan(); const day=state.plan.day;
+  try{ const pd=JSON.parse(localStorage.getItem('nok_plan_done')||'{}'); if(!pd[day]) pd[day]=new Date().toISOString(); localStorage.setItem('nok_plan_done',JSON.stringify(pd)); }catch(e){}
   const nextDay=day+1; const hasNext=nextDay<C.length;
   state.plan=null; planResume=null; planSel=Math.min(C.length-1,nextDay); state.view='plan'; setViewTabs(); renderPlan();
   showDayComplete(day+1, hasNext?nextDay:-1); }
@@ -1180,7 +1208,7 @@ function hlGet(name,ch,v){ return _hl()[name+'|'+ch+'|'+v]||''; }
 function vmHl(ev,name,ch,v,c){ ev.stopPropagation(); closeVerseMenu();
   const h=_hl(); const k=name+'|'+ch+'|'+v;
   if(c) h[k]=c; else delete h[k];
-  localStorage.setItem('nok_hl',JSON.stringify(h)); renderRead();
+  _hlSave(h); renderRead();
   setTimeout(()=>{ const el=document.getElementById('v'+v); if(el) el.scrollIntoView({block:'center'}); },50); }
 /* ---------- Reading voice (female / male / any installed voice) ---------- */
 const _VOICE_F=/female|\b(samantha|victoria|karen|moira|tessa|fiona|serena|allison|ava|susan|zoe|zoë|joanna|salli|kendra|kimberly|ivy|amy|emma|nicole|zira|aria|jenny|michelle|catherine|hazel|sonia|libby|clara|natasha|yuna|milena|shelley|sandy|martha|kate|ella|nora|olivia|luciana|asenath|ayanda|imani)\b/i;
@@ -1892,6 +1920,7 @@ function renderMenu(){
     ${item('📲','Install the App','Put it on your home screen — opens full-screen, works offline','installApp()')}
     ${item('🔄','Check for Updates',`You are on version ${BUILD.v} — tap to look for a newer one`,'checkForUpdates()')}
     ${head('Account')}
+    ${item('<span class="acav">'+(fbUser()?_acLetter():'✦')+'</span>','You','Your notes, highlights, plan days and milestones — newest first',"setView('you')")}
     ${fbUser()
       ?item('<span class="acav">'+_acLetter()+'</span>','Signed in as '+(fbUser().email||'your Google account'),'Your place and highlights follow you to every device','accountMenu()')
       :item('👤','Sign in with Google','Keep your reading place and highlights on every device you use','fbSignIn()')}
@@ -2467,7 +2496,7 @@ function saveEditor(){
   else{ arr.push({id:Math.random().toString(36).slice(2,12),text:text,date:new Date().toISOString(),src:'user'}); }
   if(v&&v!=='0'){ const h=_hl(), k=book+'|'+ch+'|'+v;
     if(_edColour) h[k]=_edColour; else delete h[k];
-    try{ localStorage.setItem('nok_hl',JSON.stringify(h)); }catch(e){} }
+    try{ _hlSave(h); }catch(e){} }
   const jv=(v==='0')?1:parseInt(v,10);
   persist(); closeEditor(true); markDirty();
   if(state.view==='mine') renderMine();
@@ -2531,7 +2560,7 @@ function _edCancelPreview(){ _edRevertPreview(); }
 function ilColour(ev,name,ch,v,c){ ev.stopPropagation();
   const h=_hl(), k=name+'|'+ch+'|'+v;
   if(c) h[k]=c; else delete h[k];
-  try{ localStorage.setItem('nok_hl',JSON.stringify(h)); }catch(e){}
+  try{ _hlSave(h); }catch(e){}
   const el=document.getElementById('v'+v);
   if(el){ el.classList.remove('hl-y','hl-g','hl-b','hl-p'); if(c) el.classList.add('hl-'+c); }
   const nw=document.getElementById('nw'+v);
@@ -2870,7 +2899,7 @@ function selShare(){ if(!VSEL.on) return; const s=selPayload();
 function selHl(c){ if(!VSEL.on) return;
   const name=window.BOOKS[state.book].name, h=_hl();
   selList().forEach(v=>{ const k=name+'|'+VSEL.ch+'|'+v; if(c) h[k]=c; else delete h[k]; });
-  try{ localStorage.setItem('nok_hl',JSON.stringify(h)); }catch(e){}
+  try{ _hlSave(h); }catch(e){}
   renderRead(); setTimeout(selPaint,30);
   toast(c?'Highlighted':'Highlight cleared'); }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&VSEL.on){ e.stopPropagation(); selEnd(); } },true);
@@ -3392,7 +3421,9 @@ const FB_KEYS={prefs:LS_PREFS,hl:'nok_hl',dict:'nok_userdict',
   chrono:'nok_chrono_ch',      // which plan chapters are done  (union)
   streak:'nok_streak',         // days you opened the app       (union)
   rdpos:'nok_rdpos',           // where you were in each chapter (union, local wins on clash)
-  anchor:'nok_plan_anchor'};   // the plan's start date          (follows the newest device, with prefs)
+  anchor:'nok_plan_anchor',    // the plan's start date          (follows the newest device, with prefs)
+  hlT:'nok_hl_t',              // when each highlight was made   (union)
+  planDone:'nok_plan_done'};   // when each plan day was finished (union)
 const FB_POS_T='nok_fb_post';
 function fbUser(){ return (window.FB&&window.FB.user)||null; }
 function _fbSnap(){ const o={}; Object.keys(FB_KEYS).forEach(k=>{ o[k]=localStorage.getItem(FB_KEYS[k])||''; }); return o; }
@@ -3408,7 +3439,8 @@ function _fbUnion(mineStr,theirsStr){
 }
 function dismissSignin(){ try{ localStorage.setItem('nok_seen_signin','1'); }catch(e){}
   const c=document.getElementById('signinCard'); if(c) c.remove(); }
-function fbMenuRefresh(){ const c=document.getElementById('crumb'); if(!c) return;
+function fbMenuRefresh(){ try{ const b=document.getElementById('youBtn'); if(b) b.innerHTML=fbUser()?'<span class="acav">'+_acLetter()+'</span>':'👤'; }catch(e){}
+  const c=document.getElementById('crumb'); if(!c) return;
   if(c.textContent==='Menu'&&typeof renderMenu==='function') renderMenu();
   else if(c.textContent==='Home'&&typeof renderHome==='function') renderHome(); }
 async function fbSignIn(){
@@ -3438,7 +3470,7 @@ async function fbPull(){
   let gained=0, moved=false;
   if(cloud){
     /* Things that only ever ADD: highlights, dictionary, chapters done, reading positions. */
-    ['hl','dict','chrono','rdpos'].forEach(k=>{
+    ['hl','dict','chrono','rdpos','hlT','planDone'].forEach(k=>{
       const m=_fbUnion(localStorage.getItem(FB_KEYS[k])||'',cloud[k]||'');
       if(m.added){ try{ localStorage.setItem(FB_KEYS[k],m.str); }catch(e){} gained+=m.added; }
     });
@@ -3515,7 +3547,7 @@ function _seedMerge(){
     if(!sn||!sn.id||tomb[sn.id]) return;
     const loc=ix[sn.id];
     if(!loc){ DATA[b]=DATA[b]||{}; DATA[b][ch]=DATA[b][ch]||{}; DATA[b][ch][v]=DATA[b][ch][v]||[]; DATA[b][ch][v].push(deepCopy(sn)); changed=true; }
-    else if(!loc.nt.edited && loc.nt.text!==sn.text){ loc.nt.text=sn.text; if(sn.date) loc.nt.date=sn.date; changed=true; }
+    else if(!loc.nt.edited){ if(loc.nt.text!==sn.text){ loc.nt.text=sn.text; changed=true; } if(sn.date&&loc.nt.date!==sn.date){ loc.nt.date=sn.date; changed=true; } }
   }))));
   if(changed) localStorage.setItem(LS_KEY,JSON.stringify(DATA));
 }
@@ -3585,6 +3617,90 @@ function _nsStatusLine(){ const d=_nsDelta(); let n=0; Object.keys(d).forEach(b=
   const u=fbUser(); const where=_nsIsOwner(u)?'the website folds them into the journal within minutes':'kept in your own account';
   return (n?('Your own notes: '+n+' synced — '):'No notes of your own yet — ')+where+(_nsLast?(' · last sync '+new Date(_nsLast).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})):''); }
 setInterval(()=>{ if(fbUser()&&!document.hidden) nsSync(); },300000);
+
+/* ---------- You — your own trail through Scripture, newest first ----------
+   Notes you wrote, verses you highlighted, plan days you finished, and milestones
+   (first note, 100 notes, a note in every book, 30 days in a row...). Everything is
+   read from what is already on the device; nothing new is stored except the time a
+   highlight was made and the day a plan day was finished. */
+let _youFilter='all', _youShown=30;
+const HL_RGB={y:'250,204,21',g:'74,222,128',b:'96,165,250',p:'244,114,182'};
+function _hlSave(h){
+  try{ const t=JSON.parse(localStorage.getItem('nok_hl_t')||'{}'); const now=new Date().toISOString(); let ch=false;
+    Object.keys(h).forEach(k=>{ if(!t[k]){ t[k]=now; ch=true; } });
+    if(ch) localStorage.setItem('nok_hl_t',JSON.stringify(t)); }catch(e){}
+  localStorage.setItem('nok_hl',JSON.stringify(h));
+}
+function _ago(iso){ if(!iso) return ''; const d=new Date(iso); if(isNaN(d)) return ''; const s=(Date.now()-d)/1000;
+  if(s<60) return 'now'; if(s<3600) return Math.floor(s/60)+'m'; if(s<86400) return Math.floor(s/3600)+'h';
+  if(s<604800) return Math.floor(s/86400)+'d'; if(s<31536000) return Math.floor(s/604800)+'w'; return Math.floor(s/31536000)+'y'; }
+function _verseText(b,ch,v){ const bib=(window.BIBLE||{})[state.version]||{}; return (((bib[b]||{})[String(ch)]||{})[String(v)])||''; }
+function _youEvents(){
+  const ev=[]; const owner=isOwner(); const seedIx=owner?null:_nsIndex(window.COMMENTARY_SEED||{});
+  Object.keys(DATA).forEach(b=>Object.keys(DATA[b]).forEach(ch=>Object.keys(DATA[b][ch]).forEach(v=>(DATA[b][ch][v]||[]).forEach(nt=>{
+    if(!nt||!nt.id) return; if(!owner&&seedIx[nt.id]) return;
+    ev.push({k:'note',t:String(nt.edited||nt.date||''),b:b,ch:+ch,v:+v,nt:nt}); }))));
+  const h=_hl(); let ht={}; try{ ht=JSON.parse(localStorage.getItem('nok_hl_t')||'{}'); }catch(e){}
+  Object.keys(h).forEach(k=>{ const p=k.split('|'); if(p.length<3) return; ev.push({k:'hl',t:ht[k]||'',b:p[0],ch:+p[1],v:+p[2],c:h[k]}); });
+  const C=getPlan(); let pd={}; try{ pd=JSON.parse(localStorage.getItem('nok_plan_done')||'{}'); }catch(e){}
+  Object.keys(pd).forEach(d=>{ ev.push({k:'plan',t:pd[d],day:+d,total:C.length}); });
+  /* milestones */
+  const notes=ev.filter(e=>e.k==='note'&&e.t).sort((a,c)=>a.t<c.t?-1:1);
+  [1,10,100,500,1000,2500,5000].forEach(n=>{ if(notes.length>=n) ev.push({k:'ms',t:notes[n-1].t,icon:'✍️',
+    title:n===1?'Your first note':n.toLocaleString()+' notes written',sub:n===1?notes[0].b+' '+notes[0].ch+(notes[0].v?':'+notes[0].v:''):'and still writing'}); });
+  [10,33,66].forEach(n=>{ const seen=new Set(); let when='';
+    for(const e of notes){ seen.add(e.b); if(seen.size===n){ when=e.t; break; } }
+    if(seen.size>=n) ev.push({k:'ms',t:when,icon:'📚',title:n===66?'A note in every book of the Bible':'Notes in '+n+' different books',sub:''}); });
+  const st=_streakStats();
+  [7,30,100,365].forEach(n=>{ if(st.daily>=n){ const dt=new Date(); dt.setDate(dt.getDate()-(st.daily-n));
+    ev.push({k:'ms',t:dt.toISOString(),icon:'🔥',title:n+' days in a row',sub:'Opened the app every day'}); } });
+  const d=chDone(); const done=C.length?C.filter(rd=>!rd.catchup&&readingDone(rd,d)).length:0;
+  [0.25,0.5,0.75,1].forEach(f=>{ if(C.length&&done>=Math.ceil(C.length*f)) ev.push({k:'ms',t:'',icon:f===1?'🏁':'📖',
+    title:f===1?'The whole plan — finished':Math.round(f*100)+'% of the plan read',sub:done+' of '+C.length+' days'}); });
+  ev.sort((a,c)=>(c.t||'')<(a.t||'')?-1:(c.t||'')>(a.t||'')?1:0);   // newest first; undated last
+  return ev;
+}
+function renderYou(){
+  document.getElementById('crumb').textContent='You';
+  document.getElementById('chapselWrap').style.display='none';
+  document.getElementById('readfoot').style.display='none';
+  const u=fbUser(); const ev=_youEvents();
+  const counts={all:ev.length,note:0,hl:0,plan:0,ms:0}; ev.forEach(e=>counts[e.k]++);
+  const list=ev.filter(e=>_youFilter==='all'||e.k===_youFilter);
+  const chip=(id,label)=>`<button class="chip ${_youFilter===id?'on':''}" onclick="_youFilter='${id}';_youShown=30;renderYou()">${label}${counts[id]?' <span style="opacity:.65">'+counts[id]+'</span>':''}</button>`;
+  const st=_streakStats(); const C=getPlan(), d=chDone();
+  const done=C.length?C.filter(rd=>!rd.catchup&&readingDone(rd,d)).length:0;
+  const who=u?escHTML((u.displayName||(u.email||'').split('@')[0]||'You')):'Your journal';
+  let html=`<div class="page">
+    <div class="you-head"><span class="acav">${u?_acLetter():'✦'}</span>
+      <div><div class="yn">${who}</div>
+        <div class="ys">${st.daily?st.daily+'-day streak · ':''}${counts.note} note${counts.note===1?'':'s'} · ${counts.hl} highlight${counts.hl===1?'':'s'}${C.length?' · day '+Math.min(C.length,done+1)+' of '+C.length:''}</div></div>
+      <button class="gear" onclick="${u?'accountMenu()':'fbSignIn()'}" title="${u?'Account':'Sign in'}">${u?'⚙':'→'}</button></div>
+    ${!u?`<div class="hcard" style="padding:14px 16px"><div class="hk">On this device only</div><p class="soft" style="margin:0 0 10px">Sign in with Google and everything here follows you to every device you use.</p><button class="btn primary" onclick="fbSignIn()">Sign in with Google</button></div>`:''}
+    <div class="chips">${chip('all','All')}${chip('note','Notes')}${chip('hl','Highlights')}${chip('plan','Plan')}${chip('ms','Milestones')}</div>`;
+  if(!list.length) html+=`<div class="yempty">${_youFilter==='hl'?'No highlights yet.<br>Tap a verse and pick a colour.':_youFilter==='note'?'No notes yet.<br>Tap a verse and write what you see.':_youFilter==='plan'?'Plan days you finish from now on will appear here.':'Nothing here yet — start reading.'}</div>`;
+  list.slice(0,_youShown).forEach(e=>{ html+=_youCard(e); });
+  if(list.length>_youShown) html+=`<button class="btn ymore" onclick="_youShown+=40;renderYou()">Show more · ${list.length-_youShown} earlier</button>`;
+  html+='</div>';
+  const r=document.getElementById('reader'); r.innerHTML=html; r.scrollTop=0;
+  if(!(window.BIBLE||{})[state.version]) ensureVersion(state.version,()=>{ if(state.view==='you') renderYou(); });
+}
+function _youCard(e){
+  const when=e.t?`<span class="yw">${_ago(e.t)}</span>`:'';
+  const clip=(t,n)=>t.length>n?t.slice(0,n).replace(/\s+\S*$/,'')+'…':t;
+  if(e.k==='note'){ const ref=e.v?`${e.b} ${e.ch}:${e.v}`:`${e.b} ${e.ch}`; const vt=e.v?_verseText(e.b,e.ch,e.v):'';
+    const edited=e.nt.edited&&e.nt.edited!==e.nt.date;
+    return `<div class="ycard" onclick="jumpTo('${esc(e.b)}',${e.ch},${e.v||1})"><div class="yt"><span class="yi">${ICONS.pen}</span><div class="yl">You wrote on <b>${ref}</b>${edited?' <span style="color:var(--soft)">· edited</span>':''}</div>${when}</div>
+      ${vt?`<div class="yq">${escHTML(clip(vt,170))}<span class="yr">${ref} ${state.version}</span></div>`:''}
+      <div class="yn">${escHTML(e.nt.text)}</div></div>`; }
+  if(e.k==='hl'){ const ref=`${e.b} ${e.ch}:${e.v}`; const vt=_verseText(e.b,e.ch,e.v); const rgb=HL_RGB[e.c]||HL_RGB.y;
+    return `<div class="ycard" onclick="jumpTo('${esc(e.b)}',${e.ch},${e.v})"><div class="yt"><span class="yi" style="background:rgba(${rgb},.35)">🖍</span><div class="yl">You highlighted <b>${ref}</b></div>${when}</div>
+      ${vt?`<div class="yq" style="border-left-color:rgb(${rgb})">${escHTML(vt)}<span class="yr">${ref} ${state.version}</span></div>`:''}</div>`; }
+  if(e.k==='plan'){ const pct=e.total?Math.round((e.day+1)/e.total*100):0;
+    return `<div class="ycard" onclick="setView('plan')"><div class="yt"><span class="yi">${ICONS.cal}</span><div class="yl">You completed <b>Day ${e.day+1}</b> of the chronological plan</div>${when}</div>
+      <div class="ybar"><i style="width:${pct}%"></i></div><div style="color:var(--soft);font-size:12px;margin-top:6px">Day ${e.day+1} of ${e.total} · ${pct}%</div></div>`; }
+  return `<div class="ycard ms" onclick="setView('${e.icon==='🔥'?'home':(e.icon==='📖'||e.icon==='🏁')?'plan':'mine'}')"><span class="yi" style="font-size:20px;flex-basis:40px;height:40px">${e.icon}</span><div style="flex:1"><div class="yl" style="padding-top:0"><b>${e.title}</b></div>${e.sub?`<div style="color:var(--soft);font-size:12.5px;margin-top:2px">${e.sub}</div>`:''}</div>${when}</div>`;
+}
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show');
   clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3200); }
 function esc(s){ return String(s).replace(/'/g,"\\'"); }
