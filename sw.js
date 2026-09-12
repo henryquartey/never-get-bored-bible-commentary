@@ -1,13 +1,13 @@
 /* Never Get Bored — service worker.
    Bump CACHE whenever the app shell changes so installed copies refresh. */
-const CACHE = 'ngb-v38';
+const CACHE = 'ngb-v39';
 const PRECACHE = [
   './', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png',
   './data/books.js', './data/versions.js', './data/KJV.js', './data/chronological.js', './data/headings.js', './data/audio_kjv.js',
   './data/commentary.js', './data/refined.js', './data/dict.js'
 ];
 /* Files that change often — always try the network first, fall back to cache offline. */
-const FRESH = /\/(index\.html|manifest\.webmanifest|data\/(commentary|refined|chronological|dict|books|versions|audio_kjv|audio_kokoro)\.js|data\/commentary\.json)$/;
+const FRESH = /\/(index\.html|manifest\.webmanifest|data\/(refined|chronological|dict|books|versions|audio_kjv|audio_kokoro)\.js|data\/commentary\.json)$/;
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
@@ -25,6 +25,30 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
 
+  /* The journal (2 MB): answer from cache at once, fetch the latest behind the scenes, and if it
+     changed, tell the open pages so they fold the new notes in without a reload. */
+  if (/\/data\/commentary\.js$/.test(url.pathname)) {
+    const work = caches.open(CACHE).then(c => c.match(req, {ignoreSearch: true}).then(hit => {
+      const old = hit ? hit.clone() : null;          // clone now: the page will consume `hit` itself
+      const net = fetch(req).then(async res => {
+        if (res.ok) {
+          const fresh = res.clone();
+          const oldText = old ? await old.text() : null;
+          const newText = await res.clone().text();
+          await c.put('./data/commentary.js', fresh);
+          if (oldText !== null && oldText !== newText) {
+            const cs = await self.clients.matchAll({type: 'window'});
+            cs.forEach(cl => cl.postMessage({type: 'commentary-updated'}));
+          }
+        }
+        return res;
+      }).catch(() => null);
+      return {hit, net};
+    }));
+    e.respondWith(work.then(({hit, net}) => hit || net.then(r => r || new Response('window.COMMENTARY_SEED={};', {headers: {'Content-Type': 'text/javascript'}}))));
+    e.waitUntil(work.then(({net}) => net));
+    return;
+  }
   const networkFirst = req.mode === 'navigate' || FRESH.test(url.pathname);
   if (networkFirst) {
     e.respondWith(

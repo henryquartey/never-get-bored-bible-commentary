@@ -882,7 +882,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <!-- DATA -->
 <script src="data/books.js"></script>
 <script src="data/versions.js"></script>
-<script src="data/commentary.js"></script>
+<script src="data/commentary.js" defer onload="_seedArrived()"></script>
 <script src="data/refined.js"></script>
 <script src="data/chronological.js"></script>
 <script src="data/headings.js" onerror="window.HEADINGS=null"></script>
@@ -893,7 +893,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.74.0', date:'12 Sep 2026'};
+const BUILD={v:'0.75.0', date:'12 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3555,7 +3555,7 @@ function _nsStamp(nt){ return String(nt.edited||nt.date||''); }
 /* Bring in anything published since this device last saved. Published corrections win over an
    unedited local copy; a note you edited yourself keeps your edit; deleted notes stay deleted. */
 function _seedMerge(){
-  const seed=window.COMMENTARY_SEED||{}; if(!Object.keys(seed).length) return;
+  const seed=window.COMMENTARY_SEED||{}; if(!Object.keys(seed).length) return false;
   const tomb=_nsTomb(), ix=_nsIndex(DATA); let changed=false;
   Object.keys(seed).forEach(b=>Object.keys(seed[b]).forEach(ch=>Object.keys(seed[b][ch]).forEach(v=>(seed[b][ch][v]||[]).forEach(sn=>{
     if(!sn||!sn.id||tomb[sn.id]) return;
@@ -3564,9 +3564,26 @@ function _seedMerge(){
     else if(!loc.nt.edited){ if(loc.nt.text!==sn.text){ loc.nt.text=sn.text; changed=true; } if(sn.date&&loc.nt.date!==sn.date){ loc.nt.date=sn.date; changed=true; } }
   }))));
   if(changed) localStorage.setItem(LS_KEY,JSON.stringify(DATA));
+  return changed;
 }
+function _seedReady(){ return !!(window.COMMENTARY_SEED&&Object.keys(window.COMMENTARY_SEED).length); }
+/* Called when data/commentary.js has loaded (it loads after first paint, and again whenever the
+   service worker finds a newer copy on the site). Folds it in and repaints what is on screen. */
+function _seedArrived(){
+  try{
+    const first=!window._seedSeen; window._seedSeen=true;
+    let ch=false;
+    if(!localStorage.getItem(LS_KEY)&&!Object.keys(DATA).length){ DATA=deepCopy(window.COMMENTARY_SEED||{}); ch=true; }
+    else ch=_seedMerge();
+    if(first||ch){ if(typeof render==='function'&&state&&state.view) render(); }
+    if(!first&&ch) toast('Journal updated');
+    if(fbUser()&&typeof nsSync==='function') nsSync();
+  }catch(e){}
+}
+function _seedRefetch(){ const sc=document.createElement('script'); sc.src='data/commentary.js?r='+Date.now(); sc.onload=_seedArrived; document.head.appendChild(sc); }
 /* What this device has that the published journal does not, per book. */
 function _nsDelta(){
+  if(!_seedReady()) return {};                 // never compare against a journal that has not loaded yet
   const seedIx=_nsIndex(window.COMMENTARY_SEED||{}), tomb=_nsTomb(), out={};
   const put=(b,id,rec)=>{ out[b]=out[b]||{n:{},x:{}}; out[b].n[id]=rec; };
   Object.keys(DATA).forEach(b=>Object.keys(DATA[b]).forEach(ch=>Object.keys(DATA[b][ch]).forEach(v=>(DATA[b][ch][v]||[]).forEach(nt=>{
@@ -3584,7 +3601,7 @@ function _nsDelta(){
 function _nsSchedule(){ if(!fbUser()) return; clearTimeout(_nsTimer); _nsTimer=setTimeout(()=>nsPush(),2500); }
 /* Send up: merge-only writes, so one device can never erase what another one added. */
 async function nsPush(){
-  const u=fbUser(); if(!u||!window.FB||!window.FB.setPath) return;
+  const u=fbUser(); if(!u||!window.FB||!window.FB.setPath||!_seedReady()) return;
   const delta=_nsDelta(), path=_nsPath(u);
   for(const b of Object.keys(delta)){
     const s=JSON.stringify(delta[b]); if(_nsSent[b]===s) continue;
@@ -3617,7 +3634,7 @@ async function nsPull(){
   return changed;
 }
 async function nsSync(say){
-  if(_nsBusy||!fbUser()) return; _nsBusy=true;
+  if(_nsBusy||!fbUser()||!_seedReady()) return; _nsBusy=true;
   try{
     const got=await nsPull();
     if(got<0){ if(say) toast('Could not reach your account — are you online?'); return; }
@@ -3749,6 +3766,7 @@ if('serviceWorker' in navigator){
         nw.addEventListener('statechange',()=>{ if(nw.state==='installed'&&navigator.serviceWorker.controller){ window._swWaiting=nw; if(!_updShown){ _updShown=true; _showUpdBar(); } } }); });
       if(reg.waiting&&navigator.serviceWorker.controller){ window._swWaiting=reg.waiting; if(!_updShown){ _updShown=true; _showUpdBar(); } }
     }).catch(()=>{});
+    navigator.serviceWorker.addEventListener('message',ev=>{ if(ev.data&&ev.data.type==='commentary-updated'&&typeof _seedRefetch==='function') _seedRefetch(); });
     let _rl=false; navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_rl||!window._updClicked) return; _rl=true; location.reload(); });
   });
 }
