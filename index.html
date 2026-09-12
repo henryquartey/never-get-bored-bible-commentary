@@ -901,7 +901,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.76.0', date:'12 Sep 2026'};
+const BUILD={v:'0.76.1', date:'12 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1298,6 +1298,7 @@ function listenMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
   const np=narrPref(), sv=studioVoicePref();
   const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu'; m.style.minWidth='250px'; m.dataset.vfor='listen';
   let h='<div class="vm-sec">🎧 Read this chapter with</div>';
+  if(window.AUDIO_KJV) h+=`<button onclick="listenStart(event,'human')">🎧 Human narration — LibriVox${np==='human'?' ✓':''} <span style="color:var(--soft);font-size:11px">(every book)</span></button>`;
   const KNOWN=[{key:'emma',name:'Emma',gender:'female'},{key:'george',name:'George',gender:'male'}];   // female voice listed first (Henry's request)
   const seen={}; const list=[];
   KNOWN.forEach(k=>{ const V=window.AUDIO_KOKORO&&window.AUDIO_KOKORO.voices&&window.AUDIO_KOKORO.voices[k.key];
@@ -1307,7 +1308,6 @@ function listenMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
     const tag = !V.have ? ' <span style="color:var(--soft);font-size:11px">(coming soon)</span>'
               : (studioHas(nm,ch,V.key)?'':' <span style="color:var(--soft);font-size:11px">(not this chapter yet)</span>');
     h+=`<button onclick="listenStart(event,'studio:${V.key}')">${V.gender==='female'?'👩':'👨'} Studio voice — ${escHTML(V.name)}${np==='studio'&&sv===V.key?' ✓':''}${tag}</button>`; });
-  if(window.AUDIO_KJV) h+=`<button onclick="listenStart(event,'human')">🎧 Human narration — LibriVox${np==='human'?' ✓':''}</button>`;
   h+=`<button onclick="listenStart(event,'device')">📱 Your device’s voice${np==='device'?' ✓':''}</button>`;
   m.innerHTML=h; document.body.appendChild(m);
   const b=(ev&&(ev.currentTarget||ev.target))||document.getElementById('readAloudBtn');
@@ -1414,7 +1414,7 @@ function _rdSyncBtn(){
                 chapter starts are estimated (or speech-aligned when the map has a 3rd element).
    • "device" — speechSynthesis (readChapterTTS), also the fallback when audio can't load.           */
 const AUD={el:null,src:null,key:null,book:null,ch:0,info:null,loading:false,note:null,seekTo:null,timer:null,lastSave:0,here:null,vlast:null,vcache:null,buffering:false};
-function narrPref(){ try{ return localStorage.getItem('nok_narr')||'studio'; }catch(e){ return 'studio'; } }
+function narrPref(){ try{ return localStorage.getItem('nok_narr')||'human'; }catch(e){ return 'human'; } }
 /* Studio voice choice: 'george' (default, male) | 'emma' (female) — whichever the map actually has */
 function studioVoicePref(){ const K=window.AUDIO_KOKORO; let v='george'; try{ v=localStorage.getItem('nok_studio_voice')||(K&&K.defaultVoice)||'george'; }catch(e){}
   return v; }
@@ -2430,8 +2430,8 @@ function tbMoreMenu(ev){ ev.stopPropagation(); closeVerseMenu();
   const np=narrPref();
   m.innerHTML=`${rd?`${(window.AUDIO_KJV||window.AUDIO_KOKORO)?`<div class="vm-sec">🎧 Listen with</div>
     <select class="btn vsel vm-voice" id="narrSel" onchange="setNarrPref(this.value)">
+      ${window.AUDIO_KJV?`<option value="human" ${np==='human'?'selected':''}>Human narration — LibriVox (every book)</option>`:''}
       ${studioVoices().map(v=>{ const V=window.AUDIO_KOKORO.voices[v]; return `<option value="studio:${v}" ${np==='studio'&&studioVoicePref()===v?'selected':''}>Studio voice — ${escHTML(V.name)} (${V.gender==='female'?'female':'male'}, verse-exact)</option>`; }).join('')}
-      ${window.AUDIO_KJV?`<option value="human" ${np==='human'?'selected':''}>Human narration — LibriVox (Michael Armenta)</option>`:''}
       <option value="device" ${np==='device'?'selected':''}>Device voice (works offline)</option></select>`:''}
     <div class="vm-sec">🎙 Device voice</div>
     <select class="btn vsel vm-voice" id="voiceSel" onchange="setVoicePref(this.value)"></select>
