@@ -525,6 +525,9 @@ html.show-dates .mc-item .mc-date{display:inline}
 .you-head .acav{width:48px;height:48px;font-size:20px;flex:0 0 48px}
 .you-head .yn{font-family:var(--serif);font-size:20px;font-weight:600}
 .you-head .ys{color:var(--soft);font-size:13px;margin-top:2px}
+.you-head .gear .nico{display:inline-flex;width:18px;height:18px}
+.you-head .gear .nico svg{width:18px;height:18px}
+.you-head .gear+.gear{margin-left:0}
 .you-head .gear{margin-left:auto;background:transparent;border:1px solid var(--line);border-radius:50%;width:36px;height:36px;color:var(--ink);font-size:17px;flex:0 0 36px}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none;font-family:var(--sans)}
 .chips::-webkit-scrollbar{display:none}
@@ -546,7 +549,9 @@ html.show-dates .mc-item .mc-date{display:inline}
 .ycard.ms{display:flex;gap:12px;align-items:center}
 .yempty{color:var(--soft);font-family:var(--sans);text-align:center;padding:30px 10px;line-height:1.5}
 .ymore{display:block;margin:6px auto 24px}
-@media (max-width:760px){ body[data-view="read"] #youBtn,body[data-view="search"] #youBtn{display:none} }
+body[data-view="menu"] #menuTopBtn{display:none}
+@media (max-width:760px){ #youBtn{display:none}
+  body[data-view="read"] #menuTopBtn,body[data-view="search"] #menuTopBtn{display:none} }
 #youBtn .acav{width:26px;height:26px;font-size:12px}
 .mhead{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
   color:var(--soft);margin:20px 6px 8px}
@@ -586,6 +591,7 @@ html.show-dates .mc-item .mc-date{display:inline}
 .bottomnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--panel);
   border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(0,0,0,.08);
   padding:4px 2px calc(4px + env(safe-area-inset-bottom))}
+.bottomnav .navav{width:22px;height:22px;font-size:11px;margin:1px 0}
 .bottomnav button{flex:1;background:transparent;border:none;color:var(--soft);font-family:var(--sans);
   font-size:10.5px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;cursor:pointer}
 .bottomnav button span{font-size:19px;line-height:1}
@@ -773,6 +779,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
       <button data-view="read" onclick="setView('read')">Bible</button>
       <button data-view="plan" onclick="setView('plan')">Plan</button>
       <button data-view="discourse" onclick="setView('discourse')">Discourse</button>
+      <button data-view="you" onclick="setView('you')">You</button>
       <button data-view="menu" onclick="setView('menu')">Menu</button>
     </div>
     <div class="side-actions tabs" id="tabsLegacy">
@@ -819,6 +826,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
       <button class="icon-btn rc" id="notesBtn" onclick="toggleNotes()" title="Show ALL of Nii Okai’s commentary / hide all (scripture only)">💬</button>
       <button class="icon-btn rc" id="refBtn" onclick="toggleRefComm()" title="Show / hide Matthew Henry's classic commentary (public domain)">📚</button>
       <button class="icon-btn" id="youBtn" onclick="setView('you')" title="You — your notes, highlights and progress"><span id="youBtnIco"></span></button>
+      <button class="icon-btn" id="menuTopBtn" onclick="setView('menu')" title="Menu"></button>
       <button class="icon-btn rc" id="dateBtn" onclick="toggleDates()" title="Show / hide the dates notes were written" style="display:none">📅</button>
       <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">☾</button>
       <button class="icon-btn rc" id="tbMore" data-ico="dots" onclick="tbMoreMenu(event)" title="More"></button>
@@ -843,7 +851,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
   <button data-view="plan" data-ico="cal" onclick="setView('plan')">Plans</button>
   <button data-view="read" data-ico="book" onclick="setView('read')">Bible</button>
   <button data-view="discourse" data-ico="chat" onclick="setView('discourse')">Discourse</button>
-  <button data-view="menu" data-ico="menu" onclick="setView('menu')">Menu</button>
+  <button data-view="you" data-ico="user" onclick="setView('you')" id="navYou">You</button>
 </nav>
 
 <input type="file" id="importFile" accept=".json,.js" style="display:none" onchange="importCommentary(event)">
@@ -893,7 +901,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.75.0', date:'12 Sep 2026'};
+const BUILD={v:'0.76.0', date:'12 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -953,7 +961,7 @@ function init(){
   _trackStreak();
   document.querySelectorAll('[data-ico]').forEach(b=>{ b.insertAdjacentHTML('afterbegin',ICONS[b.dataset.ico]); });
   document.getElementById('notesBtn').innerHTML=ICONS.chat;
-  { const yb=document.getElementById('youBtn'); if(yb) yb.innerHTML=ICONS.user; }
+  { const yb=document.getElementById('youBtn'); if(yb) yb.innerHTML=ICONS.user; const mb=document.getElementById('menuTopBtn'); if(mb) mb.innerHTML=ICONS.menu; }
   document.getElementById('refBtn').innerHTML=ICONS.library;
   document.getElementById('cmpBtn').innerHTML=ICONS.swap;
   setViewTabs();
@@ -1700,7 +1708,8 @@ const ICONS={
   marker:_I('<path d="m4 20 3.5-1 10-10-2.5-2.5-10 10z"/><path d="m12.5 9 2.5 2.5M15 6.5l2.5 2.5"/><path d="M4 20h16"/>'),
   flag:_I('<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>'),
   check:_I('<path d="m5 12.5 4.5 4.5L19 7.5"/>'),
-  chapter:_I('<rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>')
+  chapter:_I('<rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'),
+  gear:_I('<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/>')
 };
 /* Sacred-name autocorrect: capital-G God (the Almighty) -> GOD; small-g gods/idols untouched.
    "spirit of the lord" in any casing -> "Spirit of the Lord". Applied to journal notes only, never Scripture. */
@@ -1943,7 +1952,6 @@ function renderMenu(){
     ${item('📲','Install the App','Put it on your home screen — opens full-screen, works offline','installApp()')}
     ${item('🔄','Check for Updates',`You are on version ${BUILD.v} — tap to look for a newer one`,'checkForUpdates()')}
     ${head('Account')}
-    ${item('<span class="acav">'+(fbUser()?_acLetter():'✦')+'</span>','You','Your notes, highlights, plan days and milestones — newest first',"setView('you')")}
     ${fbUser()
       ?item('<span class="acav">'+_acLetter()+'</span>','Signed in as '+(fbUser().email||'your Google account'),'Your place and highlights follow you to every device','accountMenu()')
       :item(ICONS.user,'Sign in with Google','Keep your reading place and highlights on every device you use','fbSignIn()')}
@@ -3453,7 +3461,8 @@ function _fbUnion(mineStr,theirsStr){
 }
 function dismissSignin(){ try{ localStorage.setItem('nok_seen_signin','1'); }catch(e){}
   const c=document.getElementById('signinCard'); if(c) c.remove(); }
-function fbMenuRefresh(){ try{ const b=document.getElementById('youBtn'); if(b) b.innerHTML=fbUser()?'<span class="acav">'+_acLetter()+'</span>':ICONS.user; }catch(e){}
+function fbMenuRefresh(){ try{ const b=document.getElementById('youBtn'); if(b) b.innerHTML=fbUser()?'<span class="acav">'+_acLetter()+'</span>':ICONS.user;
+    const nv=document.getElementById('navYou'); if(nv){ const ic=nv.querySelector('.nico,.acav'); const rep=fbUser()?'<span class="acav navav">'+_acLetter()+'</span>':ICONS.user; if(ic) ic.outerHTML=rep; else nv.insertAdjacentHTML('afterbegin',rep); } }catch(e){}
   const c=document.getElementById('crumb'); if(!c) return;
   if(c.textContent==='Menu'&&typeof renderMenu==='function') renderMenu();
   else if(c.textContent==='Home'&&typeof renderHome==='function') renderHome(); }
@@ -3667,7 +3676,7 @@ function _ago(iso){ if(!iso) return ''; const d=new Date(iso); if(isNaN(d)) retu
   if(s<604800) return Math.floor(s/86400)+'d'; if(s<31536000) return Math.floor(s/604800)+'w'; return Math.floor(s/31536000)+'y'; }
 function _verseText(b,ch,v){ const bib=(window.BIBLE||{})[state.version]||{}; return (((bib[b]||{})[String(ch)]||{})[String(v)])||''; }
 function _youEvents(){
-  const ev=[]; const owner=isOwner(); const seedIx=owner?null:_nsIndex(window.COMMENTARY_SEED||{});
+  const ev=[]; const owner=isOwner()||_nsIsOwner(fbUser()); const seedIx=owner?null:_nsIndex(window.COMMENTARY_SEED||{});
   Object.keys(DATA).forEach(b=>Object.keys(DATA[b]).forEach(ch=>Object.keys(DATA[b][ch]).forEach(v=>(DATA[b][ch][v]||[]).forEach(nt=>{
     if(!nt||!nt.id) return; if(!owner&&seedIx[nt.id]) return;
     ev.push({k:'note',t:String(nt.edited||nt.date||''),b:b,ch:+ch,v:+v,nt:nt}); }))));
@@ -3706,7 +3715,8 @@ function renderYou(){
     <div class="you-head"><span class="acav">${u?_acLetter():'✦'}</span>
       <div><div class="yn">${who}</div>
         <div class="ys">${st.daily?st.daily+'-day streak · ':''}${counts.note} note${counts.note===1?'':'s'} · ${counts.hl} highlight${counts.hl===1?'':'s'}${C.length?' · day '+Math.min(C.length,done+1)+' of '+C.length:''}</div></div>
-      <button class="gear" onclick="${u?'accountMenu()':'fbSignIn()'}" title="${u?'Account':'Sign in'}">${u?'⚙':'→'}</button></div>
+      <button class="gear" onclick="${u?'accountMenu()':'fbSignIn()'}" title="${u?'Account':'Sign in'}">${u?ICONS.gear:'→'}</button>
+      <button class="gear" onclick="setView('menu')" title="Menu">${ICONS.menu}</button></div>
     ${!u?`<div class="hcard" style="padding:14px 16px"><div class="hk">On this device only</div><p class="soft" style="margin:0 0 10px">Sign in with Google and everything here follows you to every device you use.</p><button class="btn primary" onclick="fbSignIn()">Sign in with Google</button></div>`:''}
     <div class="chips">${chip('all','All')}${chip('note','Notes')}${chip('hl','Highlights')}${chip('plan','Plan')}${chip('ms','Milestones')}</div>`;
   if(_youFilter==='plan'&&C.length){ let pi=C.findIndex(rd=>!rd.catchup&&!readingDone(rd,d)); if(pi<0) pi=C.length-1;
