@@ -534,6 +534,8 @@ html.show-dates .mc-item .mc-date{display:inline}
 .ycard .yt{display:flex;align-items:flex-start;gap:10px}
 .ycard .yi{flex:0 0 34px;height:34px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:16px}
 .ycard .yi svg{width:17px;height:17px}
+.ycard.ms .yi svg{width:21px;height:21px}
+.ycard.ms .yi .nico,.ycard .yi .nico{display:inline-flex}
 .ycard .yl{flex:1;font-size:15px;line-height:1.35;padding-top:6px}
 .ycard .yw{color:var(--soft);font-size:12px;white-space:nowrap;margin-left:8px;padding-top:8px}
 .ycard .yq{font-family:var(--serif);font-size:15.5px;line-height:1.5;margin:10px 0 0;padding-left:12px;border-left:3px solid var(--accent);color:var(--ink)}
@@ -564,8 +566,12 @@ html.show-dates .mc-item .mc-date{display:inline}
 .selbar .selacts::-webkit-scrollbar{display:none}
 .selbar .sact{flex:0 0 auto;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:3px;background:transparent;border:none;color:var(--ink);font-family:inherit;font-size:11.5px;font-weight:600;padding:6px 8px;border-radius:12px;cursor:pointer}
 .selbar .sact:hover{background:var(--accent-soft)}
-.selbar .sact svg,.selbar .sact{font-size:18px;line-height:1}
+.selbar .sact .nico{display:inline-flex;width:24px;height:24px}
+.selbar .sact .nico svg{width:24px;height:24px;stroke-width:1.7}
 .selbar .sact span{font-size:11.5px}
+.selbar .selx .nico{width:14px;height:14px;display:inline-flex}
+.selbar .selx .nico svg{width:14px;height:14px}
+.selbar .hd-x{color:var(--soft);font-size:12px}
 .selbar .hd-x{color:var(--on-accent);background:transparent}
 .updbar{position:fixed;left:12px;right:12px;bottom:calc(66px + env(safe-area-inset-bottom));z-index:200;background:var(--accent);color:var(--on-accent);
   border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;
@@ -812,7 +818,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
       <button class="icon-btn rc" id="cmpBtn" onclick="toggleCompare()" title="Compare two translations side by side">⇄</button>
       <button class="icon-btn rc" id="notesBtn" onclick="toggleNotes()" title="Show ALL of Nii Okai’s commentary / hide all (scripture only)">💬</button>
       <button class="icon-btn rc" id="refBtn" onclick="toggleRefComm()" title="Show / hide Matthew Henry's classic commentary (public domain)">📚</button>
-      <button class="icon-btn" id="youBtn" onclick="setView('you')" title="You — your notes, highlights and progress">👤</button>
+      <button class="icon-btn" id="youBtn" onclick="setView('you')" title="You — your notes, highlights and progress"><span id="youBtnIco"></span></button>
       <button class="icon-btn rc" id="dateBtn" onclick="toggleDates()" title="Show / hide the dates notes were written" style="display:none">📅</button>
       <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">☾</button>
       <button class="icon-btn rc" id="tbMore" data-ico="dots" onclick="tbMoreMenu(event)" title="More"></button>
@@ -887,7 +893,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.73.0', date:'12 Sep 2026'};
+const BUILD={v:'0.74.0', date:'12 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -947,6 +953,7 @@ function init(){
   _trackStreak();
   document.querySelectorAll('[data-ico]').forEach(b=>{ b.insertAdjacentHTML('afterbegin',ICONS[b.dataset.ico]); });
   document.getElementById('notesBtn').innerHTML=ICONS.chat;
+  { const yb=document.getElementById('youBtn'); if(yb) yb.innerHTML=ICONS.user; }
   document.getElementById('refBtn').innerHTML=ICONS.library;
   document.getElementById('cmpBtn').innerHTML=ICONS.swap;
   setViewTabs();
@@ -1685,7 +1692,15 @@ const ICONS={
   search:_I('<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>'),
   dots:_I('<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>'),
   grid:_I('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
-  moon:_I('<path d="M20 13.5A8 8 0 1 1 10.5 4 6.5 6.5 0 0 0 20 13.5z"/>')
+  moon:_I('<path d="M20 13.5A8 8 0 1 1 10.5 4 6.5 6.5 0 0 0 20 13.5z"/>'),
+  copy:_I('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/>'),
+  share:_I('<path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v6.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V12"/>'),
+  user:_I('<circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6"/>'),
+  close:_I('<path d="M6 6l12 12M18 6 6 18"/>'),
+  marker:_I('<path d="m4 20 3.5-1 10-10-2.5-2.5-10 10z"/><path d="m12.5 9 2.5 2.5M15 6.5l2.5 2.5"/><path d="M4 20h16"/>'),
+  flag:_I('<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>'),
+  check:_I('<path d="m5 12.5 4.5 4.5L19 7.5"/>'),
+  chapter:_I('<rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>')
 };
 /* Sacred-name autocorrect: capital-G God (the Almighty) -> GOD; small-g gods/idols untouched.
    "spirit of the lord" in any casing -> "Spirit of the Lord". Applied to journal notes only, never Scripture. */
@@ -1931,7 +1946,7 @@ function renderMenu(){
     ${item('<span class="acav">'+(fbUser()?_acLetter():'✦')+'</span>','You','Your notes, highlights, plan days and milestones — newest first',"setView('you')")}
     ${fbUser()
       ?item('<span class="acav">'+_acLetter()+'</span>','Signed in as '+(fbUser().email||'your Google account'),'Your place and highlights follow you to every device','accountMenu()')
-      :item('👤','Sign in with Google','Keep your reading place and highlights on every device you use','fbSignIn()')}
+      :item(ICONS.user,'Sign in with Google','Keep your reading place and highlights on every device you use','fbSignIn()')}
     ${isOwner()?head('Owner tools'):''}
     ${isOwner()?item(ICONS.download,'Export My Notes','Save your commentary to a file for publishing','exportCommentary()'):''}
     ${isOwner()?item(ICONS.upload,'Import Notes','Bring commentary back in from a file',"document.getElementById('importFile').click()"):''}
@@ -2854,7 +2869,7 @@ function selPaint(){
   const hasNote=selList().some(v=>document.getElementById('nw'+v));
   const act=(go,ic,label)=>'<button class="sact" onclick="'+go+'">'+ic+'<span>'+label+'</span></button>';
   bar.innerHTML='<div class="selhead"><span class="selref">Selected: '+escHTML(selRef())+' <em>'+escHTML(state.version)+'</em></span>'
-    +'<span class="selx" onclick="selEnd()" title="Done">✕</span></div>'
+    +'<span class="selx" onclick="selEnd()" title="Done">'+ICONS.close+'</span></div>'
     +'<div class="seldots"><span class="hld hd-y" title="Yellow" onclick="selHl(\'y\')"></span>'
     +'<span class="hld hd-g" title="Green" onclick="selHl(\'g\')"></span>'
     +'<span class="hld hd-b" title="Blue" onclick="selHl(\'b\')"></span>'
@@ -2862,13 +2877,13 @@ function selPaint(){
     +'<span class="hld hd-x" title="Clear highlight" onclick="selHl(\'\')">✕</span>'
     +'<span class="seln">'+n+(n===1?' verse':' verses')+' · tap more to add</span></div>'
     +'<div class="selacts">'
-    +act('selCopy()','📋','Copy')
-    +act('selShare()','⬆','Share')
-    +act('selNote()','✎','Note')
-    +(hasNote?act('selRead()','💬','Commentary'):'')
-    +act('selCompare()','⇄','Compare')
-    +act('selGoogle()','🔎','Google')
-    +act('selAll()','⊞','Whole chapter')
+    +act('selCopy()',ICONS.copy,'Copy')
+    +act('selShare()',ICONS.share,'Share')
+    +act('selNote()',ICONS.pen,'Note')
+    +(hasNote?act('selRead()',ICONS.chat,'Commentary'):'')
+    +act('selCompare()',ICONS.swap,'Compare')
+    +act('selGoogle()',ICONS.search,'Google')
+    +act('selAll()',ICONS.chapter,'Chapter')
     +'</div>';
 }
 function selNote(){ if(!VSEL.on) return; const name=window.BOOKS[state.book].name, ch=VSEL.ch, v=selList()[0]; selEnd(); openEditor(name,ch,v); }
@@ -3438,7 +3453,7 @@ function _fbUnion(mineStr,theirsStr){
 }
 function dismissSignin(){ try{ localStorage.setItem('nok_seen_signin','1'); }catch(e){}
   const c=document.getElementById('signinCard'); if(c) c.remove(); }
-function fbMenuRefresh(){ try{ const b=document.getElementById('youBtn'); if(b) b.innerHTML=fbUser()?'<span class="acav">'+_acLetter()+'</span>':'👤'; }catch(e){}
+function fbMenuRefresh(){ try{ const b=document.getElementById('youBtn'); if(b) b.innerHTML=fbUser()?'<span class="acav">'+_acLetter()+'</span>':ICONS.user; }catch(e){}
   const c=document.getElementById('crumb'); if(!c) return;
   if(c.textContent==='Menu'&&typeof renderMenu==='function') renderMenu();
   else if(c.textContent==='Home'&&typeof renderHome==='function') renderHome(); }
@@ -3642,19 +3657,19 @@ function _youEvents(){
   const h=_hl(); let ht={}; try{ ht=JSON.parse(localStorage.getItem('nok_hl_t')||'{}'); }catch(e){}
   Object.keys(h).forEach(k=>{ const p=k.split('|'); if(p.length<3) return; ev.push({k:'hl',t:ht[k]||'',b:p[0],ch:+p[1],v:+p[2],c:h[k]}); });
   const C=getPlan(); let pd={}; try{ pd=JSON.parse(localStorage.getItem('nok_plan_done')||'{}'); }catch(e){}
-  Object.keys(pd).forEach(d=>{ ev.push({k:'plan',t:pd[d],day:+d,total:C.length}); });
+  Object.keys(pd).forEach(d=>{ const rd=C[+d]||{}; ev.push({k:'plan',t:pd[d],day:+d,total:C.length,title:rd.t||'',refs:(rd.r&&rd.r.length)?fmtRefs(rd.r):''}); });
   /* milestones */
   const notes=ev.filter(e=>e.k==='note'&&e.t).sort((a,c)=>a.t<c.t?-1:1);
-  [1,10,100,500,1000,2500,5000].forEach(n=>{ if(notes.length>=n) ev.push({k:'ms',t:notes[n-1].t,icon:'✍️',
+  [1,10,100,500,1000,2500,5000].forEach(n=>{ if(notes.length>=n) ev.push({k:'ms',t:notes[n-1].t,icon:'pen',go:'mine',
     title:n===1?'Your first note':n.toLocaleString()+' notes written',sub:n===1?notes[0].b+' '+notes[0].ch+(notes[0].v?':'+notes[0].v:''):'and still writing'}); });
   [10,33,66].forEach(n=>{ const seen=new Set(); let when='';
     for(const e of notes){ seen.add(e.b); if(seen.size===n){ when=e.t; break; } }
-    if(seen.size>=n) ev.push({k:'ms',t:when,icon:'📚',title:n===66?'A note in every book of the Bible':'Notes in '+n+' different books',sub:''}); });
+    if(seen.size>=n) ev.push({k:'ms',t:when,icon:'library',go:'mine',title:n===66?'A note in every book of the Bible':'Notes in '+n+' different books',sub:''}); });
   const st=_streakStats();
   [7,30,100,365].forEach(n=>{ if(st.daily>=n){ const dt=new Date(); dt.setDate(dt.getDate()-(st.daily-n));
-    ev.push({k:'ms',t:dt.toISOString(),icon:'🔥',title:n+' days in a row',sub:'Opened the app every day'}); } });
+    ev.push({k:'ms',t:dt.toISOString(),icon:'flame',go:'home',title:n+' days in a row',sub:'Opened the app every day'}); } });
   const d=chDone(); const done=C.length?C.filter(rd=>!rd.catchup&&readingDone(rd,d)).length:0;
-  [0.25,0.5,0.75,1].forEach(f=>{ if(C.length&&done>=Math.ceil(C.length*f)) ev.push({k:'ms',t:'',icon:f===1?'🏁':'📖',
+  [0.25,0.5,0.75,1].forEach(f=>{ if(C.length&&done>=Math.ceil(C.length*f)) ev.push({k:'ms',t:'',icon:f===1?'flag':'book',go:'plan',
     title:f===1?'The whole plan — finished':Math.round(f*100)+'% of the plan read',sub:done+' of '+C.length+' days'}); });
   ev.sort((a,c)=>(c.t||'')<(a.t||'')?-1:(c.t||'')>(a.t||'')?1:0);   // newest first; undated last
   return ev;
@@ -3677,7 +3692,13 @@ function renderYou(){
       <button class="gear" onclick="${u?'accountMenu()':'fbSignIn()'}" title="${u?'Account':'Sign in'}">${u?'⚙':'→'}</button></div>
     ${!u?`<div class="hcard" style="padding:14px 16px"><div class="hk">On this device only</div><p class="soft" style="margin:0 0 10px">Sign in with Google and everything here follows you to every device you use.</p><button class="btn primary" onclick="fbSignIn()">Sign in with Google</button></div>`:''}
     <div class="chips">${chip('all','All')}${chip('note','Notes')}${chip('hl','Highlights')}${chip('plan','Plan')}${chip('ms','Milestones')}</div>`;
-  if(!list.length) html+=`<div class="yempty">${_youFilter==='hl'?'No highlights yet.<br>Tap a verse and pick a colour.':_youFilter==='note'?'No notes yet.<br>Tap a verse and write what you see.':_youFilter==='plan'?'Plan days you finish from now on will appear here.':'Nothing here yet — start reading.'}</div>`;
+  if(_youFilter==='plan'&&C.length){ let pi=C.findIndex(rd=>!rd.catchup&&!readingDone(rd,d)); if(pi<0) pi=C.length-1;
+    const rd=C[pi], pct=Math.round(done/C.length*100);
+    html+=`<div class="ycard" onclick="setView('plan')"><div class="yt"><span class="yi">${ICONS.cal}</span><div class="yl"><b>Day ${pi+1} of ${C.length}</b> · Chronological plan</div><span class="yw">${pct}%</span></div>
+      <div class="yq" style="font-size:14.5px">${escHTML(rd.r&&rd.r.length?fmtRefs(rd.r):'Catch-up & reflection')}${rd.t?`<span class="yr">${escHTML(rd.t)}</span>`:''}</div>
+      <div class="ybar"><i style="width:${pct}%"></i></div>
+      <div style="color:var(--soft);font-size:12px;margin-top:6px">${done} day${done===1?'':'s'} read · ${C.length-done} to go</div></div>`; }
+  if(!list.length&&_youFilter!=='plan') html+=`<div class="yempty">${_youFilter==='hl'?'No highlights yet.<br>Tap a verse and pick a colour.':_youFilter==='note'?'No notes yet.<br>Tap a verse and write what you see.':_youFilter==='plan'?'Plan days you finish from now on will appear here.':'Nothing here yet — start reading.'}</div>`;
   list.slice(0,_youShown).forEach(e=>{ html+=_youCard(e); });
   if(list.length>_youShown) html+=`<button class="btn ymore" onclick="_youShown+=40;renderYou()">Show more · ${list.length-_youShown} earlier</button>`;
   html+='</div>';
@@ -3693,12 +3714,13 @@ function _youCard(e){
       ${vt?`<div class="yq">${escHTML(clip(vt,170))}<span class="yr">${ref} ${state.version}</span></div>`:''}
       <div class="yn">${escHTML(e.nt.text)}</div></div>`; }
   if(e.k==='hl'){ const ref=`${e.b} ${e.ch}:${e.v}`; const vt=_verseText(e.b,e.ch,e.v); const rgb=HL_RGB[e.c]||HL_RGB.y;
-    return `<div class="ycard" onclick="jumpTo('${esc(e.b)}',${e.ch},${e.v})"><div class="yt"><span class="yi" style="background:rgba(${rgb},.35)">🖍</span><div class="yl">You highlighted <b>${ref}</b></div>${when}</div>
+    return `<div class="ycard" onclick="jumpTo('${esc(e.b)}',${e.ch},${e.v})"><div class="yt"><span class="yi" style="background:rgba(${rgb},.35)">${ICONS.marker}</span><div class="yl">You highlighted <b>${ref}</b></div>${when}</div>
       ${vt?`<div class="yq" style="border-left-color:rgb(${rgb})">${escHTML(vt)}<span class="yr">${ref} ${state.version}</span></div>`:''}</div>`; }
   if(e.k==='plan'){ const pct=e.total?Math.round((e.day+1)/e.total*100):0;
-    return `<div class="ycard" onclick="setView('plan')"><div class="yt"><span class="yi">${ICONS.cal}</span><div class="yl">You completed <b>Day ${e.day+1}</b> of the chronological plan</div>${when}</div>
-      <div class="ybar"><i style="width:${pct}%"></i></div><div style="color:var(--soft);font-size:12px;margin-top:6px">Day ${e.day+1} of ${e.total} · ${pct}%</div></div>`; }
-  return `<div class="ycard ms" onclick="setView('${e.icon==='🔥'?'home':(e.icon==='📖'||e.icon==='🏁')?'plan':'mine'}')"><span class="yi" style="font-size:20px;flex-basis:40px;height:40px">${e.icon}</span><div style="flex:1"><div class="yl" style="padding-top:0"><b>${e.title}</b></div>${e.sub?`<div style="color:var(--soft);font-size:12.5px;margin-top:2px">${e.sub}</div>`:''}</div>${when}</div>`;
+    return `<div class="ycard" onclick="setView('plan')"><div class="yt"><span class="yi">${ICONS.check}</span><div class="yl">You finished <b>Day ${e.day+1}</b> of the chronological plan</div>${when}</div>
+      ${e.refs?`<div class="yq" style="font-size:14.5px">${escHTML(e.refs)}${e.title?`<span class="yr">${escHTML(e.title)}</span>`:''}</div>`:''}
+      <div class="ybar"><i style="width:${pct}%"></i></div><div style="color:var(--soft);font-size:12px;margin-top:6px">Day ${e.day+1} of ${e.total} · ${pct}% of the year</div></div>`; }
+  return `<div class="ycard ms" onclick="setView('${e.go||'mine'}')"><span class="yi" style="flex-basis:40px;height:40px">${ICONS[e.icon]||''}</span><div style="flex:1"><div class="yl" style="padding-top:0"><b>${e.title}</b></div>${e.sub?`<div style="color:var(--soft);font-size:12.5px;margin-top:2px">${e.sub}</div>`:''}</div>${when}</div>`;
 }
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show');
   clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3200); }
