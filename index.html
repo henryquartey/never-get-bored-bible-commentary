@@ -550,14 +550,22 @@ html.show-dates .mc-item .mc-date{display:inline}
   color:var(--soft);margin:20px 6px 8px}
 .menulist .mhead:first-child{margin-top:6px}
 .verse.vsel{background:rgba(var(--accent-rgb),.16);box-shadow:inset 3px 0 0 var(--accent)}
-.selbar{position:fixed;left:12px;right:12px;bottom:calc(66px + env(safe-area-inset-bottom));z-index:210;
-  background:var(--accent);color:var(--on-accent);border-radius:14px;padding:10px 12px;
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-  box-shadow:0 6px 24px rgba(0,0,0,.3);font-family:var(--sans);font-size:13px;font-weight:600}
-.selbar .selref{flex:1 1 130px;min-width:110px}
-.selbar button{background:var(--on-accent);color:var(--accent);border:none;border-radius:20px;
-  padding:6px 12px;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px}
-.selbar .hld{border-color:rgba(255,255,255,.6)}
+.selbar{position:fixed;left:8px;right:8px;bottom:calc(64px + env(safe-area-inset-bottom));z-index:210;
+  background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:18px;padding:10px 12px 8px;
+  box-shadow:0 -4px 30px rgba(0,0,0,.28);font-family:var(--sans);font-size:13px;max-width:640px;margin:0 auto}
+.selbar .selhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.selbar .selref{flex:1;font-weight:700;font-size:14px}
+.selbar .selref em{font-style:normal;color:var(--soft);font-weight:600;margin-left:4px}
+.selbar .selx{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--accent-soft);cursor:pointer;font-size:13px}
+.selbar .seldots{display:flex;align-items:center;gap:10px;padding:2px 0 10px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.selbar .seldots .hld{width:26px;height:26px}
+.selbar .seln{margin-left:auto;color:var(--soft);font-size:12px}
+.selbar .selacts{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.selbar .selacts::-webkit-scrollbar{display:none}
+.selbar .sact{flex:0 0 auto;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:3px;background:transparent;border:none;color:var(--ink);font-family:inherit;font-size:11.5px;font-weight:600;padding:6px 8px;border-radius:12px;cursor:pointer}
+.selbar .sact:hover{background:var(--accent-soft)}
+.selbar .sact svg,.selbar .sact{font-size:18px;line-height:1}
+.selbar .sact span{font-size:11.5px}
 .selbar .hd-x{color:var(--on-accent);background:transparent}
 .updbar{position:fixed;left:12px;right:12px;bottom:calc(66px + env(safe-area-inset-bottom));z-index:200;background:var(--accent);color:var(--on-accent);
   border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;
@@ -879,7 +887,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.72.1', date:'12 Sep 2026'};
+const BUILD={v:'0.73.0', date:'12 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2207,7 +2215,7 @@ function vTap(ev,name,ch,v){
   if(IS_TOUCH) return;                                     // touch has its own tap controller
   if(ev.target&&ev.target.closest&&ev.target.closest('.note,.notewrap,textarea,.inline-bar')) return;
   if(ev.target&&ev.target.closest&&ev.target.closest('.vn,.cmark,.vmenu-btn,.corrlink,a,button,select,input,textarea')) return;
-  if(VSEL.on){ clearTimeout(_vTapT); if(ev.shiftKey) selRange(v); else selToggle(v); return; }
+  if(VSEL.on&&VSEL.book===state.book&&VSEL.ch===state.chapter){ clearTimeout(_vTapT); if(ev.shiftKey) selRange(v); else selToggle(v); return; }
   { const open=document.getElementById('vmenu')||document.getElementById('selmenu');
     if(open&&open.dataset.vfor!==name+'|'+ch+'|'+v){ closeVerseMenu(); if(typeof closeSelMenu==='function')closeSelMenu(); return; } }
   try{ const sel=window.getSelection(); if(sel&&String(sel).length) return; }catch(e){}   // they're highlighting text, not tapping
@@ -2792,35 +2800,11 @@ document.addEventListener('touchstart',e=>{ const m=document.getElementById('vme
   window._vClosedT=setTimeout(()=>{ window._vClosedFor=null; },700);
   closeVerseMenu(); },{passive:true});
 window.addEventListener('scroll',closeVerseMenu,true);
-function verseMenu(ev,name,ch,v){ ev.stopPropagation();
-  if(window._vClosedFor===name+'|'+ch+'|'+v) return;                                      // the tap that closed it also triggered this
-  const ex=document.getElementById('vmenu');
-  if(ex&&ex.dataset.vfor===name+'|'+ch+'|'+v){ closeVerseMenu(); return; }   // same verse again → just close
-  closeVerseMenu(); closeCopyMenus(); if(typeof closeSelMenu==='function') closeSelMenu();
-  const anchor=ev.currentTarget||ev.target;
-  const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu'; m.dataset.vfor=name+'|'+ch+'|'+v;
-  m.innerHTML=`<div class="hlrow"><span class="hlbl">Highlight</span>
-      <span class="hld hd-y" onclick="vmHl(event,'${esc(name)}',${ch},${v},'y')"></span>
-      <span class="hld hd-g" onclick="vmHl(event,'${esc(name)}',${ch},${v},'g')"></span>
-      <span class="hld hd-b" onclick="vmHl(event,'${esc(name)}',${ch},${v},'b')"></span>
-      <span class="hld hd-p" onclick="vmHl(event,'${esc(name)}',${ch},${v},'p')"></span>
-      <span class="hld hd-x" onclick="vmHl(event,'${esc(name)}',${ch},${v},'')">✕</span></div>
-    ${document.getElementById('nw'+v)?`<button onclick="vmReadNote(event,${v})">💬 Read Nii Okai’s commentary</button>`:''}
-    <button onclick="vmDo(event,'copy','${esc(name)}',${ch},${v})">📋 Copy verse</button>
-    <button onclick="vmDo(event,'share','${esc(name)}',${ch},${v})"><svg width="13" height="15" viewBox="0 0 14 17" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:1px"><path d="M7 1v10"/><path d="M3.8 4.2 7 1l3.2 3.2"/><path d="M4.2 7H2.6v9h8.8V7H9.8"/></svg> Share</button>
-    <button onclick="vmDo(event,'google','${esc(name)}',${ch},${v})">🔎 Search on Google</button>
-    <button onclick="vmDo(event,'compare','${esc(name)}',${ch},${v})">⇄ Compare versions</button>
-    <button onclick="vmDo(event,'note','${esc(name)}',${ch},${v})">✎ Add a note</button>
-    <button onclick="vmDo(event,'select','${esc(name)}',${ch},${v})">⊞ Select more verses</button>
-    ${AUD.key===name+'|'+ch&&AUD.src==='human'&&AUD.el&&!AUD.el.paused&&!(AUD.info&&AUD.info.exact)?`<button onclick="closeVerseMenu();audAnchor(${v})" title="Tell the app the narrator is reading this verse right now — the highlight will follow more accurately">🎧 Narrator is on this verse now</button>`:''}`;
-  document.body.appendChild(m);
-  const r=anchor.getBoundingClientRect(); const mw=m.offsetWidth, mh=m.offsetHeight;
-  const pt=window._vPoint;                                  // where the tap/click actually landed
-  const near=pt&&Math.abs(Date.now()-pt.t)<1500&&pt.y>=r.top-4&&pt.y<=r.bottom+4;
-  const ax=near?pt.x:r.left, ay=near?pt.y:r.bottom;
-  let top=ay+8; if(top+mh>window.innerHeight-8) top=Math.max(8,ay-mh-8);
-  let left=near?ax-24:r.left; if(left+mw>window.innerWidth-8) left=window.innerWidth-mw-8;
-  m.style.top=top+'px'; m.style.left=Math.max(8,left)+'px';
+function verseMenu(ev,name,ch,v){ if(ev&&ev.stopPropagation) ev.stopPropagation();
+  /* A tap on a verse selects it and opens the verse sheet; tapping more verses adds them
+     (tap a selected one to drop it). Everything on the sheet acts on the whole selection. */
+  if(VSEL.on&&VSEL.book===state.book&&VSEL.ch===ch){ selToggle(v); return; }
+  selStart(name,ch,v);
 }
 /* ---------- Select several verses at once (works with a single tap on phones) ----------
    tap a verse while selecting  -> add or remove just that verse (scattered picks welcome)
@@ -2831,7 +2815,7 @@ function selList(){ return VSEL.set?Array.from(VSEL.set).sort((a,b)=>a-b):[]; }
 function selStart(name,ch,v){
   closeVerseMenu(); if(typeof closeSelMenu==='function') closeSelMenu();
   VSEL.on=true; VSEL.book=state.book; VSEL.ch=ch; VSEL.set=new Set([v]); VSEL.last=v;
-  selPaint(); toast('Tap verses to add · press and hold to reach a range');
+  selPaint();
 }
 function selToggle(v){
   if(!VSEL.on) return;
@@ -2866,18 +2850,33 @@ function selPaint(){
     el.classList.toggle('vsel', VSEL.set.has(+el.dataset.v)); });
   let bar=document.getElementById('selbar');
   if(!bar){ bar=document.createElement('div'); bar.className='selbar'; bar.id='selbar'; document.body.appendChild(bar); }
-  const n=VSEL.set.size;
-  bar.innerHTML='<span class="selref">'+escHTML(selRef())+' · '+n+(n===1?' verse':' verses')+'</span>'
-    +'<span class="hld hd-y" title="Highlight yellow" onclick="selHl(\'y\')"></span>'
-    +'<span class="hld hd-g" title="Highlight green" onclick="selHl(\'g\')"></span>'
-    +'<span class="hld hd-b" title="Highlight blue" onclick="selHl(\'b\')"></span>'
-    +'<span class="hld hd-p" title="Highlight pink" onclick="selHl(\'p\')"></span>'
+  const n=VSEL.set.size, name=window.BOOKS[state.book].name;
+  const hasNote=selList().some(v=>document.getElementById('nw'+v));
+  const act=(go,ic,label)=>'<button class="sact" onclick="'+go+'">'+ic+'<span>'+label+'</span></button>';
+  bar.innerHTML='<div class="selhead"><span class="selref">Selected: '+escHTML(selRef())+' <em>'+escHTML(state.version)+'</em></span>'
+    +'<span class="selx" onclick="selEnd()" title="Done">✕</span></div>'
+    +'<div class="seldots"><span class="hld hd-y" title="Yellow" onclick="selHl(\'y\')"></span>'
+    +'<span class="hld hd-g" title="Green" onclick="selHl(\'g\')"></span>'
+    +'<span class="hld hd-b" title="Blue" onclick="selHl(\'b\')"></span>'
+    +'<span class="hld hd-p" title="Pink" onclick="selHl(\'p\')"></span>'
     +'<span class="hld hd-x" title="Clear highlight" onclick="selHl(\'\')">✕</span>'
-    +'<button onclick="selAll()" title="Select the whole chapter">All</button>'
-    +'<button onclick="selCopy()">Copy</button>'
-    +'<button onclick="selShare()">Share</button>'
-    +'<button onclick="selEnd()">Done</button>';
+    +'<span class="seln">'+n+(n===1?' verse':' verses')+' · tap more to add</span></div>'
+    +'<div class="selacts">'
+    +act('selCopy()','📋','Copy')
+    +act('selShare()','⬆','Share')
+    +act('selNote()','✎','Note')
+    +(hasNote?act('selRead()','💬','Commentary'):'')
+    +act('selCompare()','⇄','Compare')
+    +act('selGoogle()','🔎','Google')
+    +act('selAll()','⊞','Whole chapter')
+    +'</div>';
 }
+function selNote(){ if(!VSEL.on) return; const name=window.BOOKS[state.book].name, ch=VSEL.ch, v=selList()[0]; selEnd(); openEditor(name,ch,v); }
+function selRead(){ if(!VSEL.on) return; selList().forEach(v=>{ const el=document.getElementById('v'+v); if(!el||!document.getElementById('nw'+v)) return;
+  const hidden=document.documentElement.classList.contains('hide-notes')?!el.classList.contains('revealed'):el.classList.contains('collapsed'); if(hidden) toggleVerse(v); });
+  const f=selList()[0]; selEnd(); setTimeout(()=>{ const el=document.getElementById('v'+f); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); },60); }
+function selCompare(){ if(!VSEL.on) return; const name=window.BOOKS[state.book].name, ch=VSEL.ch, v=selList()[0]; selEnd(); compareVerse(name,ch,v); }
+function selGoogle(){ if(!VSEL.on) return; const q=selRef()+' meaning'; selEnd(); window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank','noopener'); }
 function selAll(){
   if(!VSEL.on) return;
   document.querySelectorAll('#reader .verse').forEach(el=>VSEL.set.add(+el.dataset.v));
