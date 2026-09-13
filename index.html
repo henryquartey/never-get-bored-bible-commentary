@@ -918,7 +918,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.78.0', date:'13 Sep 2026'};
+const BUILD={v:'0.79.0', date:'13 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3238,6 +3238,107 @@ document.addEventListener('mousedown',e=>{ if(!(e.target&&e.target.closest&&e.ta
 /* ---------- Search ---------- */
 let searchTimer=null;
 function onSearch(q){ clearTimeout(searchTimer); searchTimer=setTimeout(()=>doSearch(q),180); }
+/* ---------- Search that understands what you mean ----------
+   • references in any shape: "jn 3 16", "1sam2:25", "ps 23:1-6", "revelations 21", "I Samuel 2"
+   • misspellings: "shepard", "genisis", "pslam" — corrected against the Bible's own vocabulary
+   • phrases in any word order, across the translation you read AND the KJV wording
+   • topics: "verses about fear", "anxiety", "forgiveness" — a curated list of the passages people look for
+   • your notes, ranked
+   • and when the app itself can't answer, a one-tap web search with the query shaped for Google */
+const SR_ALIAS={gen:'Genesis',ge:'Genesis',gn:'Genesis',ex:'Exodus',exo:'Exodus',exod:'Exodus',lev:'Leviticus',num:'Numbers',dt:'Deuteronomy',deu:'Deuteronomy',deut:'Deuteronomy',jos:'Joshua',josh:'Joshua',jdg:'Judges',judg:'Judges',rth:'Ruth',
+'1sa':'1 Samuel','1sam':'1 Samuel','1sm':'1 Samuel','1s':'1 Samuel','2sa':'2 Samuel','2sam':'2 Samuel','2sm':'2 Samuel','2s':'2 Samuel','1ki':'1 Kings','1kg':'1 Kings','1kgs':'1 Kings','1k':'1 Kings','2ki':'2 Kings','2kg':'2 Kings','2kgs':'2 Kings','2k':'2 Kings','1ch':'1 Chronicles','1chr':'1 Chronicles','1chron':'1 Chronicles','2ch':'2 Chronicles','2chr':'2 Chronicles','2chron':'2 Chronicles',
+ezr:'Ezra',neh:'Nehemiah',est:'Esther',ps:'Psalms',psa:'Psalms',psalm:'Psalms',pss:'Psalms',pslm:'Psalms',pslam:'Psalms',pslams:'Psalms',pslm:'Psalms',salms:'Psalms',pr:'Proverbs',prov:'Proverbs',prv:'Proverbs',ecc:'Ecclesiastes',eccl:'Ecclesiastes',qoh:'Ecclesiastes',sos:'Song of Solomon',song:'Song of Solomon',songs:'Song of Solomon',cant:'Song of Solomon',canticles:'Song of Solomon','song of songs':'Song of Solomon',
+isa:'Isaiah',jer:'Jeremiah',lam:'Lamentations',eze:'Ezekiel',ezk:'Ezekiel',ezek:'Ezekiel',dan:'Daniel',hos:'Hosea',joe:'Joel',oba:'Obadiah',obad:'Obadiah',jon:'Jonah',jnh:'Jonah',mic:'Micah',nah:'Nahum',hab:'Habakkuk',zep:'Zephaniah',zeph:'Zephaniah',hag:'Haggai',zec:'Zechariah',zech:'Zechariah',mal:'Malachi',
+mt:'Matthew',mat:'Matthew',matt:'Matthew',mk:'Mark',mrk:'Mark',lk:'Luke',luk:'Luke',jn:'John',jhn:'John',joh:'John',ac:'Acts',act:'Acts',ro:'Romans',rom:'Romans','1co':'1 Corinthians','1cor':'1 Corinthians','2co':'2 Corinthians','2cor':'2 Corinthians',gal:'Galatians',eph:'Ephesians',php:'Philippians',phil:'Philippians',col:'Colossians',
+'1th':'1 Thessalonians','1thes':'1 Thessalonians','1thess':'1 Thessalonians','2th':'2 Thessalonians','2thes':'2 Thessalonians','2thess':'2 Thessalonians','1ti':'1 Timothy','1tim':'1 Timothy','2ti':'2 Timothy','2tim':'2 Timothy',tit:'Titus',phm:'Philemon',phlm:'Philemon',philem:'Philemon',heb:'Hebrews',jas:'James',jam:'James','1pe':'1 Peter','1pet':'1 Peter','1pt':'1 Peter','2pe':'2 Peter','2pet':'2 Peter','2pt':'2 Peter',
+'1jn':'1 John','1jo':'1 John','1joh':'1 John','2jn':'2 John','2jo':'2 John','3jn':'3 John','3jo':'3 John',jud:'Jude',rev:'Revelation',rv:'Revelation',revelations:'Revelation',apoc:'Revelation',apocalypse:'Revelation'};
+function _srLev(a,b){ if(a===b) return 0; const m=a.length,n=b.length; if(!m||!n) return m||n; let p=new Array(n+1); for(let j=0;j<=n;j++)p[j]=j;
+  for(let i=1;i<=m;i++){ let c=[i]; for(let j=1;j<=n;j++){ c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1)); } p=c; } return p[n]; }
+function _srBook(raw){ if(!raw||!window.BOOKS) return null;
+  let q=raw.toLowerCase().replace(/^(i{1,3})\s+/,(m,r)=>({i:'1',ii:'2',iii:'3'})[r]+' ').replace(/^(1st|2nd|3rd|first|second|third)\s+/,(m,r)=>({'1st':'1','2nd':'2','3rd':'3',first:'1',second:'2',third:'3'})[r]+' ').replace(/\./g,'').replace(/\s+/g,' ').trim();
+  const sq=q.replace(/\s/g,'');
+  const names=window.BOOKS.map(b=>b.name);
+  let hit=names.find(n=>n.toLowerCase()===q); if(hit) return hit;
+  if(SR_ALIAS[q]) return SR_ALIAS[q]; if(SR_ALIAS[sq]) return SR_ALIAS[sq];
+  hit=names.find(n=>n.toLowerCase().replace(/\s/g,'').startsWith(sq)); if(hit&&sq.length>=3) return hit;
+  // misspelling: closest book name — 1 edit for short names, 2 for long ones (never for 4-letter words like "love")
+  if(sq.length<5) return null;
+  let best=null,bd=99; names.forEach(n=>{ const d=_srLev(sq,n.toLowerCase().replace(/\s/g,'')); if(d<bd){ bd=d; best=n; } });
+  if(best&&bd<=(sq.length>=8?2:1)) return best; return null; }
+/* "jn 3 16", "1sam2:25", "ps 23:1-6", "romans" → {book,ch,v,v2} */
+function parseRefQuery(q){ q=q.replace(/\s+(kjv|bsb|niv|esv|nlt|nkjv|web|asv)$/i,''); const m=q.trim().match(/^((?:[1-3]|i{1,3}|1st|2nd|3rd|first|second|third)?\s*[a-z][a-z .]*?)\s*(\d+)?(?:\s*[:.,\s]\s*(\d+)(?:\s*[-–]\s*(\d+))?)?\s*$/i);
+  if(!m) return null; const book=_srBook(m[1]); if(!book) return null;
+  const B=window.BOOKS.find(b=>b.name===book); if(!m[2]) return {book,ch:1,v:0,v2:0,whole:true};
+  const ch=Math.max(1,Math.min(B.chapters.length,parseInt(m[2],10)));
+  return {book,ch,v:m[3]?parseInt(m[3],10):0,v2:m[4]?parseInt(m[4],10):0}; }
+const _srNorm=s=>String(s).toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+const SR_STOP=new Set(['the','and','of','a','to','in','that','he','shall','unto','for','i','his','is','not','be','they','him','them','with','it','all','was','which','thou','thy','my','me','ye','you','your','but','are','have','from','as','this','were','had','will','on','by','an','at','or','who','what','verses','verse','about','bible','scripture','on','does','say','says','where','find','show','give','me','some']);
+let _srVocab={}, _srIdx={};
+function _srIndex(ver){ if(_srIdx[ver]) return _srIdx[ver]; const bib=window.BIBLE[ver]; if(!bib) return null; const a=[];
+  for(const bk in bib)for(const ch in bib[bk])for(const v in bib[bk][ch]){ const t=bib[bk][ch][v]; if(t) a.push({bk,ch,v,t,n:' '+_srNorm(t)+' '}); }
+  return _srIdx[ver]=a; }
+function _srVocabFor(ver){ if(_srVocab[ver]) return _srVocab[ver]; const bib=window.BIBLE[ver]; if(!bib) return null; const v=new Map();
+  for(const bk in bib)for(const ch in bib[bk])for(const vs in bib[bk][ch]) _srNorm(bib[bk][ch][vs]).split(' ').forEach(w=>{ if(w.length>2) v.set(w,(v.get(w)||0)+1); });
+  return _srVocab[ver]=v; }
+function _srCorrect(word,vocab){ if(!vocab||vocab.has(word)||word.length<4||/^\d+$/.test(word)) return word;
+  let best=word,bd=99,bc=-1; const maxd=word.length>=7?2:1;
+  for(const [w,c] of vocab){ if(Math.abs(w.length-word.length)>maxd||w[0]!==word[0]) continue; const d=_srLev(word,w); if(d<=maxd&&(d<bd||(d===bd&&c>bc))){ bd=d; bc=c; best=w; } }
+  return best; }
+const SR_TOPICS=[
+ {t:'fear & anxiety',k:['fear','afraid','anxiety','anxious','worry','worried','scared','panic'],r:['Isaiah 41:10','Philippians 4:6','Psalms 56:3','2 Timothy 1:7','Joshua 1:9','Psalms 34:4','1 Peter 5:7','Matthew 6:34','Psalms 23:4','Isaiah 43:1']},
+ {t:'love',k:['love','loving','loved','charity'],r:['1 Corinthians 13:4','John 3:16','1 John 4:8','Romans 5:8','John 13:34','1 John 4:19','Song of Solomon 8:7','Romans 8:38','1 Peter 4:8','Ephesians 5:25']},
+ {t:'faith',k:['faith','believe','believing','trust','doubt'],r:['Hebrews 11:1','Hebrews 11:6','Proverbs 3:5','Mark 9:23','Romans 10:17','2 Corinthians 5:7','Matthew 17:20','James 1:6','Ephesians 2:8','Habakkuk 2:4']},
+ {t:'hope',k:['hope','hopeless','despair','discouraged'],r:['Jeremiah 29:11','Romans 15:13','Isaiah 40:31','Romans 8:28','Psalms 42:11','Lamentations 3:22','Hebrews 6:19','Romans 5:5','Psalms 130:5','1 Peter 1:3']},
+ {t:'forgiveness',k:['forgive','forgiveness','forgiven','mercy','pardon'],r:['1 John 1:9','Ephesians 4:32','Matthew 6:14','Colossians 3:13','Psalms 103:12','Isaiah 1:18','Luke 23:34','Matthew 18:21','Micah 7:18','Acts 3:19']},
+ {t:'healing',k:['heal','healing','healed','sick','sickness','illness','disease','health'],r:['Jeremiah 17:14','James 5:14','Psalms 103:2','Isaiah 53:5','Exodus 15:26','Psalms 147:3','Matthew 8:17','3 John 1:2','Jeremiah 30:17','Proverbs 17:22']},
+ {t:'strength',k:['strength','strong','weak','weakness','tired','weary'],r:['Philippians 4:13','Isaiah 40:29','Psalms 46:1','2 Corinthians 12:9','Nehemiah 8:10','Isaiah 41:10','Psalms 28:7','Ephesians 6:10','Deuteronomy 31:6','Matthew 11:28']},
+ {t:'peace',k:['peace','peaceful','calm','rest','restless'],r:['John 14:27','Philippians 4:7','Isaiah 26:3','Psalms 4:8','Matthew 11:28','John 16:33','Romans 5:1','Colossians 3:15','Numbers 6:24','Psalms 29:11']},
+ {t:'comfort in grief',k:['grief','grieving','mourn','mourning','comfort','loss','died','death','dying','sorrow','sad','sadness'],r:['Psalms 34:18','Matthew 5:4','Revelation 21:4','Psalms 23:4','2 Corinthians 1:3','John 11:25','Psalms 147:3','Isaiah 41:10','1 Thessalonians 4:13','Romans 8:38']},
+ {t:'temptation & sin',k:['temptation','tempted','tempt','sin','sins','sinner','lust','flesh'],r:['1 Corinthians 10:13','James 1:12','Hebrews 4:15','Romans 3:23','Romans 6:23','1 John 1:9','Psalms 51:10','James 4:7','Galatians 5:16','Matthew 26:41']},
+ {t:'salvation',k:['salvation','saved','save','born again','eternal life','heaven','saviour','savior','redeem','redemption'],r:['John 3:16','Romans 10:9','Ephesians 2:8','Acts 4:12','John 14:6','Romans 6:23','Titus 3:5','John 1:12','2 Corinthians 5:17','Romans 5:8']},
+ {t:'wisdom & guidance',k:['wisdom','wise','guidance','guide','direction','decision','decisions','understanding','knowledge'],r:['James 1:5','Proverbs 3:5','Proverbs 9:10','Psalms 32:8','Proverbs 2:6','Psalms 119:105','Isaiah 30:21','Proverbs 16:9','Colossians 2:3','Proverbs 4:7']},
+ {t:'patience',k:['patience','patient','wait','waiting','endure','endurance','perseverance'],r:['Romans 12:12','James 1:3','Psalms 27:14','Isaiah 40:31','Galatians 6:9','Romans 5:3','Hebrews 12:1','Lamentations 3:25','Ecclesiastes 7:8','Colossians 1:11']},
+ {t:'anger',k:['anger','angry','wrath','rage','temper'],r:['Ephesians 4:26','James 1:19','Proverbs 15:1','Proverbs 29:11','Ecclesiastes 7:9','Colossians 3:8','Psalms 37:8','Proverbs 14:29','Romans 12:19','Proverbs 16:32']},
+ {t:'joy',k:['joy','joyful','happy','happiness','rejoice','gladness'],r:['Nehemiah 8:10','Psalms 16:11','Philippians 4:4','John 15:11','Romans 15:13','Psalms 30:5','James 1:2','Habakkuk 3:18','Psalms 118:24','1 Thessalonians 5:16']},
+ {t:'prayer',k:['prayer','pray','praying','intercession'],r:['Philippians 4:6','1 Thessalonians 5:17','Matthew 6:9','James 5:16','Jeremiah 33:3','Mark 11:24','Matthew 7:7','1 John 5:14','Psalms 145:18','Romans 8:26']},
+ {t:'money & giving',k:['money','wealth','rich','riches','poor','poverty','giving','give','tithe','tithing','generosity','debt','finances','provision','provide'],r:['Matthew 6:24','Malachi 3:10','2 Corinthians 9:7','Proverbs 3:9','Luke 6:38','1 Timothy 6:10','Philippians 4:19','Hebrews 13:5','Proverbs 22:7','Matthew 6:33']},
+ {t:'marriage & family',k:['marriage','married','wife','husband','spouse','family','children','child','parents','parenting','divorce'],r:['Genesis 2:24','Ephesians 5:25','Proverbs 31:10','1 Corinthians 13:4','Ephesians 6:1','Proverbs 22:6','Colossians 3:18','Hebrews 13:4','Psalms 127:3','Ephesians 6:4']},
+ {t:'work & purpose',k:['work','job','career','purpose','calling','labour','labor','lazy','diligent','diligence'],r:['Colossians 3:23','Proverbs 16:3','Jeremiah 29:11','Ecclesiastes 9:10','Proverbs 12:24','Philippians 2:13','Romans 8:28','Ephesians 2:10','1 Corinthians 15:58','Proverbs 14:23']},
+ {t:'protection',k:['protection','protect','safe','safety','danger','refuge','shield'],r:['Psalms 91:1','Psalms 121:7','Proverbs 18:10','Isaiah 54:17','2 Thessalonians 3:3','Psalms 46:1','Psalms 18:2','Deuteronomy 31:8','Psalms 32:7','Nahum 1:7']},
+ {t:'the Holy Spirit',k:['holy spirit','spirit','holy ghost','tongues','gifts'],r:['John 14:26','Acts 1:8','Galatians 5:22','Romans 8:26','Acts 2:4','John 16:13','1 Corinthians 12:4','Ephesians 5:18','Romans 8:11','2 Corinthians 3:17']},
+ {t:'courage',k:['courage','courageous','brave','bold','boldness'],r:['Joshua 1:9','Deuteronomy 31:6','Psalms 27:1','1 Corinthians 16:13','Isaiah 41:10','2 Timothy 1:7','Psalms 31:24','Philippians 1:28','Proverbs 28:1','Acts 4:31']},
+ {t:'loneliness',k:['lonely','loneliness','alone','abandoned','forsaken','rejected'],r:['Deuteronomy 31:6','Psalms 25:16','Hebrews 13:5','Isaiah 41:10','Matthew 28:20','Psalms 68:6','Psalms 27:10','John 14:18','Psalms 139:7','Isaiah 49:15']},
+ {t:'gratitude',k:['thank','thanks','thankful','gratitude','grateful','thanksgiving'],r:['1 Thessalonians 5:18','Psalms 100:4','Colossians 3:17','Psalms 107:1','Philippians 4:6','Ephesians 5:20','Psalms 136:1','Colossians 3:15','James 1:17','Psalms 118:1']},
+ {t:'humility & pride',k:['humble','humility','pride','proud','arrogant','boast'],r:['Proverbs 16:18','James 4:10','Philippians 2:3','Proverbs 11:2','1 Peter 5:6','Micah 6:8','Matthew 23:12','Proverbs 22:4','Romans 12:3','Luke 14:11']},
+ {t:'the second coming',k:['second coming','return','rapture','end times','last days','judgment','judgement','tribulation','antichrist'],r:['Matthew 24:36','1 Thessalonians 4:16','Revelation 22:12','John 14:3','Acts 1:11','2 Peter 3:10','Matthew 24:42','Titus 2:13','Revelation 1:7','1 Corinthians 15:52']},
+ {t:'creation',k:['creation','created','beginning','universe','world made'],r:['Genesis 1:1','Psalms 19:1','Colossians 1:16','John 1:3','Hebrews 11:3','Genesis 1:27','Psalms 33:6','Isaiah 40:28','Revelation 4:11','Romans 1:20']},
+ {t:'obedience',k:['obey','obedience','obedient','commandments','commands','law'],r:['John 14:15','1 Samuel 15:22','Deuteronomy 11:1','James 1:22','Luke 11:28','Joshua 1:8','Ecclesiastes 12:13','1 John 5:3','Romans 2:13','Acts 5:29']},
+ {t:'the tongue & lying',k:['tongue','lie','lying','liar','gossip','speech','words','mouth'],r:['James 3:5','Proverbs 18:21','Ephesians 4:29','Proverbs 12:22','Colossians 4:6','Proverbs 21:23','Psalms 141:3','Proverbs 15:4','Matthew 12:36','Exodus 20:16']},
+ {t:'depression & despair',k:['depressed','depression','despair','hopeless','downcast','heavy','burden'],r:['Psalms 34:17','Psalms 42:11','Matthew 11:28','Psalms 40:1','Isaiah 41:10','Psalms 34:18','Psalms 3:3','1 Peter 5:7','Psalms 143:7','Romans 8:38']},
+ {t:'enemies & persecution',k:['enemy','enemies','persecution','persecuted','hate','hated','betrayed','revenge'],r:['Matthew 5:44','Romans 12:20','Psalms 23:5','Luke 6:27','Romans 12:19','Matthew 5:10','2 Timothy 3:12','John 15:18','Proverbs 25:21','Psalms 27:2']},
+ {t:'worship & praise',k:['worship','praise','sing','singing','glorify','glory'],r:['Psalms 150:6','John 4:24','Psalms 100:1','Psalms 95:6','Hebrews 13:15','Psalms 34:1','Romans 12:1','Psalms 96:9','Revelation 4:11','Psalms 103:1']},
+ {t:'grace',k:['grace','gracious','undeserved','favour','favor'],r:['Ephesians 2:8','2 Corinthians 12:9','Romans 5:20','Titus 2:11','Hebrews 4:16','John 1:16','Romans 6:14','James 4:6','2 Timothy 1:9','Romans 3:24']},
+ {t:'truth',k:['truth','true','honest','honesty','integrity'],r:['John 8:32','John 14:6','John 17:17','Psalms 25:5','Ephesians 4:15','Proverbs 12:19','John 16:13','Psalms 119:160','Zechariah 8:16','3 John 1:4']},
+ {t:'friendship',k:['friend','friends','friendship','companions'],r:['Proverbs 17:17','Proverbs 18:24','John 15:13','Ecclesiastes 4:9','Proverbs 27:17','Proverbs 13:20','John 15:15','1 Corinthians 15:33','Proverbs 27:9','Ruth 1:16']},
+ {t:'leadership',k:['leader','leadership','leading','authority','servant'],r:['Mark 10:45','Proverbs 11:14','1 Timothy 3:2','Philippians 2:3','Exodus 18:21','Proverbs 29:2','Luke 22:26','Titus 1:7','Joshua 1:9','1 Peter 5:2']},
+ {t:'fasting',k:['fast','fasting','fasted'],r:['Matthew 6:16','Isaiah 58:6','Joel 2:12','Matthew 4:2','Acts 13:2','Daniel 10:3','Esther 4:16','Luke 4:2','Nehemiah 1:4','Matthew 17:21']},
+ {t:'baptism',k:['baptism','baptize','baptized','baptised'],r:['Matthew 28:19','Acts 2:38','Romans 6:4','Mark 16:16','Acts 22:16','Galatians 3:27','1 Peter 3:21','Matthew 3:16','Colossians 2:12','Acts 8:36']},
+ {t:'jealousy & envy',k:['jealous','jealousy','envy','envious','covet','coveting'],r:['Proverbs 14:30','James 3:16','Exodus 20:17','Galatians 5:26','1 Corinthians 13:4','Psalms 37:1','Proverbs 23:17','Romans 13:13','1 Peter 2:1','Ecclesiastes 4:4']},
+ {t:'sexual purity',k:['sex','sexual','adultery','fornication','purity','pure','immorality','pornography'],r:['1 Corinthians 6:18','1 Thessalonians 4:3','Hebrews 13:4','Matthew 5:28','1 Corinthians 6:19','Galatians 5:19','Ephesians 5:3','Psalms 119:9','2 Timothy 2:22','Job 31:1']},
+ {t:'alcohol',k:['alcohol','drunk','drunkenness','wine','drinking'],r:['Ephesians 5:18','Proverbs 20:1','Proverbs 23:31','1 Corinthians 6:10','Galatians 5:21','Romans 13:13','1 Timothy 5:23','Isaiah 5:11','Proverbs 31:4','1 Peter 4:3']},
+ {t:'the resurrection',k:['resurrection','risen','rose','raised','empty tomb','easter'],r:['1 Corinthians 15:3','Matthew 28:6','John 11:25','Romans 6:5','Luke 24:6','1 Corinthians 15:20','Romans 10:9','1 Peter 1:3','Philippians 3:10','Acts 2:24']},
+ {t:'justice',k:['justice','just','injustice','oppressed','oppression','fair'],r:['Micah 6:8','Isaiah 1:17','Amos 5:24','Proverbs 21:15','Psalms 82:3','Isaiah 30:18','Deuteronomy 16:20','Luke 18:7','Proverbs 31:8','Zechariah 7:9']},
+ {t:'children',k:['children','kids','child','sons','daughters','youth','young'],r:['Psalms 127:3','Proverbs 22:6','Matthew 19:14','Ephesians 6:1','Deuteronomy 6:7','Mark 10:14','Proverbs 20:11','1 Timothy 4:12','Psalms 8:2','Ecclesiastes 12:1']},
+ {t:'kindness',k:['kind','kindness','compassion','compassionate','gentle','gentleness'],r:['Ephesians 4:32','Colossians 3:12','Galatians 5:22','Proverbs 11:17','Luke 6:35','Micah 6:8','1 Corinthians 13:4','Titus 3:4','Proverbs 31:26','Romans 2:4']},
+ {t:'government & authority',k:['government','king','rulers','authorities','nation','politics','taxes','caesar'],r:['Romans 13:1','1 Timothy 2:1','Matthew 22:21','Proverbs 21:1','Daniel 2:21','1 Peter 2:13','Psalms 33:12','Proverbs 14:34','Titus 3:1','2 Chronicles 7:14']},
+ {t:'the Word of God',k:['word of god','scripture','bible','word','study'],r:['2 Timothy 3:16','Hebrews 4:12','Psalms 119:105','Joshua 1:8','Isaiah 40:8','Matthew 4:4','Psalms 119:11','Romans 15:4','2 Timothy 2:15','John 1:1']},
+];
+function _srTopics(nq){ const out=[]; const words=nq.split(' ');
+  SR_TOPICS.forEach(T=>{ let sc=0; T.k.forEach(k=>{ if(k.indexOf(' ')>=0){ if(nq.indexOf(k)>=0) sc+=3; } else if(words.some(w=>w===k||(w.length>4&&k.length>4&&(w.startsWith(k)||k.startsWith(w))))) sc+=2; });
+    if(sc) out.push({T,sc}); });
+  return out.sort((a,b)=>b.sc-a.sc).slice(0,2).map(x=>x.T); }
+function _srRef(r){ const m=r.match(/^(.*?) (\d+):(\d+)$/); return m?{bk:m[1],ch:+m[2],v:+m[3]}:null; }
+function _srVerse(ver,bk,ch,v){ const b=(window.BIBLE[ver]||{})[bk]; return b?(((b[String(ch)]||{})[String(v)])||''):''; }
 function doSearch(q){
   q=q.trim();
   if(q.length<2){ if(state.view==='search'){ state.view='read'; setViewTabs(); render(); } return; }
@@ -3245,41 +3346,66 @@ function doSearch(q){
   document.getElementById('crumb').textContent='Search';
   document.getElementById('chapselWrap').style.display='none';
   document.getElementById('readfoot').style.display='none';
-  const ql=q.toLowerCase();
-  // A typed reference ("jer 22:19", "psalm 23", "1 kings 2") becomes a jump card
-  let refRow='';
-  { const m=q.match(/^([1-3]?\s?[a-z]+(?:\s+[a-z]+)*?)\.?\s+(\d+)(?:\s*[:.]\s*(\d+))?$/i);
-    if(m&&window.BOOKS){ const bq=m[1].replace(/\s+/g,' ').trim().toLowerCase();
-      const hit=window.BOOKS.find(b=>b.name.toLowerCase()===bq)
-        ||window.BOOKS.find(b=>b.name.toLowerCase().startsWith(bq))
-        ||window.BOOKS.find(b=>b.name.toLowerCase().replace(/\s/g,'').startsWith(bq.replace(/\s/g,'')));
-      if(hit){ const chn=Math.max(1,Math.min(hit.chapters.length,parseInt(m[2],10)));
-        const vn=m[3]?parseInt(m[3],10):0;
-        refRow=`<div class="hcard" style="cursor:pointer;margin-bottom:14px" onclick="openChapter('${esc(hit.name)}',${chn})${vn?`;setTimeout(()=>jumpVerse(${vn}),500)`:''}">
-          <div class="hk">📖 Go to</div><h3 style="margin:4px 0 0">${escHTML(hit.name)} ${chn}${vn?':'+vn:''} →</h3></div>`; } } }
-  // commentary results
+  const ver=state.version, kjv=window.BIBLE.KJV?'KJV':null;
+  if(!window.BIBLE[ver]){ ensureVersion(ver,()=>{ if(state.view==='search') doSearch(q); }); }
+  const nq=_srNorm(q);
+  let html=`<div class="page">`;
+  /* 1. a reference, in any shape */
+  const ref=parseRefQuery(q);
+  if(ref){ const B=window.BOOKS.find(b=>b.name===ref.book);
+    const vt=ref.v?_srVerse(ver,ref.book,ref.ch,ref.v):''; const vk=ref.v&&kjv&&ver!=='KJV'?_srVerse('KJV',ref.book,ref.ch,ref.v):'';
+    const label=ref.whole?ref.book:`${ref.book} ${ref.ch}${ref.v?':'+ref.v+(ref.v2?'-'+ref.v2:''):''}`;
+    html+=`<div class="hcard" style="cursor:pointer;margin-bottom:14px" onclick="openChapter('${esc(ref.book)}',${ref.ch})${ref.v?`;setTimeout(()=>jumpVerse(${ref.v}),500)`:''}">
+      <div class="hk">${ICONS.book} Go to</div><h3 style="margin:4px 0 ${vt?'8px':'0'}">${escHTML(label)} →</h3>
+      ${vt?`<div style="font-family:var(--serif);font-size:15.5px;line-height:1.5">${escHTML(vt)}<span style="display:block;font-family:var(--sans);font-size:11.5px;color:var(--soft);margin-top:4px">${ver}</span></div>`:''}
+      ${vk&&vk!==vt?`<div style="font-family:var(--serif);font-size:14.5px;line-height:1.5;margin-top:8px;color:var(--soft)">${escHTML(vk)}<span style="display:block;font-family:var(--sans);font-size:11.5px;margin-top:4px">KJV</span></div>`:''}
+      ${ref.whole?`<div class="soft" style="margin:6px 0 0">${B.chapters.length} chapters — opens at chapter 1</div>`:''}</div>`;
+    const chN=DATA[ref.book]&&DATA[ref.book][String(ref.ch)]; const onV=ref.v&&chN?(chN[String(ref.v)]||[]):[];
+    if(onV.length){ html+=`<div class="book-group" style="padding-left:0">Nii Okai on ${escHTML(ref.book)} ${ref.ch}:${ref.v}</div>`;
+      onV.slice(0,3).forEach(nt=>{ html+=`<div class="sr-item" onclick="jumpTo('${esc(ref.book)}',${ref.ch},${ref.v})"><div class="t">${escHTML(nt.text.length>260?nt.text.slice(0,260).replace(/\s+\S*$/,'')+'…':nt.text)}</div></div>`; }); }
+    else if(chN&&!ref.whole){ const n=Object.keys(chN).reduce((a,k)=>a+chN[k].length,0); if(n) html+=`<div class="soft" style="margin:-6px 0 14px">${ICONS.chat} Nii Okai has ${n} note${n===1?'':'s'} in ${escHTML(ref.book)} ${ref.ch}</div>`; } }
+  /* 2. words: correct spelling against the Bible's own vocabulary */
+  const vocab=_srVocabFor(ver)||_srVocabFor('KJV');
+  const rawWords=ref?[]:nq.split(' ').filter(w=>w&&!SR_STOP.has(w));
+  const words=rawWords.map(w=>_srCorrect(w,vocab));
+  const corrected=words.join(' ')!==rawWords.join(' ');
+  if(corrected&&!ref) html+=`<div class="soft" style="margin:-4px 0 12px">Searching for <b>${escHTML(words.join(' '))}</b> <span style="opacity:.7">(you typed “${escHTML(q)}”)</span></div>`;
+  /* 3. topics */
+  if(!ref){ _srTopics(nq).forEach(T=>{ html+=`<div class="hcard" style="margin-bottom:14px"><div class="hk">${ICONS.library} Verses about ${escHTML(T.t)}</div><div class="hrow" style="margin-top:8px">`;
+      T.r.forEach(r=>{ const p=_srRef(r); if(!p) return; const t=_srVerse(ver,p.bk,p.ch,p.v)||_srVerse('KJV',p.bk,p.ch,p.v); const has=!!(DATA[p.bk]&&DATA[p.bk][String(p.ch)]&&DATA[p.bk][String(p.ch)][String(p.v)]);
+        html+=`<div class="sr-item" style="flex:1 1 100%;margin:0 0 6px" onclick="jumpTo('${esc(p.bk)}',${p.ch},${p.v})"><div class="r">${escHTML(r)}${has?'<span class="sr-tag" style="color:var(--accent)">Nii Okai wrote here</span>':''}</div><div class="t">${escHTML(t.length>150?t.slice(0,150).replace(/\s+\S*$/,'')+'…':t)}</div></div>`; });
+      html+=`</div></div>`; }); }
+  /* 4. ranked phrase search: your notes, then Scripture in the version you read and in the KJV wording */
+  const phrase=words.join(' ');
+  const alts=words.map((w,i)=>rawWords[i]&&rawWords[i]!==w?[w,rawWords[i]]:[w]);
+  const scoreN=n=>{ if(!words.length) return 0; if(phrase&&n.indexOf(' '+phrase+' ')>=0) return 100+words.length+40/(1+n.length/120);
+    let sc=0,last=-1,inorder=true; alts.forEach(g=>{ let i=-1,part=false; for(const w of g){ i=n.indexOf(' '+w+' '); if(i>=0) break; if(w.length>3&&(i=n.indexOf(w))>=0){ part=true; break; } }
+      if(i>=0){ sc+=part?1:2; if(i<last) inorder=false; last=i; } });
+    if(sc<Math.max(1,Math.ceil(words.length*0.6)*2)) return 0;
+    if(inorder&&words.length>1) sc+=2; return sc+words.length*2/(1+n.length/120); };
+  const score=t=>scoreN(' '+_srNorm(t)+' ');
   let comm=[];
-  for(const bk in DATA)for(const ch in DATA[bk])for(const v in DATA[bk][ch])
-    DATA[bk][ch][v].forEach(nt=>{ if(nt.text.toLowerCase().includes(ql))
-      comm.push({bk,ch,v,text:nt.text}); });
-  // scripture results in loaded version
-  let scrip=[]; const bib=window.BIBLE[state.version]||{};
-  outer:for(const bk in bib){ for(const ch in bib[bk]){ for(const v in bib[bk][ch]){
-    const t=bib[bk][ch][v]; if(t&&t.toLowerCase().includes(ql)){ scrip.push({bk,ch,v,text:t});
-      if(scrip.length>=150)break outer; } } } }
-  let html=`<div class="page">
-    ${refRow}
-    <div class="mc-head"><h2>“${escHTML(q)}”</h2><span class="mc-count">${comm.length} in commentary · ${scrip.length}${scrip.length>=150?'+':''} in ${state.version}</span></div>`;
-  if(comm.length){ html+='<div class="book-group" style="padding-left:0">Your commentary</div>';
-    comm.slice(0,80).forEach(r=>{ const ref=r.v==='0'?`${r.bk} ${r.ch}`:`${r.bk} ${r.ch}:${r.v}`;
-      html+=`<div class="sr-item" onclick="jumpTo('${esc(r.bk)}',${r.ch},${r.v==='0'?1:r.v})">
-        <div class="r">${ref}<span class="sr-tag">note</span></div>
-        <div class="t">${hl(r.text,q,160)}</div></div>`; }); }
-  if(scrip.length){ html+='<div class="book-group" style="padding-left:0">Scripture</div>';
-    scrip.slice(0,80).forEach(r=>{ html+=`<div class="sr-item" onclick="jumpTo('${esc(r.bk)}',${r.ch},${r.v})">
-        <div class="r">${r.bk} ${r.ch}:${r.v}</div>
-        <div class="t">${hl(r.text,q,200)}</div></div>`; }); }
-  if(!comm.length&&!scrip.length) html+='<div class="empty"><div class="big">🔍</div>No matches.</div>';
+  if(words.length){ for(const bk in DATA)for(const ch in DATA[bk])for(const v in DATA[bk][ch]) DATA[bk][ch][v].forEach(nt=>{ const sc=score(nt.text); if(sc) comm.push({bk,ch,v,text:nt.text,sc}); }); comm.sort((a,b)=>b.sc-a.sc); }
+  let scrip=[]; const seen=new Set();
+  if(words.length){ [ver,kjv].filter((x,i,a)=>x&&a.indexOf(x)===i).forEach(vv=>{ const idx=_srIndex(vv)||[];
+    for(const e of idx){ const k=e.bk+'|'+e.ch+'|'+e.v; if(seen.has(k)) continue; const sc=scoreN(e.n); if(sc){ seen.add(k); scrip.push({bk:e.bk,ch:e.ch,v:e.v,text:_srVerse(ver,e.bk,e.ch,e.v)||e.t,sc,ver:vv}); } } });
+    scrip.sort((a,b)=>b.sc-a.sc); }
+  const total=comm.length+scrip.length;
+  if(words.length) html+=`<div class="mc-head"><h2>“${escHTML(q)}”</h2><span class="mc-count">${comm.length} in Nii Okai’s notes · ${scrip.length} in Scripture</span></div>`;
+  const hlw=(t,max)=>{ let out=t; const allw=[].concat(...alts); const first=allw.find(w=>_srNorm(t).indexOf(w)>=0); const i=first?_srNorm(t).indexOf(first):-1; if(i>80) out='…'+t.slice(Math.max(0,i-60)); if(out.length>max) out=out.slice(0,max)+'…'; let h=escHTML(out); allw.forEach(w=>{ if(w.length>1) h=h.replace(new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>'); }); return h; };
+  const noteRow=r=>{ const rf=r.v==='0'?`${r.bk} ${r.ch}`:`${r.bk} ${r.ch}:${r.v}`; return `<div class="sr-item" onclick="jumpTo('${esc(r.bk)}',${r.ch},${r.v==='0'?1:r.v})"><div class="r">${rf}<span class="sr-tag">Nii Okai</span></div><div class="t">${hlw(r.text,180)}</div></div>`; };
+  const scripFirst=scrip.length&&(!comm.length||scrip[0].sc>comm[0].sc);   // Bible wording → Scripture leads; otherwise Nii Okai leads
+  const notesTop=()=>{ if(comm.length){ html+='<div class="book-group" style="padding-left:0">Nii Okai’s notes</div>'; comm.slice(0,5).forEach(r=>{ html+=noteRow(r); }); } };
+  const scripAll=()=>{ if(scrip.length){ html+='<div class="book-group" style="padding-left:0">Scripture</div>';
+    scrip.slice(0,40).forEach(r=>{ html+=`<div class="sr-item" onclick="jumpTo('${esc(r.bk)}',${r.ch},${r.v})"><div class="r">${r.bk} ${r.ch}:${r.v}${r.ver!==ver?`<span class="sr-tag">${r.ver} wording</span>`:''}</div><div class="t">${hlw(r.text,220)}</div></div>`; }); } };
+  if(scripFirst){ scripAll(); notesTop(); } else { notesTop(); scripAll(); }
+  if(comm.length>5){ html+='<div class="book-group" style="padding-left:0">More from Nii Okai’s notes</div>'; comm.slice(5,45).forEach(r=>{ html+=noteRow(r); }); }
+  /* 5. when the app can't answer, hand the question to the web the way people actually ask it */
+  const weak=!ref&&total<3;
+  html+=`<div class="hcard" style="margin-top:${weak?'6px':'18px'};${weak?'':'opacity:.9'}"><div class="hk">${ICONS.search} ${weak?'Nothing close enough here':'Not what you meant?'}</div>
+    <p class="soft" style="margin:6px 0 10px">${weak?'Try a reference like <b>jn 3 16</b>, a phrase you remember, or a topic like <b>verses about fear</b> — or ask the web.':'Ask the web with your words — it comes back with the reference, and you can look it up here.'}</p>
+    <div class="hrow"><button class="btn primary" onclick="window.open('https://www.google.com/search?q='+encodeURIComponent(${JSON.stringify(q)}+' bible verse'),'_blank','noopener')">Search Google</button>
+    <button class="btn" onclick="window.open('https://www.biblegateway.com/quicksearch/?quicksearch='+encodeURIComponent(${JSON.stringify(q)})+'&version=KJV','_blank','noopener')">Bible Gateway</button></div></div>`;
   html+='</div>';
   document.getElementById('reader').innerHTML=html;
   document.getElementById('reader').scrollTop=0;
