@@ -310,8 +310,16 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
 .chapindex{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 22px}
 .copyline{font-family:var(--sans);font-size:11px;color:var(--soft);line-height:1.45;margin:26px 0 10px;padding-top:10px;border-top:1px solid var(--line)}
 .chapindex.nearby{cursor:pointer;padding:10px 14px}
-.notd-body{display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;white-space:pre-wrap}
-.notd-body.open{display:block;-webkit-line-clamp:unset}
+.cn{--cl:6}
+.cn .cnt{white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:var(--cl);-webkit-box-orient:vertical;overflow:hidden}
+.cn.open .cnt{display:block;-webkit-line-clamp:unset}
+.cn .cnm{display:none;align-items:center;gap:3px;margin-top:7px;background:transparent;border:0;padding:0;color:var(--accent);font:600 12.5px/1 var(--sans);cursor:pointer;letter-spacing:.01em}
+.cn .cnm .nico{display:inline-flex;width:15px;height:15px;transition:transform .2s}
+.cn .cnm .nico svg{width:15px;height:15px}
+.cn.open .cnm .nico{transform:rotate(180deg)}
+.cn.long{cursor:pointer}
+.cn.long .cnm{display:inline-flex}
+.verse{scroll-margin-top:18px}
 .chip.dim{opacity:.4}
 .chapindex .lbl-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .chapindex .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent);font-weight:700}
@@ -366,6 +374,10 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
 .mc-item .t{font-size:13.5px;color:var(--soft);margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;
   -webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
 .mc-item.open .t{-webkit-line-clamp:unset;display:block;color:var(--ink);font-size:14.5px;line-height:1.6}
+.mc-item .mc-more{display:inline-flex;align-items:center;gap:3px;margin-top:6px;color:var(--accent);font:600 12px/1 var(--sans)}
+.mc-item .mc-more .nico{display:inline-flex;width:14px;height:14px;transition:transform .2s}.mc-item .mc-more .nico svg{width:14px;height:14px}
+.mc-item .mc-more .mc-m2,.mc-item.open .mc-more .mc-m1{display:none}.mc-item.open .mc-more .mc-m2{display:inline}
+.mc-item.open .mc-more .nico{transform:rotate(180deg)}
 /* scripture-only reading mode (hide all commentary) — but keep the chapter jump bar visible */
 html.hide-notes .note, html.hide-notes .notewrap{display:none}
 html.hide-notes .verse.revealed + .notewrap,
@@ -565,7 +577,7 @@ html.show-dates .mc-item .mc-date{display:inline}
 .ycard .yw{color:var(--soft);font-size:12px;white-space:nowrap;margin-left:8px;padding-top:8px}
 .ycard .yq{font-family:var(--serif);font-size:15.5px;line-height:1.5;margin:10px 0 0;padding-left:12px;border-left:3px solid var(--accent);color:var(--ink)}
 .ycard .yq .yr{display:block;font-family:var(--sans);font-size:12px;font-weight:700;color:var(--soft);margin-top:4px}
-.ycard .yn{background:var(--note-bg);border-radius:12px;padding:10px 12px;margin-top:10px;font-size:14px;line-height:1.45;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.ycard .yn{background:var(--note-bg);border-radius:12px;padding:10px 12px;margin-top:10px;font-size:14px;line-height:1.45}
 .ycard .ybar{height:6px;border-radius:3px;background:var(--line);margin-top:10px;overflow:hidden}
 .ycard .ybar i{display:block;height:100%;background:var(--accent)}
 .ycard.ms{display:flex;gap:12px;align-items:center}
@@ -925,7 +937,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.80.1', date:'13 Sep 2026'};
+const BUILD={v:'0.81.0', date:'13 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1845,6 +1857,19 @@ const ICONS={
   pin:_I('<path d="M12 21s6-5.6 6-11a6 6 0 0 0-12 0c0 5.4 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/>'),
   gear:_I('<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/>')
 };
+ICONS.chev=_I('<path d="M6 9l6 6 6-6"/>');
+/* Clamped note with a Read more / Show less control. The control only appears when the text
+   really overflows (measured after render), so short notes stay clean. Tapping the text toggles too. */
+function cnHTML(text,lines){ return `<div class="cn" style="--cl:${lines||6}" onclick="cnToggle(event,this)"><div class="cnt">${escNote(text)}</div><button class="cnm" type="button" aria-expanded="false"><span class="cnl">Read more</span>${ICONS.chev}</button></div>`; }
+function cnToggle(ev,el){ if(!el.classList.contains('long')) return;            // short note: let the card handle the tap
+  ev.stopPropagation(); const open=el.classList.toggle('open');
+  const l=el.querySelector('.cnl'); if(l) l.textContent=open?'Show less':'Read more';
+  const b=el.querySelector('.cnm'); if(b) b.setAttribute('aria-expanded',open?'true':'false');
+  if(!open){ const r=el.getBoundingClientRect(); if(r.top<0) el.scrollIntoView({block:'start',behavior:'smooth'}); } }
+function cnMeasure(){ document.querySelectorAll('.cn:not(.open)').forEach(el=>{ const t=el.querySelector('.cnt'); if(t) el.classList.toggle('long', t.scrollHeight>t.clientHeight+2); }); }
+window.addEventListener('DOMContentLoaded',()=>{ const r=document.getElementById('reader'); if(!r) return;
+  let q=0; new MutationObserver(()=>{ if(q) return; q=requestAnimationFrame(()=>{ q=0; cnMeasure(); }); }).observe(r,{childList:true,subtree:true}); });
+window.addEventListener('resize',()=>{ clearTimeout(window._cnRz); window._cnRz=setTimeout(cnMeasure,150); });
 /* Sacred-name autocorrect: capital-G God (the Almighty) -> GOD; small-g gods/idols untouched.
    "spirit of the lord" in any casing -> "Spirit of the Lord". Applied to journal notes only, never Scripture. */
 function sacredCase(t){ if(!t) return t;
@@ -2000,8 +2025,8 @@ function renderHome(){
       return `<div class="hcard notd"><div class="hk">${ICONS.pen} Nii Okai’s note of the day</div>
       <div class="href">${escHTML(n.b)} ${n.ch}:${n.v}${n.date?` <span style="color:var(--soft);font-weight:600">· written ${new Date(n.date).toLocaleDateString(undefined,{month:'short',year:'numeric'})}</span>`:''}</div>
       ${vt?`<div class="hverse">“${escHTML(vt.length>200?vt.slice(0,200).replace(/\s+\S*$/,'')+'…':vt)}”</div>`:''}
-      <div class="hnote notd-body" id="notdBody" onclick="this.classList.toggle('open')">${escNote(n.text)}</div>
-      <div class="hrow"><button class="btn primary" onclick="jumpTo('${esc(n.b)}',${n.ch},${n.v})">Read in context →</button>
+      <div class="hnote">${cnHTML(n.text,7)}</div>
+      <div class="hrow"><button class="btn primary" onclick="jumpTo('${esc(n.b)}',${n.ch},${n.v},{note:1})">Read in context →</button>
         <button class="btn" onclick="setView('explore')">Explore the journal</button></div></div>`; })()}
     ${(()=>{ const bk=window.BOOKS[state.book]; if(!bk) return '';
       return `<div class="hcard" style="cursor:pointer" onclick="setView('read')">
@@ -2027,8 +2052,8 @@ function renderHome(){
       <div class="hk">${ICONS.book} Verse of the Day${S?` <span class="seasontag">${S.icon} ${escHTML(S.name)}</span>`:''}</div>
       <div class="href">${vd[0]} ${vd[1]}:${vd[2]} · ${state.version}</div>
       ${vtext?`<div class="hverse">“${escHTML(vtext)}”</div>`:`<div class="hverse" style="color:var(--soft)">Loading Scripture…</div>`}
-      ${note?`<div class="hnote">${ICONS.chat} ${escNote(note.text.slice(0,170))}${note.text.length>170?'…':''}</div>`:''}
-      <button class="btn primary" onclick="jumpTo('${esc(vd[0])}',${vd[1]},${vd[2]})">Open in Bible →</button>
+      ${note?`<div class="hnote"><div class="hk" style="margin-bottom:4px">${ICONS.chat} Nii Okai’s note</div>${cnHTML(note.text,4)}</div>`:''}
+      <button class="btn primary" onclick="jumpTo('${esc(vd[0])}',${vd[1]},${vd[2]},${note?'{note:1}':'null'})">Open in Bible →</button>
     </div>`; })():''}
     ${planCard}
     ${BLOG_URL?`<div class="hcard">
@@ -2480,8 +2505,8 @@ function renderMine(){
       const d=it.date?new Date(it.date).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'';
       books+=`<div class="mc-item" onclick="this.classList.toggle('open')">
         <div class="r">${ref}${d?`<span class="mc-date">${d}</span>`:''}
-          <button class="mc-open" onclick="event.stopPropagation();jumpTo('${esc(b.name)}',${it.ch},${it.v==='0'?1:it.v})">Open in Bible →</button></div>
-        <div class="t">${escHTML(it.text)}</div></div>`;
+          <button class="mc-open" onclick="event.stopPropagation();jumpTo('${esc(b.name)}',${it.ch},${it.v==='0'?1:it.v},{note:1})">Open in Bible →</button></div>
+        <div class="t">${escHTML(it.text)}</div><span class="mc-more"><span class="mc-m1">Read more</span><span class="mc-m2">Show less</span>${ICONS.chev}</span></div>`;
     });
     books+=`</details>`;
   });
@@ -2501,11 +2526,13 @@ function renderMine(){
   document.getElementById('reader').scrollTop=0;
   buildBookList();
 }
-function jumpTo(name,ch,v){
+function jumpTo(name,ch,v,opts){
   state.book=window.BOOKS.findIndex(b=>b.name===name); state.chapter=ch; state.view='read';
   setViewTabs(); savePrefs();
   ensureVersion(state.version,()=>{ renderRead(); setTimeout(()=>{const el=document.getElementById('v'+v);
-    if(el){el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.transition='background .3s';
+    if(el){ let withNote=false;
+      if(opts&&opts.note&&el.classList.contains('has-note')){ el.classList.remove('collapsed'); el.classList.add('revealed'); _syncCmark(v); withNote=true; } // came from the journal → open the note too
+      el.scrollIntoView({behavior:'smooth',block:withNote?'start':'center'}); el.style.transition='background .3s';
       const o=el.style.background; el.style.background='var(--note-line)'; setTimeout(()=>el.style.background=o,900);} },60); });
   toggleSidebar(false);
 }
@@ -4015,9 +4042,9 @@ function _youCard(e){
   const clip=(t,n)=>t.length>n?t.slice(0,n).replace(/\s+\S*$/,'')+'…':t;
   if(e.k==='note'){ const ref=e.v?`${e.b} ${e.ch}:${e.v}`:`${e.b} ${e.ch}`; const vt=e.v?_verseText(e.b,e.ch,e.v):'';
     const edited=e.nt.edited&&e.nt.edited!==e.nt.date;
-    return `<div class="ycard" onclick="jumpTo('${esc(e.b)}',${e.ch},${e.v||1})"><div class="yt"><span class="yi">${ICONS.pen}</span><div class="yl">You wrote on <b>${ref}</b>${edited?' <span style="color:var(--soft)">· edited</span>':''}</div>${when}</div>
+    return `<div class="ycard" onclick="jumpTo('${esc(e.b)}',${e.ch},${e.v||1},{note:1})"><div class="yt"><span class="yi">${ICONS.pen}</span><div class="yl">You wrote on <b>${ref}</b>${edited?' <span style="color:var(--soft)">· edited</span>':''}</div>${when}</div>
       ${vt?`<div class="yq">${escHTML(clip(vt,170))}<span class="yr">${ref} ${state.version}</span></div>`:''}
-      <div class="yn">${escHTML(e.nt.text)}</div></div>`; }
+      <div class="yn">${cnHTML(e.nt.text,4)}</div></div>`; }
   if(e.k==='hl'){ const ref=`${e.b} ${e.ch}:${e.v}`; const vt=_verseText(e.b,e.ch,e.v); const rgb=HL_RGB[e.c]||HL_RGB.y;
     return `<div class="ycard" onclick="jumpTo('${esc(e.b)}',${e.ch},${e.v})"><div class="yt"><span class="yi" style="background:rgba(${rgb},.35)">${ICONS.marker}</span><div class="yl">You highlighted <b>${ref}</b></div>${when}</div>
       ${vt?`<div class="yq" style="border-left-color:rgb(${rgb})">${escHTML(vt)}<span class="yr">${ref} ${state.version}</span></div>`:''}</div>`; }
@@ -4057,8 +4084,8 @@ function _exThemes(){ if(window._exThemeCache) return window._exThemeCache; cons
     if(notes.length) out.push({t:T.t,n:onRef.length+byKw.length,notes}); });
   return window._exThemeCache=out.sort((a,b)=>b.n-a.n); }
 function _exCard(n,label){ const vt=_srVerse(state.version,n.b,n.ch,n.v)||_srVerse('KJV',n.b,n.ch,n.v); const ref=n.v?`${n.b} ${n.ch}:${n.v}`:`${n.b} ${n.ch}`;
-  return `<div class="ycard" onclick="jumpTo('${esc(n.b)}',${n.ch},${n.v||1})"><div class="yt"><span class="yi">${ICONS.pen}</span><div class="yl"><b>${escHTML(ref)}</b>${label?` <span style="color:var(--soft)">· ${escHTML(label)}</span>`:''}</div>${n.date?`<span class="yw">${new Date(n.date).toLocaleDateString(undefined,{month:'short',year:'numeric'})}</span>`:''}</div>
-    ${vt?`<div class="yq">${escHTML(vt.length>150?vt.slice(0,150).replace(/\s+\S*$/,'')+'…':vt)}</div>`:''}<div class="yn">${escNote(n.text)}</div></div>`; }
+  return `<div class="ycard" onclick="jumpTo('${esc(n.b)}',${n.ch},${n.v||1},{note:1})"><div class="yt"><span class="yi">${ICONS.pen}</span><div class="yl"><b>${escHTML(ref)}</b>${label?` <span style="color:var(--soft)">· ${escHTML(label)}</span>`:''}</div>${n.date?`<span class="yw">${new Date(n.date).toLocaleDateString(undefined,{month:'short',year:'numeric'})}</span>`:''}</div>
+    ${vt?`<div class="yq">${escHTML(vt.length>150?vt.slice(0,150).replace(/\s+\S*$/,'')+'…':vt)}</div>`:''}<div class="yn">${cnHTML(n.text,4)}</div></div>`; }
 function renderExplore(){
   document.getElementById('crumb').textContent='Explore';
   document.getElementById('chapselWrap').style.display='none';
