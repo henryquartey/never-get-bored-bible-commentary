@@ -307,6 +307,11 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
   text-decoration:underline;text-decoration-style:wavy;text-decoration-color:#c0392b}
 .ed-spell .es-chip:hover{background:rgba(192,57,43,.16)}
 .chapindex{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 22px}
+.copyline{font-family:var(--sans);font-size:11px;color:var(--soft);line-height:1.45;margin:26px 0 10px;padding-top:10px;border-top:1px solid var(--line)}
+.chapindex.nearby{cursor:pointer;padding:10px 14px}
+.notd-body{display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;white-space:pre-wrap}
+.notd-body.open{display:block;-webkit-line-clamp:unset}
+.chip.dim{opacity:.4}
 .chapindex .lbl-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .chapindex .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent);font-weight:700}
 .chapindex .ci-toggle{margin-left:auto;font-family:var(--sans);font-size:12px;font-weight:600;
@@ -907,6 +912,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <!-- DATA -->
 <script src="data/books.js"></script>
 <script src="data/versions.js"></script>
+<script src="data/apikeys.js" onerror="window.API_KEYS=window.API_KEYS||{}"></script>
 <script src="data/commentary.js" defer onload="_seedArrived()"></script>
 <script src="data/refined.js"></script>
 <script src="data/chronological.js"></script>
@@ -918,7 +924,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.79.0', date:'13 Sep 2026'};
+const BUILD={v:'0.80.0', date:'13 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -955,7 +961,7 @@ function init(){
     if(p.hideNotes===true){ document.documentElement.classList.add('hide-notes'); } // default: MY journal is shown
     if(p.journal==='original'||p.journal==='modern') state.journal=p.journal;
     if(p.refcomm) state.refcomm=true;
-    if(['read','plan','home','discourse','menu','mine','you'].includes(p.view)) state.view=p.view;
+    if(['read','plan','home','discourse','menu','mine','you','explore'].includes(p.view)) state.view=p.view;
     if(p.plan&&typeof p.plan.day==='number') state.plan=p.plan;
     if(p.planResume&&typeof p.planResume.day==='number') planResume=p.planResume;
     if(typeof p.planSel==='number') planSel=p.planSel;
@@ -1024,11 +1030,62 @@ function persist(){localStorage.setItem(LS_KEY,JSON.stringify(DATA)); try{ _nsSc
 /* ---------- Version loading ---------- */
 function buildVersionSelect(){
   const sel=document.getElementById('verSelect');
-  sel.innerHTML=Object.entries(window.VERSIONS).map(([c,n])=>
-    `<option value="${c}" title="${n}" ${c===state.version?'selected':''}>${c}</option>`).join('');
+  _olRegister();
+  const ents=Object.entries(window.VERSIONS); const off=ents.filter(([c])=>!ONLINE_VERSIONS[c]), on=ents.filter(([c])=>ONLINE_VERSIONS[c]);
+  sel.innerHTML=off.map(([c,n])=>`<option value="${c}" title="${n}" ${c===state.version?'selected':''}>${c}</option>`).join('')
+    +(on.length?`<optgroup label="Online">`+on.map(([c,n])=>`<option value="${c}" title="${n}" ${c===state.version?'selected':''}>${c} ☁</option>`).join('')+`</optgroup>`:'');
 }
+
+/* ---------- Online translations (publishers' own servers; keys live in data/apikeys.js) ----------
+   NIV · NKJV · NASB · AMP · MSG through API.Bible, ESV through Crossway, NLT through Tyndale.
+   Loaded one chapter at a time, kept only for this session (the licences forbid storing the text),
+   shown with the publisher's copyright line, and the KJV steps in when there is no connection. */
+const ONLINE_VERSIONS={
+  NIV:{src:'apibible',abbr:['NIV','NIV11'],name:'New International Version',c:'Holy Bible, New International Version®, NIV® Copyright © 1973, 1978, 1984, 2011 by Biblica, Inc.® Used by permission. All rights reserved worldwide.'},
+  ESV:{src:'esv',name:'English Standard Version',c:'Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved. www.esv.org'},
+  NLT:{src:'nlt',name:'New Living Translation',c:'Scripture quotations marked NLT are taken from the Holy Bible, New Living Translation, copyright © 1996, 2004, 2015 by Tyndale House Foundation. Used by permission of Tyndale House Publishers, Carol Stream, Illinois 60188. All rights reserved.'},
+  NKJV:{src:'apibible',abbr:['NKJV'],name:'New King James Version',c:'Scripture taken from the New King James Version®. Copyright © 1982 by Thomas Nelson. Used by permission. All rights reserved.'},
+  NASB:{src:'apibible',abbr:['NASB','NASB2020','NASB1995','NASB95'],name:'New American Standard Bible',c:'Scripture quotations taken from the (NASB®) New American Standard Bible®, Copyright © 1960, 1971, 1977, 1995, 2020 by The Lockman Foundation. Used by permission. All rights reserved. lockman.org'},
+  AMP:{src:'apibible',abbr:['AMP'],name:'Amplified Bible',c:'Scripture quotations taken from the Amplified® Bible (AMP), Copyright © 2015 by The Lockman Foundation. Used by permission. lockman.org'},
+  MSG:{src:'apibible',abbr:['MSG'],name:'The Message',c:'Scripture taken from THE MESSAGE. Copyright © 1993, 2002, 2018 by Eugene H. Peterson. Used by permission of NavPress. All rights reserved. Represented by Tyndale House Publishers, Inc.'}
+};
+const OSIS={"Genesis":"Gen","Exodus":"Exod","Leviticus":"Lev","Numbers":"Num","Deuteronomy":"Deut","Joshua":"Josh","Judges":"Judg","Ruth":"Ruth","1 Samuel":"1Sam","2 Samuel":"2Sam","1 Kings":"1Kgs","2 Kings":"2Kgs","1 Chronicles":"1Chr","2 Chronicles":"2Chr","Ezra":"Ezra","Nehemiah":"Neh","Esther":"Esth","Job":"Job","Psalms":"Ps","Proverbs":"Prov","Ecclesiastes":"Eccl","Song of Solomon":"Song","Isaiah":"Isa","Jeremiah":"Jer","Lamentations":"Lam","Ezekiel":"Ezek","Daniel":"Dan","Hosea":"Hos","Joel":"Joel","Amos":"Amos","Obadiah":"Obad","Jonah":"Jonah","Micah":"Mic","Nahum":"Nah","Habakkuk":"Hab","Zephaniah":"Zeph","Haggai":"Hag","Zechariah":"Zech","Malachi":"Mal","Matthew":"Matt","Mark":"Mark","Luke":"Luke","John":"John","Acts":"Acts","Romans":"Rom","1 Corinthians":"1Cor","2 Corinthians":"2Cor","Galatians":"Gal","Ephesians":"Eph","Philippians":"Phil","Colossians":"Col","1 Thessalonians":"1Thess","2 Thessalonians":"2Thess","1 Timothy":"1Tim","2 Timothy":"2Tim","Titus":"Titus","Philemon":"Phlm","Hebrews":"Heb","James":"Jas","1 Peter":"1Pet","2 Peter":"2Pet","1 John":"1John","2 John":"2John","3 John":"3John","Jude":"Jude","Revelation":"Rev"};
+const USFM3={"Genesis":"GEN","Exodus":"EXO","Leviticus":"LEV","Numbers":"NUM","Deuteronomy":"DEU","Joshua":"JOS","Judges":"JDG","Ruth":"RUT","1 Samuel":"1SA","2 Samuel":"2SA","1 Kings":"1KI","2 Kings":"2KI","1 Chronicles":"1CH","2 Chronicles":"2CH","Ezra":"EZR","Nehemiah":"NEH","Esther":"EST","Job":"JOB","Psalms":"PSA","Proverbs":"PRO","Ecclesiastes":"ECC","Song of Solomon":"SNG","Isaiah":"ISA","Jeremiah":"JER","Lamentations":"LAM","Ezekiel":"EZK","Daniel":"DAN","Hosea":"HOS","Joel":"JOL","Amos":"AMO","Obadiah":"OBA","Jonah":"JON","Micah":"MIC","Nahum":"NAM","Habakkuk":"HAB","Zephaniah":"ZEP","Haggai":"HAG","Zechariah":"ZEC","Malachi":"MAL","Matthew":"MAT","Mark":"MRK","Luke":"LUK","John":"JHN","Acts":"ACT","Romans":"ROM","1 Corinthians":"1CO","2 Corinthians":"2CO","Galatians":"GAL","Ephesians":"EPH","Philippians":"PHP","Colossians":"COL","1 Thessalonians":"1TH","2 Thessalonians":"2TH","1 Timothy":"1TI","2 Timothy":"2TI","Titus":"TIT","Philemon":"PHM","Hebrews":"HEB","James":"JAS","1 Peter":"1PE","2 Peter":"2PE","1 John":"1JN","2 John":"2JN","3 John":"3JN","Jude":"JUD","Revelation":"REV"};
+function _olKeys(){ return window.API_KEYS||{}; }
+function _olAvail(v){ const o=ONLINE_VERSIONS[v]; if(!o) return false; const k=_olKeys(); return !!(o.src==='apibible'?k.apibible:o.src==='esv'?k.esv:k.nlt); }
+function _olRegister(){ window.BIBLE=window.BIBLE||{}; window.VERSIONS=window.VERSIONS||{}; Object.keys(ONLINE_VERSIONS).forEach(v=>{ if(_olAvail(v)){ window.VERSIONS[v]=ONLINE_VERSIONS[v].name+' (online)'; window.BIBLE[v]=window.BIBLE[v]||{}; } else if(window.VERSIONS[v]&&/\(online\)$/.test(window.VERSIONS[v])) delete window.VERSIONS[v]; }); }
+function _olHas(v,b,c){ return !!(window.BIBLE[v]&&window.BIBLE[v][b]&&window.BIBLE[v][b][String(c)]); }
+function _olParseBracketed(txt){ const out={}; const parts=String(txt).split(/\[(\d+)\]/); for(let i=1;i<parts.length;i+=2){ const t=parts[i+1].replace(/\s+/g,' ').trim(); if(t) out[parts[i]]=t; } return out; }
+let _olIds=null;
+async function _olApiBibleId(v){ const k=_olKeys().apibible; const o=ONLINE_VERSIONS[v];
+  if(!_olIds){ try{ _olIds=JSON.parse(localStorage.getItem('nok_ab_ids')||'{}'); }catch(e){ _olIds={}; } }
+  if(_olIds[v]) return _olIds[v];
+  const r=await fetch('https://api.scripture.api.bible/v1/bibles?language=eng',{headers:{'api-key':k}}); if(!r.ok) throw new Error('bibles '+r.status);
+  const j=await r.json(); const list=(j.data||[]);
+  const want=o.abbr.map(a=>a.toLowerCase());
+  const hit=list.find(b=>want.includes(String(b.abbreviationLocal||'').toLowerCase()))||list.find(b=>want.includes(String(b.abbreviation||'').toLowerCase()))||list.find(b=>want.some(a=>String(b.name||'').toLowerCase().replace(/[^a-z0-9]/g,'').includes(a)));
+  if(!hit) throw new Error('no '+v+' on this key');
+  _olIds[v]=hit.id; try{ localStorage.setItem('nok_ab_ids',JSON.stringify(_olIds)); }catch(e){} return hit.id; }
+async function _olFetch(v,b,c){
+  const o=ONLINE_VERSIONS[v], k=_olKeys(); let verses={};
+  if(o.src==='apibible'){ const id=await _olApiBibleId(v);
+    const r=await fetch(`https://api.scripture.api.bible/v1/bibles/${id}/chapters/${USFM3[b]}.${c}?content-type=text&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=true&include-verse-spans=false`,{headers:{'api-key':k.apibible}});
+    if(!r.ok) throw new Error(v+' '+r.status); const j=await r.json(); verses=_olParseBracketed((j.data&&j.data.content)||''); }
+  else if(o.src==='esv'){ const r=await fetch('https://api.esv.org/v3/passage/text/?q='+encodeURIComponent(b+' '+c)+'&include-headings=false&include-footnotes=false&include-verse-numbers=true&include-first-verse-numbers=true&include-short-copyright=false&include-passage-references=false&include-selahs=true&indent-poetry=false&indent-paragraphs=0&indent-declares=0&indent-psalm-doxology=0&line-length=0',{headers:{'Authorization':'Token '+k.esv}});
+    if(!r.ok) throw new Error('ESV '+r.status); const j=await r.json(); verses=_olParseBracketed((j.passages||[]).join(' ')); }
+  else { const r=await fetch('https://api.nlt.to/api/passages?ref='+encodeURIComponent(OSIS[b]+'.'+c)+'&version=NLT&key='+encodeURIComponent(k.nlt));
+    if(!r.ok) throw new Error('NLT '+r.status); const h=await r.text();
+    const re=/<verse_export[^>]*\bvn="(\d+)"[^>]*>([\s\S]*?)<\/verse_export>/g; let m;
+    while((m=re.exec(h))){ let t=m[2].replace(/<span class="vn">[\s\S]*?<\/span>/g,' ').replace(/<a class="a-tn">[\s\S]*?<\/a>/g,'').replace(/<span class="tn">[\s\S]*?<\/span>/g,'').replace(/<h\d[^>]*>[\s\S]*?<\/h\d>/g,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim(); if(t) verses[m[1]]=(verses[m[1]]?verses[m[1]]+' ':'')+t; } }
+  if(!Object.keys(verses).length) throw new Error(v+' empty');
+  window.BIBLE[v]=window.BIBLE[v]||{}; window.BIBLE[v][b]=window.BIBLE[v][b]||{}; window.BIBLE[v][b][String(c)]=verses; return verses; }
+let _olBusy={};
+function ensureChapterOnline(v,b,c,cb){ if(_olHas(v,b,c)) return cb(true); const key=v+'|'+b+'|'+c; if(_olBusy[key]){ _olBusy[key].push(cb); return; } _olBusy[key]=[cb];
+  _olFetch(v,b,c).then(()=>{ const q=_olBusy[key]; delete _olBusy[key]; q.forEach(f=>f(true)); }).catch(err=>{ const q=_olBusy[key]; delete _olBusy[key]; window._olErr=String(err&&err.message||err); q.forEach(f=>f(false)); }); }
 let _verLoading={};
-function ensureVersion(v,cb){
+function ensureVersion(v,cb,book,ch){
+  if(ONLINE_VERSIONS[v]){ window.BIBLE[v]=window.BIBLE[v]||{}; const b=book||(window.BOOKS[state.book]||{}).name, c=ch||state.chapter; if(!b) return cb();
+    ensureChapterOnline(v,b,c,ok=>{ if(!ok&&v===state.version&&state.view==='read') toast(v+' could not load — showing KJV for now'); if(!ok&&!window.BIBLE.KJV){ ensureVersion('KJV',cb); return; } cb(); }); return; }
   if(window.BIBLE&&window.BIBLE[v])return cb();
   if(_verLoading[v]){ _verLoading[v].push(cb); return; }   // already fetching — just queue
   _verLoading[v]=[cb];
@@ -1094,6 +1151,7 @@ function render(){
   if(state.view==='plan') return renderPlan();
   if(state.view==='mine') return renderMine();
   if(state.view==='you') return renderYou();
+  if(state.view==='explore') return renderExplore();
   ensureVersion(state.version, renderRead);
 }
 /* ---------- Chronological reading plan ---------- */
@@ -1937,6 +1995,13 @@ function renderHome(){
       </div>
       <audio id="welcomeAudio" preload="none"><source src="audio/welcome.mp3" type="audio/mpeg"><source src="audio/welcome.m4a" type="audio/mp4"></audio>
     </div>
+    ${(()=>{ const n=_notdPick(); if(!n) return ''; const vt=_srVerse(state.version,n.b,n.ch,n.v)||_srVerse('KJV',n.b,n.ch,n.v);
+      return `<div class="hcard notd"><div class="hk">${ICONS.pen} Nii Okai’s note of the day</div>
+      <div class="href">${escHTML(n.b)} ${n.ch}:${n.v}${n.date?` <span style="color:var(--soft);font-weight:600">· written ${new Date(n.date).toLocaleDateString(undefined,{month:'short',year:'numeric'})}</span>`:''}</div>
+      ${vt?`<div class="hverse">“${escHTML(vt.length>200?vt.slice(0,200).replace(/\s+\S*$/,'')+'…':vt)}”</div>`:''}
+      <div class="hnote notd-body" id="notdBody" onclick="this.classList.toggle('open')">${escNote(n.text)}</div>
+      <div class="hrow"><button class="btn primary" onclick="jumpTo('${esc(n.b)}',${n.ch},${n.v})">Read in context →</button>
+        <button class="btn" onclick="setView('explore')">Explore the journal</button></div></div>`; })()}
     ${(()=>{ const bk=window.BOOKS[state.book]; if(!bk) return '';
       return `<div class="hcard" style="cursor:pointer" onclick="setView('read')">
         <div class="hk">📖 Continue reading</div>
@@ -2018,7 +2083,8 @@ function renderMenu(){
   const head=t=>`<div class="mhead">${t}</div>`;
   document.getElementById('reader').innerHTML=`<div class="page"><div class="menulist">
     ${head('Read')}
-    ${item(ICONS.pen,'Nii Okai’s Journal','Every note, verse by verse — 20 years of walking through Scripture',"setView('mine')")}
+    ${item(ICONS.pen,'Explore the journal','Newest notes, themes, books, and the most written-about chapters',"setView('explore')")}
+    ${item(ICONS.library,'Nii Okai’s Journal, verse by verse','Every note in order, book by book',"setView('mine')")}
     ${item(ICONS.library,'Matthew Henry’s Commentary','The classic commentary, shown alongside your reading','menuMHC()')}
     ${BLOG_URL?item(ICONS.pen,'Blog','Reflections and essays from Nii Okai',`window.open(BLOG_URL,'_blank','noopener')`):''}
     ${head('Your journal')}
@@ -2191,8 +2257,13 @@ function renderRead(){
   document.getElementById('chapselWrap').style.display='';
   const csel=document.getElementById('chapSelect');
   csel.innerHTML=book.chapters.map((_,i)=>`<option value="${i+1}" ${i+1===ch?'selected':''}>Ch ${i+1}</option>`).join('');
+  if(ONLINE_VERSIONS[state.version]&&!_olHas(state.version,name,ch)&&!window._olTried){ window._olTried=name+'|'+ch;
+    const rd=document.getElementById('reader'); if(rd&&!rd.querySelector('.verse')) rd.innerHTML='<div class="empty"><div class="big">📖</div>Loading '+state.version+'…</div>';
+    ensureChapterOnline(state.version,name,ch,()=>{ renderRead(); }); return; }
+  window._olTried=null;
   const bib=(window.BIBLE[state.version]||{})[name]||{};
-  const verses=bib[String(ch)]||{};
+  let verses=bib[String(ch)]||{}; let olFallback='';
+  if(ONLINE_VERSIONS[state.version]&&!Object.keys(verses).length){ verses=((window.BIBLE.KJV||{})[name]||{})[String(ch)]||{}; olFallback=state.version+' needs a connection — this is the KJV wording'; }
   const vcount=book.chapters[ch-1];
   const chData=(DATA[name]&&DATA[name][String(ch)])||{};
   // plan context bar
@@ -2226,8 +2297,12 @@ function renderRead(){
     }
     html+=`</div>`;
   } else {
+    if(olFallback) html+=`<div class="soft" style="margin:-6px 0 14px">${ICONS.globe} ${escHTML(olFallback)}</div>`;
     const noted=Object.keys(chData).filter(k=>k!=='0'&&chData[k].length).map(Number).sort((a,b)=>a-b);
     window._chapHasNotes=noted.length>0;
+    if(!noted.length&&!(chData['0']||[]).length){ const nn=_nearestNoted(name,ch);
+      if(nn) html+=`<div class="chapindex nearby" onclick="openChapter('${esc(nn.b)}',${nn.ch})"><div class="lbl-row" style="margin:0"><div class="lbl">${ICONS.chat} No notes in this chapter yet</div>
+        <button class="ci-toggle">Nearest: ${escHTML(nn.b)} ${nn.ch} · ${nn.n} note${nn.n===1?'':'s'} →</button></div></div>`; }
     if(noted.length){
       const off=document.documentElement.classList.contains('hide-notes');
       html+=`<div class="chapindex">
@@ -2279,6 +2354,7 @@ function renderRead(){
       <button onclick="nextChapter()" ${state.book===window.BOOKS.length-1&&ch===nch?'disabled':''}>Next →</button></div>`;
   }
   const r=document.getElementById('reader'); r.innerHTML=html; r.scrollTop=0;
+  { const o=ONLINE_VERSIONS[state.version]; if(o&&!olFallback){ const r0=document.getElementById('reader'); const pg=r0.querySelector('.page'); if(pg) pg.insertAdjacentHTML('beforeend',`<div class="copyline">${escHTML(o.c)}</div>`); } }
   const foot=document.getElementById('readfoot'); foot.innerHTML=`<div class="audnote" id="audnote" style="display:none"></div><div class="audbar" id="audbar" style="display:none"></div>`+nav; foot.style.display='';
   fillVoiceSel(); _rdSyncBtn();
   if(AUD.key===_rdKey()&&AUD.el&&!AUD.el.paused){ AUD.vlast=null; _audFollowVerse(AUD.el.currentTime,AUD.here,true); }
@@ -3015,7 +3091,7 @@ function compareVerse(name,ch,v){
   const versions=Object.keys(window.VERSIONS||{KJV:'King James Version'});
   let pending=versions.length;
   const done=()=>{ if(--pending<=0) renderCompareVerse(name,ch,v,versions); };
-  versions.forEach(ver=>{ if(window.BIBLE&&window.BIBLE[ver]) done(); else ensureVersion(ver,done); });
+  versions.forEach(ver=>{ if(ONLINE_VERSIONS[ver]) ensureVersion(ver,done,name,ch); else if(window.BIBLE&&window.BIBLE[ver]) done(); else ensureVersion(ver,done); });
 }
 function renderCompareVerse(name,ch,v,versions){
   const rows=versions.map(ver=>{ const txt=(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(v)]||'—';
@@ -3338,7 +3414,7 @@ function _srTopics(nq){ const out=[]; const words=nq.split(' ');
     if(sc) out.push({T,sc}); });
   return out.sort((a,b)=>b.sc-a.sc).slice(0,2).map(x=>x.T); }
 function _srRef(r){ const m=r.match(/^(.*?) (\d+):(\d+)$/); return m?{bk:m[1],ch:+m[2],v:+m[3]}:null; }
-function _srVerse(ver,bk,ch,v){ const b=(window.BIBLE[ver]||{})[bk]; return b?(((b[String(ch)]||{})[String(v)])||''):''; }
+function _srVerse(ver,bk,ch,v){ const b=((window.BIBLE||{})[ver]||{})[bk]; return b?(((b[String(ch)]||{})[String(v)])||''):''; }
 function doSearch(q){
   q=q.trim();
   if(q.length<2){ if(state.view==='search'){ state.view='read'; setViewTabs(); render(); } return; }
@@ -3950,6 +4026,62 @@ function _youCard(e){
       <div class="ybar"><i style="width:${pct}%"></i></div><div style="color:var(--soft);font-size:12px;margin-top:6px">Day ${e.day+1} of ${e.total} · ${pct}% of the year</div></div>`; }
   return `<div class="ycard ms" onclick="setView('${e.go||'mine'}')"><span class="yi" style="flex-basis:40px;height:40px">${ICONS[e.icon]||''}</span><div style="flex:1"><div class="yl" style="padding-top:0"><b>${e.title}</b></div>${e.sub?`<div style="color:var(--soft);font-size:12.5px;margin-top:2px">${e.sub}</div>`:''}</div>${when}</div>`;
 }
+
+/* ---------- Ways into the journal: note of the day, Explore, nearest notes ---------- */
+function _jrnSeed(){ const sd=window.COMMENTARY_SEED; return (sd&&Object.keys(sd).length)?sd:DATA; }
+function _jrnAll(){ if(window._jrnCache&&window._jrnCache.src===_jrnSeed()) return window._jrnCache.list; const seed=_jrnSeed(), list=[];
+  Object.keys(seed).forEach(b=>Object.keys(seed[b]).forEach(ch=>Object.keys(seed[b][ch]).forEach(v=>(seed[b][ch][v]||[]).forEach(nt=>{ if(nt&&nt.text) list.push({b,ch:+ch,v:+v,text:nt.text,date:String(nt.edited||nt.date||''),id:nt.id}); }))));
+  window._jrnCache={src:seed,list}; return list; }
+function _notdPick(){
+  const pool=_jrnAll().filter(n=>n.v>0&&n.text.length>=140&&n.text.length<=900&&!/^["“]/.test(n.text.trim()));
+  if(!pool.length) return null;
+  const d=new Date(); const day=Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5);
+  return pool[((day*7919)%pool.length+pool.length)%pool.length]; }
+function _nearestNoted(name,ch){
+  const bi=window.BOOKS.findIndex(b=>b.name===name); if(bi<0) return null;
+  const cnt=(b,c)=>{ const d=DATA[b]&&DATA[b][String(c)]; return d?Object.keys(d).reduce((a,k)=>a+d[k].length,0):0; };
+  const nch=window.BOOKS[bi].chapters.length;
+  for(let dlt=1;dlt<nch;dlt++){ if(ch+dlt<=nch&&cnt(name,ch+dlt)) return {b:name,ch:ch+dlt,n:cnt(name,ch+dlt)}; if(ch-dlt>=1&&cnt(name,ch-dlt)) return {b:name,ch:ch-dlt,n:cnt(name,ch-dlt)}; }
+  for(let i=bi+1;i<window.BOOKS.length;i++){ const B=window.BOOKS[i]; for(let c=1;c<=B.chapters.length;c++) if(cnt(B.name,c)) return {b:B.name,ch:c,n:cnt(B.name,c)}; }
+  for(let i=bi-1;i>=0;i--){ const B=window.BOOKS[i]; for(let c=B.chapters.length;c>=1;c--) if(cnt(B.name,c)) return {b:B.name,ch:c,n:cnt(B.name,c)}; }
+  return null; }
+let _exTab='new', _exPick=null;
+function _exThemes(){ if(window._exThemeCache) return window._exThemeCache; const all=_jrnAll(); const out=[];
+  SR_TOPICS.forEach(T=>{ const refs=new Set(T.r); const kw=T.k.filter(k=>k.length>3);
+    const onRef=all.filter(n=>refs.has(n.b+' '+n.ch+':'+n.v));
+    const byKw=[]; all.forEach(n=>{ if(refs.has(n.b+' '+n.ch+':'+n.v)) return; const t=' '+_srNorm(n.text)+' '; let sc=0;
+      kw.forEach(k=>{ let i=-1; while((i=t.indexOf(' '+k+' ',i+1))>=0) sc++; }); if(sc>=2||(sc===1&&n.text.length<260)) byKw.push({n,sc}); });
+    byKw.sort((a,c)=>c.sc-a.sc||(c.n.date<a.n.date?-1:1));
+    const notes=onRef.concat(byKw.map(x=>x.n)).slice(0,60);
+    if(notes.length) out.push({t:T.t,n:onRef.length+byKw.length,notes}); });
+  return window._exThemeCache=out.sort((a,b)=>b.n-a.n); }
+function _exCard(n,label){ const vt=_srVerse(state.version,n.b,n.ch,n.v)||_srVerse('KJV',n.b,n.ch,n.v); const ref=n.v?`${n.b} ${n.ch}:${n.v}`:`${n.b} ${n.ch}`;
+  return `<div class="ycard" onclick="jumpTo('${esc(n.b)}',${n.ch},${n.v||1})"><div class="yt"><span class="yi">${ICONS.pen}</span><div class="yl"><b>${escHTML(ref)}</b>${label?` <span style="color:var(--soft)">· ${escHTML(label)}</span>`:''}</div>${n.date?`<span class="yw">${new Date(n.date).toLocaleDateString(undefined,{month:'short',year:'numeric'})}</span>`:''}</div>
+    ${vt?`<div class="yq">${escHTML(vt.length>150?vt.slice(0,150).replace(/\s+\S*$/,'')+'…':vt)}</div>`:''}<div class="yn">${escNote(n.text)}</div></div>`; }
+function renderExplore(){
+  document.getElementById('crumb').textContent='Explore';
+  document.getElementById('chapselWrap').style.display='none';
+  document.getElementById('readfoot').style.display='none';
+  const all=_jrnAll(); const books=new Set(all.map(n=>n.b));
+  const chip=(id,label)=>`<button class="chip ${_exTab===id?'on':''}" onclick="_exTab='${id}';_exPick=null;renderExplore()">${label}</button>`;
+  let html=`<div class="page"><div class="you-head"><span class="acav">✦</span><div><div class="yn">Nii Okai’s journal</div><div class="ys">${all.length.toLocaleString()} notes · ${books.size} books · written 2020 to today</div></div></div>
+    <div class="chips">${chip('new','Newest')}${chip('themes','Themes')}${chip('books','Books')}${chip('most','Most written about')}</div>`;
+  if(_exTab==='new'){ all.slice().sort((a,b)=>b.date<a.date?-1:1).slice(0,25).forEach(n=>{ html+=_exCard(n); }); }
+  else if(_exTab==='themes'){ const th=_exThemes();
+    if(_exPick){ const T=th.find(x=>x.t===_exPick); html+=`<div class="hcard" style="padding:12px 16px;cursor:pointer" onclick="_exPick=null;renderExplore()"><div class="hk">← All themes</div><h3 style="margin:2px 0 0">${escHTML(T.t)} <span style="color:var(--soft);font-weight:600;font-size:14px">· ${T.n} notes</span></h3></div>`; T.notes.forEach(n=>{ html+=_exCard(n); }); }
+    else { html+='<div class="hrow" style="margin-bottom:6px">'; th.forEach(T=>{ html+=`<button class="chip" style="font-size:13.5px" onclick="_exPick='${esc(T.t)}';renderExplore()">${escHTML(T.t)} <span style="opacity:.6">${T.n}</span></button>`; }); html+='</div>'; } }
+  else if(_exTab==='books'){
+    if(_exPick){ const B=window.BOOKS.find(b=>b.name===_exPick); const d=DATA[_exPick]||{};
+      html+=`<div class="hcard" style="padding:12px 16px;cursor:pointer" onclick="_exPick=null;renderExplore()"><div class="hk">← All books</div><h3 style="margin:2px 0 0">${escHTML(_exPick)}</h3></div><div class="hrow">`;
+      B.chapters.forEach((_,i)=>{ const c=i+1; const n=d[String(c)]?Object.keys(d[String(c)]).reduce((a,k)=>a+d[String(c)][k].length,0):0; html+=`<button class="chip ${n?'':'dim'}" ${n?`onclick="openChapter('${esc(_exPick)}',${c})"`:'disabled'}>${c}${n?` <span style="opacity:.6">${n}</span>`:''}</button>`; }); html+='</div>'; }
+    else { html+='<div class="hrow">'; window.BOOKS.forEach(B=>{ const n=all.reduce((a,x)=>a+(x.b===B.name?1:0),0); if(!n) return; html+=`<button class="chip" style="font-size:13.5px" onclick="_exPick='${esc(B.name)}';renderExplore()">${escHTML(B.name)} <span style="opacity:.6">${n}</span></button>`; }); html+='</div>'; } }
+  else { const m=new Map(); all.forEach(n=>{ const k=n.b+' '+n.ch; m.set(k,(m.get(k)||0)+1); });
+    Array.from(m.entries()).sort((a,b)=>b[1]-a[1]).slice(0,20).forEach(([k,n])=>{ const i=k.lastIndexOf(' '); const b=k.slice(0,i), c=+k.slice(i+1);
+      const H=((window.HEADINGS||{})[b]||{})[String(c)]; const first=H?(H[Object.keys(H)[0]]||[])[0]:null;
+      html+=`<div class="ycard ms" onclick="openChapter('${esc(b)}',${c})"><span class="yi" style="flex-basis:40px;height:40px">${ICONS.book}</span><div style="flex:1"><div class="yl" style="padding-top:0"><b>${escHTML(k)}</b></div>${first?`<div style="color:var(--soft);font-size:12.5px;margin-top:2px">${escHTML(first[1]||'')}</div>`:''}</div><span class="yw">${n} notes</span></div>`; }); }
+  html+='</div>';
+  const r=document.getElementById('reader'); r.innerHTML=html; r.scrollTop=0;
+}
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show');
   clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3200); }
 function esc(s){ return String(s).replace(/'/g,"\\'"); }
@@ -3962,7 +4094,7 @@ init();
 /* Heavy data (Bible text, spell dictionary) loads in the background after first paint */
 _syncThemeColor();
 window.addEventListener('load',()=>{ setTimeout(()=>{
-  ensureVersion(state.version,()=>{ if(state.view==='read') render(); });
+  ensureVersion(state.version,()=>{ if(state.view==='read'||state.view==='home'||state.view==='explore') render(); });
   const d=document.createElement('script'); d.src='data/dict.js';
   d.onload=()=>{ _DICT=null; }; document.head.appendChild(d);
 },60); });
