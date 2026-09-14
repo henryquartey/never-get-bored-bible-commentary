@@ -939,7 +939,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <script src="data/versions.js"></script>
 <script src="data/apikeys.js" onerror="window.API_KEYS=window.API_KEYS||{}"></script>
 <script src="data/commentary.js" defer onload="_seedArrived()"></script>
-<script src="data/refined.js"></script>
+<script src="data/refined.js" defer onload="_refinedArrived()"></script>
 <script src="data/chronological.js"></script>
 <script src="data/headings.js" onerror="window.HEADINGS=null"></script>
 <script src="data/audio_kjv.js"></script>
@@ -949,7 +949,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.86.0', date:'14 Sep 2026'};
+const BUILD={v:'0.87.0', date:'14 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2470,17 +2470,47 @@ function setJournalMode(m){ state.journal=m; savePrefs();
 function setTrkM(btn,m){ const t=btn.closest('.trk'); t.dataset.m=m;
   t.querySelectorAll('.sub button').forEach(b=>b.classList.toggle('on', b.textContent.toLowerCase().includes(m==='side'?'side':'stack'))); }
 /* A verse can carry more than one note written years apart, so the refined edition holds an
-   ARRAY of entries per verse, each with its own date. Older single-entry data still works. */
+   ARRAY of entries per verse, each with its own date. Older single-entry data still works.
+
+   Most entries do not carry their text at all — they carry `q`, a short list of [from, to, text]
+   patches against the original note, and `s`, the id of that note. Rebuilding is instant and it
+   keeps the download small. An entry that was edited by hand still carries its full text in `m`. */
+let _refGen = 0;                     // bumped whenever the journal itself changes
+function _refBuild(e,name,ch,v){
+  if(e.m!=null) return e.m;
+  if(e._m!=null && e._g===_refGen) return e._m;
+  const ids=e.s||[]; if(!ids.length) return null;
+  const vs=((window.COMMENTARY_SEED||{})[name]||{})[String(ch)]||{};
+  const src=(vs[String(v)]||[]).find(n=>n&&n.id===ids[0]);
+  if(!src) return null;                                   // journal not loaded yet — show the raw note
+  const txt=src.text; let out='', i=0;
+  (e.q||[]).forEach(sp=>{ out+=txt.slice(i,sp[0])+sp[2]; i=sp[1]; });
+  e._m=out+txt.slice(i); e._g=_refGen;
+  return e._m;
+}
 function refinedFor(name,ch,v){
   const x=(window.REFINED&&REFINED[name]&&REFINED[name][String(ch)]&&REFINED[name][String(ch)][String(v)])||null;
   if(!x) return null;
   const a=Array.isArray(x)?x:[x];
-  return a.length?a:null;
+  const out=[];
+  for(const e of a){ const m=_refBuild(e,name,ch,v); if(m!=null){ if(e.m==null) e.m=m; out.push(e); } }
+  return out.length?out:null;
+}
+function _refinedArrived(){
+  try{ if(state.view==='read') renderRead(); else if(state.view==='mine') renderMine(); }catch(err){}
 }
 function modernNoteHTML(name,ch,v,r){
   const ref=`${name} ${ch}:${v}`;
-  const stack=r.d.map(dr=>`<div class="draft2"><span class="dl">${escHTML(dr[0])}</span>${escHTML(dr[1])}</div>`).join('');
-  const origSide=r.d.map(dr=>escHTML(dr[0]+'\n'+dr[1])).join('\n\n──────\n');
+  /* Hand-edited entries keep their drafts in `d`; patched ones look the original up by id. */
+  let drafts=r.d;
+  if(!drafts){
+    const vs=((window.COMMENTARY_SEED||{})[name]||{})[String(ch)]||{};
+    drafts=(r.s||[]).map(id=>{ const n=(vs[String(v)]||[]).find(x=>x&&x.id===id);
+      return n?[(n.date||'').slice(0,10)||'original', n.text]:null; }).filter(Boolean);
+    if(!drafts.length) drafts=[['original','(the original could not be found)']];
+  }
+  const stack=drafts.map(dr=>`<div class="draft2"><span class="dl">${escHTML(dr[0])}</span>${escHTML(dr[1])}</div>`).join('');
+  const origSide=drafts.map(dr=>escHTML(dr[0]+'\n'+dr[1])).join('\n\n──────\n');
   return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
     <div class="meta"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}</div>
     <div class="body">${escNote(r.m)}</div>
@@ -2489,11 +2519,11 @@ function modernNoteHTML(name,ch,v,r){
     <details class="trk owner-only" data-m="stack">
       <summary>🔍 Track changes — your original & what I changed</summary>
       <div class="sub"><button class="on" onclick="setTrkM(this,'stack')">Stacked</button><button onclick="setTrkM(this,'side')">⇄ Side by side</button></div>
-      <div class="tk-stack">${stack}<div class="chg2">✎ ${escHTML(r.c)}</div></div>
+      <div class="tk-stack">${stack}<div class="chg2">✎ ${escHTML(r.c||'Spelling and punctuation only.')}</div></div>
       <div class="tk-side"><div class="sxs2">
         <div><span class="dl">✨ Modern</span><div class="draft2" style="border-color:var(--note-line)">${escHTML(r.m)}</div></div>
         <div><span class="dl">📝 Original</span><div class="draft2">${origSide}</div></div></div>
-        <div class="chg2">✎ ${escHTML(r.c)}</div></div>
+        <div class="chg2">✎ ${escHTML(r.c||'Spelling and punctuation only.')}</div></div>
     </details></div>`;
 }
 function noteHTML(nt,name,ch,v,label){
