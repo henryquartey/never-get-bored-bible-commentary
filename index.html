@@ -949,7 +949,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.85.0', date:'14 Sep 2026'};
+const BUILD={v:'0.86.0', date:'14 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2370,9 +2370,13 @@ function renderRead(){
       const txt=verses[String(v)]||'';
       const notes=chData[String(v)]||[];
       const hasRef = state.journal==='modern' && refinedFor(name,ch,v);
+      /* The number on the chip must be the number of notes the reader will actually SEE.
+         In the refined edition repeated drafts of one thought are merged, so a verse with 2 raw
+         notes can show 1 — the chip used to say "2" and then open a single note. (14 Sep 2026) */
+      const shown = hasRef ? hasRef.length : notes.length;
       const _openNow=!document.documentElement.classList.contains('hide-notes');
-      const mark=notes.length?`<span onclick="event.stopPropagation();toggleVerse(${v})" ontouchend="event.stopPropagation();event.preventDefault();toggleVerse(${v})" title="${_openNow?'Hide':'Read'} Nii Okai’s note${notes.length>1?'s':''} on this verse" class="cmark${_openNow?' on':''}">${ICONS.chat}${notes.length>1?'<b>'+notes.length+'</b>':''}</span>`:'';
-      const ncTier=notes.length?(notes.length>=3?' nc3':notes.length===2?' nc2':' nc1'):'';
+      const mark=shown?`<span onclick="event.stopPropagation();toggleVerse(${v})" ontouchend="event.stopPropagation();event.preventDefault();toggleVerse(${v})" title="${_openNow?'Hide':'Read'} Nii Okai’s note${shown>1?'s':''} on this verse" class="cmark${_openNow?' on':''}">${ICONS.chat}${shown>1?'<b>'+shown+'</b>':''}</span>`:'';
+      const ncTier=shown?(shown>=3?' nc3':shown===2?' nc2':' nc1'):'';
       const hlc=hlGet(name,ch,v);
       html+=`<div class="verse ${notes.length?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" data-hint="${notes.length?'Click for options · double-click to read the note':'Click for options · double-click to write a note'}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${notes.length?1:0})">
         <span class="vn" onclick="event.stopPropagation();openEditor('${esc(name)}',${ch},${v})" title="Add a note">${v}</span>${txt||'<i style="color:var(--soft)">(verse not in this translation)</i>'}${mark}</div>`;
