@@ -116,12 +116,30 @@ def main():
             if nt.get("edited") and str(nt["edited"]) > str(ts): continue      # edited after the delete: keep
             remove(seed, b0, ch0, v0, nid); del ix[nid]; removed += 1
 
-    if added or updated or removed or unioned:
+    # 3. notes deliberately taken out (duplicates, or a note moved to its right verse).
+    #    The union in step 1 and the account in step 2 will both keep re-adding a note that is
+    #    simply missing from this file — that is the safety net working as designed. This list is
+    #    the only way to say "no, this one really is meant to be gone". One note id per line, or a
+    #    JSON list; anything after a # is a comment. File: data/removed_ids.txt beside the journal.
+    dropped = 0
+    rid_path = os.path.join(os.path.dirname(os.path.abspath(path)), "removed_ids.txt")
+    if os.path.exists(rid_path):
+        ids = set()
+        for line in io.open(rid_path, encoding="utf-8"):
+            line = line.split("#")[0].strip().strip('",[] ')
+            if line: ids.add(line)
+        for nid in ids:
+            loc = ix.get(nid)
+            if loc:
+                b0, ch0, v0, nt = loc
+                remove(seed, b0, ch0, v0, nid); del ix[nid]; dropped += 1
+
+    if added or updated or removed or unioned or dropped:
         tmp = path + ".tmp"
         io.open(tmp, "w", encoding="utf-8").write(head + json.dumps(seed, ensure_ascii=False, separators=(",", ":")) + ";")
         os.replace(tmp, path)
     total = sum(len(a) for chs in seed.values() for vs in chs.values() for a in vs.values())
-    print("notes: added=%d updated=%d removed=%d unioned=%d total=%d" % (added, updated, removed, unioned, total))
+    print("notes: added=%d updated=%d removed=%d unioned=%d dropped=%d total=%d" % (added, updated, removed, unioned, dropped, total))
 
 if __name__ == "__main__":
     main()
