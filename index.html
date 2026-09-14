@@ -937,7 +937,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.81.0', date:'13 Sep 2026'};
+const BUILD={v:'0.82.0', date:'14 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2351,8 +2351,7 @@ function renderRead(){
       const ncTier=notes.length?(notes.length>=3?' nc3':notes.length===2?' nc2':' nc1'):'';
       const hlc=hlGet(name,ch,v);
       html+=`<div class="verse ${notes.length?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" data-hint="${notes.length?'Click for options · double-click to read the note':'Click for options · double-click to write a note'}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${notes.length?1:0})">
-        <span class="vn" onclick="event.stopPropagation();openEditor('${esc(name)}',${ch},${v})" title="Add a note">${v}</span>${txt||'<i style="color:var(--soft)">(verse not in this translation)</i>'}${mark}
-        <button class="add vmenu-btn" onclick="event.stopPropagation();verseMenu(event,'${esc(name)}',${ch},${v})" title="Copy · Share · Search · Compare · Note">⋯</button></div>`;
+        <span class="vn" onclick="event.stopPropagation();openEditor('${esc(name)}',${ch},${v})" title="Add a note">${v}</span>${txt||'<i style="color:var(--soft)">(verse not in this translation)</i>'}${mark}</div>`;
       if(notes.length){
         html+=`<div class="notewrap" id="nw${v}">`;
         const r = state.journal==='modern' ? refinedFor(name,ch,v) : null;
@@ -3017,10 +3016,12 @@ function selList(){ return VSEL.set?Array.from(VSEL.set).sort((a,b)=>a-b):[]; }
 function selStart(name,ch,v){
   closeVerseMenu(); if(typeof closeSelMenu==='function') closeSelMenu();
   VSEL.on=true; VSEL.book=state.book; VSEL.ch=ch; VSEL.set=new Set([v]); VSEL.last=v;
+  VSEL.t=Date.now();
   selPaint();
 }
 function selToggle(v){
   if(!VSEL.on) return;
+  VSEL.t=Date.now();
   if(VSEL.set.has(v)){ VSEL.set.delete(v); if(VSEL.last===v) VSEL.last=selList().slice(-1)[0]||null; }
   else { VSEL.set.add(v); VSEL.last=v; }
   if(!VSEL.set.size){ selEnd(); return; }
@@ -3038,6 +3039,20 @@ function selEnd(){
   document.querySelectorAll('.verse.vsel').forEach(el=>el.classList.remove('vsel'));
   const b=document.getElementById('selbar'); if(b) b.remove();
 }
+/* Tap anywhere that is not a verse or the sheet itself and the selection closes.
+   The 400 ms guard stops the very click that opened the sheet from closing it again.
+   Bound on the capture phase so a handler that stops propagation cannot swallow it. */
+document.addEventListener('click',function(e){
+  if(!VSEL||!VSEL.on) return;
+  if(VSEL.t&&Date.now()-VSEL.t<400) return;
+  const t=e.target;
+  if(t&&t.closest&&t.closest('.selbar,.verse,.cmprow')) return;
+  selEnd();
+},true);
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&VSEL&&VSEL.on){ selEnd(); }
+});
+
 function selRuns(){
   const a=selList(), runs=[]; let i=0;
   while(i<a.length){ let j=i; while(j+1<a.length&&a[j+1]===a[j]+1) j++;
