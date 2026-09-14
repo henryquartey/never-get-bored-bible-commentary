@@ -365,6 +365,7 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
   border:1px solid var(--line);border-radius:12px;color:var(--accent);font:700 13px/1 var(--sans);cursor:pointer}
 .jmore:hover{border-color:var(--accent);background:var(--accent-soft)}
 .mc-item .mc-bk{font-weight:400;color:var(--soft);font-size:11px}
+.note .meta .ndate{color:var(--soft);font-weight:400;font-size:11px}
 .mc-head h2{font-family:var(--serif);font-size:26px;margin:0}
 .mc-count{color:var(--soft);font-size:13px;flex-basis:100%}
 .mine-seg{max-width:320px;margin-left:auto}
@@ -948,7 +949,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.84.0', date:'14 Sep 2026'};
+const BUILD={v:'0.85.0', date:'14 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2339,7 +2340,7 @@ function renderRead(){
       if(notes.length){
         html+=`<div class="notewrap" id="nw${v}">`;
         const r=state.journal==='modern'?refinedFor(name,ch,v):null;
-        if(r){ html+=modernNoteHTML(name,ch,v,r); }
+        if(r){ r.forEach(e=>{ html+=modernNoteHTML(name,ch,v,e); }); }
         else { notes.forEach(nt=>{ html+=noteHTML(nt,name,ch,v); }); }
         html+=`</div>`;
       }
@@ -2378,7 +2379,7 @@ function renderRead(){
       if(notes.length){
         html+=`<div class="notewrap" id="nw${v}">`;
         const r = state.journal==='modern' ? refinedFor(name,ch,v) : null;
-        if(r){ html+=modernNoteHTML(name,ch,v,r); }
+        if(r){ r.forEach(e=>{ html+=modernNoteHTML(name,ch,v,e); }); }
         else { notes.forEach(nt=>{ html+=noteHTML(nt,name,ch,v); }); }
         html+=`</div>`;
       }
@@ -2464,13 +2465,20 @@ function setJournalMode(m){ state.journal=m; savePrefs();
   if(state.view==='mine') renderMine(); else if(state.view==='read') renderRead(); }
 function setTrkM(btn,m){ const t=btn.closest('.trk'); t.dataset.m=m;
   t.querySelectorAll('.sub button').forEach(b=>b.classList.toggle('on', b.textContent.toLowerCase().includes(m==='side'?'side':'stack'))); }
-function refinedFor(name,ch,v){ return (window.REFINED&&REFINED[name]&&REFINED[name][String(ch)]&&REFINED[name][String(ch)][String(v)])||null; }
+/* A verse can carry more than one note written years apart, so the refined edition holds an
+   ARRAY of entries per verse, each with its own date. Older single-entry data still works. */
+function refinedFor(name,ch,v){
+  const x=(window.REFINED&&REFINED[name]&&REFINED[name][String(ch)]&&REFINED[name][String(ch)][String(v)])||null;
+  if(!x) return null;
+  const a=Array.isArray(x)?x:[x];
+  return a.length?a:null;
+}
 function modernNoteHTML(name,ch,v,r){
   const ref=`${name} ${ch}:${v}`;
   const stack=r.d.map(dr=>`<div class="draft2"><span class="dl">${escHTML(dr[0])}</span>${escHTML(dr[1])}</div>`).join('');
   const origSide=r.d.map(dr=>escHTML(dr[0]+'\n'+dr[1])).join('\n\n──────\n');
   return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
-    <div class="meta"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${r.e?'<span class="badge">📈 understanding grew</span>':''}</div>
+    <div class="meta"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}</div>
     <div class="body">${escNote(r.m)}</div>
     ${r.e?`<div class="chg2" style="color:var(--accent)">📈 ${escHTML(String(r.e).replace(/<[^>]+>/g,''))}</div>`:''}
     ${noteActionsHTML(String(v))}
@@ -2555,8 +2563,8 @@ function renderMine(){
     const bd=DATA[b.name]; if(!bd)return;
     Object.keys(bd).sort((a,c)=>+a-+c).forEach(ch=>{
       Object.keys(bd[ch]).sort((a,c)=>+a-+c).forEach(v=>{
-        if(!legacy){ const r=refinedFor(b.name,ch,v);          // New Edition: one refined entry per verse where it exists
-          if(r){ all.push({book:b.name,bi,ch,v,text:r.m,date:(bd[ch][v][0]||{}).date}); return; } }
+        if(!legacy){ const r=refinedFor(b.name,ch,v);          // refined edition: one row per entry, each with its own date
+          if(r){ r.forEach(e=>all.push({book:b.name,bi,ch,v,text:e.m,date:e.dt||(bd[ch][v][0]||{}).date})); return; } }
         bd[ch][v].forEach(nt=>all.push({book:b.name,bi,ch,v,text:nt.text,date:nt.date}));
       });
     });
