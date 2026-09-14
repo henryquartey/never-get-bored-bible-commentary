@@ -354,6 +354,17 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
 
 /* My Commentary view */
 .mc-head{display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.jsortrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;margin-top:10px;
+  padding-top:12px;border-top:1px solid var(--line)}
+.jsortrow label{font:700 12px/1 var(--sans);color:var(--soft);text-transform:uppercase;letter-spacing:.06em}
+.jsortrow select{font:600 13px/1.2 var(--sans);color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:10px;padding:7px 10px;cursor:pointer;max-width:100%}
+.jsortrow select:hover{border-color:var(--accent)}
+.jsorthint{font:400 12px/1.4 var(--sans);color:var(--soft)}
+.jmore{display:block;width:100%;margin:16px 0 4px;padding:11px 14px;background:transparent;
+  border:1px solid var(--line);border-radius:12px;color:var(--accent);font:700 13px/1 var(--sans);cursor:pointer}
+.jmore:hover{border-color:var(--accent);background:var(--accent-soft)}
+.mc-item .mc-bk{font-weight:400;color:var(--soft);font-size:11px}
 .mc-head h2{font-family:var(--serif);font-size:26px;margin:0}
 .mc-count{color:var(--soft);font-size:13px;flex-basis:100%}
 .mine-seg{max-width:320px;margin-left:auto}
@@ -937,12 +948,12 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.83.0', date:'14 Sep 2026'};
+const BUILD={v:'0.84.0', date:'14 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
 function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
-let state={version:'KJV',book:0,chapter:1,view:'home',dirty:false,journal:'modern',plan:null,compare:null,refcomm:false};
+let state={version:'KJV',book:0,chapter:1,view:'home',dirty:false,journal:'modern',plan:null,compare:null,refcomm:false,jsort:'bible'};
 let _refTried={};
 let DATA={};            // working commentary
 let editing=null;       // {book,ch,v,id}
@@ -973,6 +984,7 @@ function init(){
     if(p.showDates){ document.documentElement.classList.add('show-dates'); }
     if(p.hideNotes===true){ document.documentElement.classList.add('hide-notes'); } // default: MY journal is shown
     if(p.journal==='original'||p.journal==='modern') state.journal=p.journal;
+    if(['bible','chrono','new','old','most'].includes(p.jsort)) state.jsort=p.jsort;
     if(p.refcomm) state.refcomm=true;
     if(['read','plan','home','discourse','menu','mine','you','explore'].includes(p.view)) state.view=p.view;
     if(p.plan&&typeof p.plan.day==='number') state.plan=p.plan;
@@ -1036,7 +1048,7 @@ function savePrefs(){localStorage.setItem(LS_PREFS,JSON.stringify({
   themeMode:_themeMode, theme:document.documentElement.dataset.theme||'light',
   showDates:document.documentElement.classList.contains('show-dates'),
   hideNotes:document.documentElement.classList.contains('hide-notes'),
-  journal:state.journal,refcomm:state.refcomm,
+  journal:state.journal,refcomm:state.refcomm,jsort:state.jsort,
   view:state.view,plan:state.plan,planResume:planResume,planSel:planSel}))}
 function persist(){localStorage.setItem(LS_KEY,JSON.stringify(DATA)); try{ _nsSchedule(); }catch(e){} }
 
@@ -2492,34 +2504,86 @@ function noteHTML(nt,name,ch,v,label){
 }
 
 /* ---------- My Commentary view ---------- */
+/* ---------- Journal sorting ----------
+   Bible order is how the journal has always been laid out. Chronological uses the same reading
+   plan data the "Bible in a Year" plan uses (data/chronological.js), so a note lands where that
+   chapter sits in the story, not where the book sits in the binding. */
+const JSORTS={
+  bible :'Bible order — Genesis to Revelation',
+  chrono:'Chronological — in the order it happened',
+  new   :'Date — newest note first',
+  old   :'Date — oldest note first',
+  most  :'Books I have written most about'
+};
+const JHINTS={
+  bible :'Grouped by book, in the order they appear in the Bible.',
+  chrono:'One long list, following the order the events actually happened.',
+  new   :'One long list, most recent note at the top.',
+  old   :'One long list, starting with the very first note you wrote.',
+  most  :'Grouped by book, the books you have written most about first.'
+};
+let _chIdx=null;
+function _chronoPos(book,ch){
+  if(!_chIdx){ _chIdx={}; let n=0;
+    (window.CHRONO||[]).forEach(d=>{ (d.r||[]).forEach(r=>{ const b=r[0]; for(let c=r[1];c<=r[2];c++){
+      const k=b+'|'+c; if(_chIdx[k]===undefined) _chIdx[k]=n++; } }); }); }
+  const k=book+'|'+ch; return _chIdx[k]!==undefined?_chIdx[k]:1e9;
+}
+const JPAGE=250;              // a flat list of 5,000 notes is a wall — show a page at a time
+let _jshow=JPAGE;
+function setJournalSort(v){ if(!JSORTS[v]) return; state.jsort=v; _jshow=JPAGE; savePrefs(); renderMine(); }
+function jMore(){ _jshow+=JPAGE; renderMine(); }
+function _jItem(it){
+  const ref=it.v==='0'?`${it.book} ${it.ch}`:`${it.book} ${it.ch}:${it.v}`;
+  const d=it.date?new Date(it.date).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'';
+  return `<div class="mc-item" onclick="this.classList.toggle('open')">
+    <div class="r">${ref}${d?`<span class="mc-date">${d}</span>`:''}
+      <button class="mc-open" onclick="event.stopPropagation();jumpTo('${esc(it.book)}',${it.ch},${it.v==='0'?1:it.v},{note:1})">Open in Bible →</button></div>
+    <div class="t">${escHTML(it.text)}</div><span class="mc-more"><span class="mc-m1">Read more</span><span class="mc-m2">Show less</span>${ICONS.chev}</span></div>`;
+}
 function renderMine(){
   document.getElementById('crumb').textContent='Journal';
   document.getElementById('chapselWrap').style.display='none';
   document.getElementById('readfoot').style.display='none';
   const legacy = state.journal==='original';
-  let total=0, books='';
-  window.BOOKS.forEach(b=>{
+  const sort = JSORTS[state.jsort]?state.jsort:'bible';
+
+  /* Gather every entry once, then arrange it. A refined entry takes the date of the first
+     note under that verse, so the date sorts work in both editions. */
+  const all=[];
+  window.BOOKS.forEach((b,bi)=>{
     const bd=DATA[b.name]; if(!bd)return;
-    const items=[];
     Object.keys(bd).sort((a,c)=>+a-+c).forEach(ch=>{
       Object.keys(bd[ch]).sort((a,c)=>+a-+c).forEach(v=>{
         if(!legacy){ const r=refinedFor(b.name,ch,v);          // New Edition: one refined entry per verse where it exists
-          if(r){ items.push({ch,v,text:r.m,edition:true}); total++; return; } }
-        bd[ch][v].forEach(nt=>{ items.push({ch,v,text:nt.text,date:nt.date}); total++; });
+          if(r){ all.push({book:b.name,bi,ch,v,text:r.m,date:(bd[ch][v][0]||{}).date}); return; } }
+        bd[ch][v].forEach(nt=>all.push({book:b.name,bi,ch,v,text:nt.text,date:nt.date}));
       });
     });
-    if(!items.length)return;
-    books+=`<details class="mc-book" open><summary>${b.name}<span class="n">${items.length} note${items.length>1?'s':''}</span></summary>`;
-    items.forEach(it=>{
-      const ref=it.v==='0'?`${b.name} ${it.ch}`:`${b.name} ${it.ch}:${it.v}`;
-      const d=it.date?new Date(it.date).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'';
-      books+=`<div class="mc-item" onclick="this.classList.toggle('open')">
-        <div class="r">${ref}${d?`<span class="mc-date">${d}</span>`:''}
-          <button class="mc-open" onclick="event.stopPropagation();jumpTo('${esc(b.name)}',${it.ch},${it.v==='0'?1:it.v},{note:1})">Open in Bible →</button></div>
-        <div class="t">${escHTML(it.text)}</div><span class="mc-more"><span class="mc-m1">Read more</span><span class="mc-m2">Show less</span>${ICONS.chev}</span></div>`;
-    });
-    books+=`</details>`;
   });
+  const total=all.length;
+  const ts=it=>it.date?(Date.parse(it.date)||0):0;
+  let books='';
+
+  if(sort==='new'||sort==='old'||sort==='chrono'){
+    const list=all.slice();
+    if(sort==='chrono') list.sort((a,b)=>_chronoPos(a.book,a.ch)-_chronoPos(b.book,b.ch)||a.bi-b.bi||+a.ch-+b.ch||+a.v-+b.v);
+    else if(sort==='new') list.sort((a,b)=>ts(b)-ts(a));
+    else list.sort((a,b)=>{ const x=ts(a),y=ts(b); if(!x&&!y) return 0; if(!x) return 1; if(!y) return -1; return x-y; });
+    const show=Math.min(_jshow,list.length);
+    books=list.slice(0,show).map(_jItem).join('');
+    if(show<list.length) books+=`<button class="jmore" onclick="jMore()">Show ${Math.min(JPAGE,list.length-show)} more · ${list.length-show} still to come</button>`;
+  } else {
+    const by={}; all.forEach(it=>{ (by[it.book]=by[it.book]||[]).push(it); });
+    let names=Object.keys(by);
+    if(sort==='most') names.sort((a,b)=>by[b].length-by[a].length||by[a][0].bi-by[b][0].bi);
+    else names.sort((a,b)=>by[a][0].bi-by[b][0].bi);
+    names.forEach(n=>{ const items=by[n];
+      books+=`<details class="mc-book" open><summary>${n}<span class="n">${items.length} note${items.length>1?'s':''}</span></summary>`;
+      books+=items.map(_jItem).join('');
+      books+=`</details>`;
+    });
+  }
   const sub = legacy
     ? 'The raw, unedited original — exactly as first written, typos and all.'
     : 'The refined edition — my journal, gently polished for reading.';
@@ -2529,7 +2593,12 @@ function renderMine(){
         <button class="${!legacy?'on':''}" onclick="setJournalMode('modern')">Journal</button>
         <button class="${legacy?'on':''}" onclick="setJournalMode('original')">📜 Legacy Journal</button>
       </div>
-      <span class="mc-count">${sub} · ${total} entr${total!==1?'ies':'y'} · tap one to expand</span></div>
+      <span class="mc-count">${sub} · ${total} entr${total!==1?'ies':'y'} · tap one to expand</span>
+      <div class="jsortrow"><label for="jsortSel">Sort</label>
+        <select id="jsortSel" onchange="setJournalSort(this.value)">
+          ${Object.keys(JSORTS).map(k=>`<option value="${k}"${k===sort?' selected':''}>${JSORTS[k]}</option>`).join('')}
+        </select>
+        <span class="jsorthint">${JHINTS[sort]}</span></div></div>
     ${total?books:'<div class="empty"><div class="big">✍</div>No commentary yet. Open any verse and add your thoughts.</div>'}
   </div>`;
   document.getElementById('reader').innerHTML=html;
