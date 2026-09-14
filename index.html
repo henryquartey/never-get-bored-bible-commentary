@@ -937,7 +937,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.82.0', date:'14 Sep 2026'};
+const BUILD={v:'0.83.0', date:'14 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1065,7 +1065,13 @@ const ONLINE_VERSIONS={
 const OSIS={"Genesis":"Gen","Exodus":"Exod","Leviticus":"Lev","Numbers":"Num","Deuteronomy":"Deut","Joshua":"Josh","Judges":"Judg","Ruth":"Ruth","1 Samuel":"1Sam","2 Samuel":"2Sam","1 Kings":"1Kgs","2 Kings":"2Kgs","1 Chronicles":"1Chr","2 Chronicles":"2Chr","Ezra":"Ezra","Nehemiah":"Neh","Esther":"Esth","Job":"Job","Psalms":"Ps","Proverbs":"Prov","Ecclesiastes":"Eccl","Song of Solomon":"Song","Isaiah":"Isa","Jeremiah":"Jer","Lamentations":"Lam","Ezekiel":"Ezek","Daniel":"Dan","Hosea":"Hos","Joel":"Joel","Amos":"Amos","Obadiah":"Obad","Jonah":"Jonah","Micah":"Mic","Nahum":"Nah","Habakkuk":"Hab","Zephaniah":"Zeph","Haggai":"Hag","Zechariah":"Zech","Malachi":"Mal","Matthew":"Matt","Mark":"Mark","Luke":"Luke","John":"John","Acts":"Acts","Romans":"Rom","1 Corinthians":"1Cor","2 Corinthians":"2Cor","Galatians":"Gal","Ephesians":"Eph","Philippians":"Phil","Colossians":"Col","1 Thessalonians":"1Thess","2 Thessalonians":"2Thess","1 Timothy":"1Tim","2 Timothy":"2Tim","Titus":"Titus","Philemon":"Phlm","Hebrews":"Heb","James":"Jas","1 Peter":"1Pet","2 Peter":"2Pet","1 John":"1John","2 John":"2John","3 John":"3John","Jude":"Jude","Revelation":"Rev"};
 const USFM3={"Genesis":"GEN","Exodus":"EXO","Leviticus":"LEV","Numbers":"NUM","Deuteronomy":"DEU","Joshua":"JOS","Judges":"JDG","Ruth":"RUT","1 Samuel":"1SA","2 Samuel":"2SA","1 Kings":"1KI","2 Kings":"2KI","1 Chronicles":"1CH","2 Chronicles":"2CH","Ezra":"EZR","Nehemiah":"NEH","Esther":"EST","Job":"JOB","Psalms":"PSA","Proverbs":"PRO","Ecclesiastes":"ECC","Song of Solomon":"SNG","Isaiah":"ISA","Jeremiah":"JER","Lamentations":"LAM","Ezekiel":"EZK","Daniel":"DAN","Hosea":"HOS","Joel":"JOL","Amos":"AMO","Obadiah":"OBA","Jonah":"JON","Micah":"MIC","Nahum":"NAM","Habakkuk":"HAB","Zephaniah":"ZEP","Haggai":"HAG","Zechariah":"ZEC","Malachi":"MAL","Matthew":"MAT","Mark":"MRK","Luke":"LUK","John":"JHN","Acts":"ACT","Romans":"ROM","1 Corinthians":"1CO","2 Corinthians":"2CO","Galatians":"GAL","Ephesians":"EPH","Philippians":"PHP","Colossians":"COL","1 Thessalonians":"1TH","2 Thessalonians":"2TH","1 Timothy":"1TI","2 Timothy":"2TI","Titus":"TIT","Philemon":"PHM","Hebrews":"HEB","James":"JAS","1 Peter":"1PE","2 Peter":"2PE","1 John":"1JN","2 John":"2JN","3 John":"3JN","Jude":"JUD","Revelation":"REV"};
 function _olKeys(){ return window.API_KEYS||{}; }
-function _olAvail(v){ const o=ONLINE_VERSIONS[v]; if(!o) return false; const k=_olKeys(); return !!(o.src==='apibible'?k.apibible:o.src==='esv'?k.esv:k.nlt); }
+/* The keys are not in this page. window.API_PROXY points at a small Cloudflare Worker that holds
+   them and answers on their behalf; window.API_ENABLED says which of the three it actually has.
+   If no proxy is set we fall back to keys in data/apikeys.js — handy for testing on this Mac,
+   never for the published site, where anyone can read them. */
+function _olProxy(){ return String(window.API_PROXY||'').replace(/\/+$/,''); }
+function _olSrcOn(src){ if(_olProxy()) return !!(window.API_ENABLED||{})[src]; const k=_olKeys(); return !!k[src]; }
+function _olAvail(v){ const o=ONLINE_VERSIONS[v]; if(!o) return false; return _olSrcOn(o.src); }
 function _olRegister(){ window.BIBLE=window.BIBLE||{}; window.VERSIONS=window.VERSIONS||{}; Object.keys(ONLINE_VERSIONS).forEach(v=>{ if(_olAvail(v)){ window.VERSIONS[v]=ONLINE_VERSIONS[v].name+' (online)'; window.BIBLE[v]=window.BIBLE[v]||{}; } else if(window.VERSIONS[v]&&/\(online\)$/.test(window.VERSIONS[v])) delete window.VERSIONS[v]; }); }
 function _olHas(v,b,c){ return !!(window.BIBLE[v]&&window.BIBLE[v][b]&&window.BIBLE[v][b][String(c)]); }
 function _olParseBracketed(txt){ const out={}; const parts=String(txt).split(/\[(\d+)\]/); for(let i=1;i<parts.length;i+=2){ const t=parts[i+1].replace(/\s+/g,' ').trim(); if(t) out[parts[i]]=t; } return out; }
@@ -1073,7 +1079,8 @@ let _olIds=null;
 async function _olApiBibleId(v){ const k=_olKeys().apibible; const o=ONLINE_VERSIONS[v];
   if(!_olIds){ try{ _olIds=JSON.parse(localStorage.getItem('nok_ab_ids')||'{}'); }catch(e){ _olIds={}; } }
   if(_olIds[v]) return _olIds[v];
-  const r=await fetch('https://api.scripture.api.bible/v1/bibles?language=eng',{headers:{'api-key':k}}); if(!r.ok) throw new Error('bibles '+r.status);
+  const P=_olProxy(), path='/v1/bibles?language=eng';
+  const r=await fetch(P?P+'/apibible'+path:'https://api.scripture.api.bible'+path, P?{}:{headers:{'api-key':k}}); if(!r.ok) throw new Error('bibles '+r.status);
   const j=await r.json(); const list=(j.data||[]);
   const want=o.abbr.map(a=>a.toLowerCase());
   const hit=list.find(b=>want.includes(String(b.abbreviationLocal||'').toLowerCase()))||list.find(b=>want.includes(String(b.abbreviation||'').toLowerCase()))||list.find(b=>want.some(a=>String(b.name||'').toLowerCase().replace(/[^a-z0-9]/g,'').includes(a)));
@@ -1081,12 +1088,16 @@ async function _olApiBibleId(v){ const k=_olKeys().apibible; const o=ONLINE_VERS
   _olIds[v]=hit.id; try{ localStorage.setItem('nok_ab_ids',JSON.stringify(_olIds)); }catch(e){} return hit.id; }
 async function _olFetch(v,b,c){
   const o=ONLINE_VERSIONS[v], k=_olKeys(); let verses={};
+  const P=_olProxy();
   if(o.src==='apibible'){ const id=await _olApiBibleId(v);
-    const r=await fetch(`https://api.scripture.api.bible/v1/bibles/${id}/chapters/${USFM3[b]}.${c}?content-type=text&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=true&include-verse-spans=false`,{headers:{'api-key':k.apibible}});
+    const path=`/v1/bibles/${id}/chapters/${USFM3[b]}.${c}?content-type=text&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=true&include-verse-spans=false`;
+    const r=await fetch(P?P+'/apibible'+path:'https://api.scripture.api.bible'+path, P?{}:{headers:{'api-key':k.apibible}});
     if(!r.ok) throw new Error(v+' '+r.status); const j=await r.json(); verses=_olParseBracketed((j.data&&j.data.content)||''); }
-  else if(o.src==='esv'){ const r=await fetch('https://api.esv.org/v3/passage/text/?q='+encodeURIComponent(b+' '+c)+'&include-headings=false&include-footnotes=false&include-verse-numbers=true&include-first-verse-numbers=true&include-short-copyright=false&include-passage-references=false&include-selahs=true&indent-poetry=false&indent-paragraphs=0&indent-declares=0&indent-psalm-doxology=0&line-length=0',{headers:{'Authorization':'Token '+k.esv}});
+  else if(o.src==='esv'){ const path='/v3/passage/text/?q='+encodeURIComponent(b+' '+c)+'&include-headings=false&include-footnotes=false&include-verse-numbers=true&include-first-verse-numbers=true&include-short-copyright=false&include-passage-references=false&include-selahs=true&indent-poetry=false&indent-paragraphs=0&indent-declares=0&indent-psalm-doxology=0&line-length=0';
+    const r=await fetch(P?P+'/esv'+path:'https://api.esv.org'+path, P?{}:{headers:{'Authorization':'Token '+k.esv}});
     if(!r.ok) throw new Error('ESV '+r.status); const j=await r.json(); verses=_olParseBracketed((j.passages||[]).join(' ')); }
-  else { const r=await fetch('https://api.nlt.to/api/passages?ref='+encodeURIComponent(OSIS[b]+'.'+c)+'&version=NLT&key='+encodeURIComponent(k.nlt));
+  else { const path='/api/passages?ref='+encodeURIComponent(OSIS[b]+'.'+c)+'&version=NLT';
+    const r=await fetch(P?P+'/nlt'+path:'https://api.nlt.to'+path+'&key='+encodeURIComponent(k.nlt));
     if(!r.ok) throw new Error('NLT '+r.status); const h=await r.text();
     const re=/<verse_export[^>]*\bvn="(\d+)"[^>]*>([\s\S]*?)<\/verse_export>/g; let m;
     while((m=re.exec(h))){ let t=m[2].replace(/<span class="vn">[\s\S]*?<\/span>/g,' ').replace(/<a class="a-tn">[\s\S]*?<\/a>/g,'').replace(/<span class="tn">[\s\S]*?<\/span>/g,'').replace(/<h\d[^>]*>[\s\S]*?<\/h\d>/g,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim(); if(t) verses[m[1]]=(verses[m[1]]?verses[m[1]]+' ':'')+t; } }
