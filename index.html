@@ -809,6 +809,15 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
   .verse{font-size:calc(18px*var(--fs,1))}
   .resizer{display:none}
 }
+.placebar{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;z-index:140;
+  display:flex;gap:8px;align-items:center;background:var(--panel);color:var(--ink);
+  border:1px solid var(--line);border-radius:999px;padding:8px 10px 8px 16px;box-shadow:var(--shadow);
+  font-family:var(--sans);font-size:14px;max-width:94vw}
+.placebar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.placebar button{border:0;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer;flex:none}
+.placebar .go{background:var(--accent);color:var(--on-accent)}
+.placebar .no{background:transparent;color:var(--soft);font-weight:600}
+@media(max-width:560px){.placebar{bottom:96px;font-size:13px;padding:7px 8px 7px 13px}}
 </style>
 </head>
 <body>
@@ -957,7 +966,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.89.0', date:'16 Sep 2026'};
+const BUILD={v:'0.90.0', date:'16 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1022,6 +1031,7 @@ function init(){
   document.getElementById('refBtn').innerHTML=ICONS.library;
   document.getElementById('cmpBtn').innerHTML=ICONS.swap;
   setViewTabs();
+  window._resumePending=true;          /* opening the app returns you to the verse you left */
   buildVersionSelect();
   buildBookList();
   render();
@@ -2061,10 +2071,11 @@ function renderHome(){
       <div class="hrow"><button class="btn primary" onclick="jumpTo('${esc(n.b)}',${n.ch},${n.v},{note:1})">Read in context →</button>
         <button class="btn" onclick="setView('explore')">Explore the journal</button></div></div>`; })()}
     ${(()=>{ const bk=window.BOOKS[state.book]; if(!bk) return '';
-      return `<div class="hcard" style="cursor:pointer" onclick="setView('read')">
+      const pv=+((typeof _chposAll==='function'?_chposAll():{})[bk.name+'|'+state.chapter]||0);
+      return `<div class="hcard" style="cursor:pointer" onclick="window._resumePending=true;setView('read')">
         <div class="hk">📖 Continue reading</div>
-        <h3 style="margin:4px 0 2px">${escHTML(bk.name)} ${state.chapter} →</h3>
-        <p class="soft" style="margin:0">Pick up right where you left off</p></div>`; })()}
+        <h3 style="margin:4px 0 2px">${escHTML(bk.name)} ${state.chapter}${pv>1?':'+pv:''} →</h3>
+        <p class="soft" style="margin:0">${pv>1?'Back to the verse you left':'Pick up right where you left off'}</p></div>`; })()}
     ${(!fbUser()&&!localStorage.getItem('nok_seen_signin'))?`<div class="hcard" id="signinCard">
       <div class="hk">👤 Reading on more than one device?</div>
       <h3 style="margin:4px 0 2px">Sign in to carry your place with you</h3>
@@ -2422,6 +2433,12 @@ function renderRead(){
   if(AUD.key===_rdKey()&&AUD.el&&!AUD.el.paused){ AUD.vlast=null; _audFollowVerse(AUD.el.currentTime,AUD.here,true); }
   if(typeof _fabSync==='function')_fabSync();
   if(typeof _progSync==='function')_progSync();
+  if(typeof _placeArmed!=='undefined') _placeArmed=false;
+  if(window._resumePending){ window._resumePending=false;
+    setTimeout(function(){ if(typeof restorePlace==='function'&&restorePlace()){
+      const want=document.getElementById('reader').scrollTop;
+      setTimeout(function(){ const rd=document.getElementById('reader');
+        if(rd&&Math.abs(rd.scrollTop-want)>4) rd.scrollTop=want; _progSync(); _fabSync(); },260); } },80); }
   buildBookList();
 }
 function jumpVerse(v){ const el=document.getElementById('v'+v); if(!el)return;
@@ -2664,7 +2681,8 @@ function jumpTo(name,ch,v,opts){
     if(el){ let withNote=false;
       if(opts&&opts.note&&el.classList.contains('has-note')){ el.classList.remove('collapsed'); el.classList.add('revealed'); _syncCmark(v); withNote=true; } // came from the journal → open the note too
       el.scrollIntoView({behavior:'smooth',block:withNote?'start':'center'}); el.style.transition='background .3s';
-      const o=el.style.background; el.style.background='var(--note-line)'; setTimeout(()=>el.style.background=o,900);} },60); });
+      const o=el.style.background; el.style.background='var(--note-line)'; setTimeout(()=>el.style.background=o,900);
+      try{ markPlace(v); }catch(e){} } },60); });
   toggleSidebar(false);
 }
 
@@ -3465,6 +3483,72 @@ function _progSync(){ const tr=document.getElementById('readprog'), f=document.g
   const max=rd.scrollHeight-rd.clientHeight;
   f.style.width=(max>40?Math.min(100,Math.round(rd.scrollTop/max*100)):100)+'%'; }
 (function(){ const rd=document.getElementById('reader'); if(rd) rd.addEventListener('scroll',_progSync,{passive:true}); })();
+/* ---------- Where you left off ----------
+   Remembers the verse you were actually looking at, per chapter, so that coming back to the app
+   puts you on the line you were reading instead of at the top of the chapter. */
+const LS_PLACE='nok_place';      /* {b,c,v,t} — your latest place; the newest READING wins */
+const LS_CHPOS='nok_chpos';      /* {'Book|chapter':verse} — how far you got in each chapter */
+function _chposAll(){ try{ const o=JSON.parse(localStorage.getItem(LS_CHPOS)||'{}');
+  return (o&&typeof o==='object'&&!Array.isArray(o))?o:{}; }catch(e){ return {}; } }
+function placeGet(){ try{ const o=JSON.parse(localStorage.getItem(LS_PLACE)||'null');
+  return (o&&o.b&&o.c)?o:null; }catch(e){ return null; } }
+function _topVerse(){
+  const rd=document.getElementById('reader'); if(!rd) return 0;
+  const rows=rd.querySelectorAll('.verse,.cmprow'); if(!rows.length) return 0;
+  const edge=rd.getBoundingClientRect().top+10;
+  for(let i=0;i<rows.length;i++){ if(rows[i].getBoundingClientRect().bottom>edge) return +(rows[i].dataset.v||0); }
+  return +(rows[rows.length-1].dataset.v||0); }
+function markPlace(v){
+  if(state.view!=='read') return;
+  const bk=window.BOOKS[state.book]; if(!bk) return;
+  const vv=v||_topVerse(); if(!vv) return;
+  try{
+    const m=_chposAll(); m[bk.name+'|'+state.chapter]=vv;
+    const ks=Object.keys(m); if(ks.length>500) delete m[ks[0]];
+    localStorage.setItem(LS_CHPOS,JSON.stringify(m));
+    localStorage.setItem(LS_PLACE,JSON.stringify({b:bk.name,c:state.chapter,v:vv,t:Date.now()}));
+  }catch(e){} }
+let _placeT=null, _placeArmed=false;
+/* Only a scroll the READER made counts. The browser restores its own scroll position on reload,
+   and every render resets it to the top — neither of those is you moving down the chapter. */
+function _placeArm(){ _placeArmed=true; }
+function _placeSoon(){ if(!_placeArmed) return; clearTimeout(_placeT); _placeT=setTimeout(function(){ markPlace(); },700); }
+(function(){ try{ if('scrollRestoration' in history) history.scrollRestoration='manual'; }catch(e){}
+  const rd=document.getElementById('reader'); if(!rd) return;
+  rd.addEventListener('scroll',_placeSoon,{passive:true});
+  ['wheel','touchstart','touchmove','pointerdown','mousedown'].forEach(function(ev){
+    rd.addEventListener(ev,_placeArm,{passive:true}); });
+  document.addEventListener('keydown',_placeArm,{passive:true}); })();
+document.addEventListener('visibilitychange',function(){ if(document.hidden) markPlace(); });
+window.addEventListener('pagehide',function(){ markPlace(); });
+/* Put the reader back on the verse they left. Used when the app opens and by "Continue reading"
+   on Home — never on a chapter they have just deliberately opened. */
+function restorePlace(){
+  const bk=window.BOOKS[state.book]; if(!bk) return false;
+  const v=+(_chposAll()[bk.name+'|'+state.chapter]||0); if(v<2) return false;
+  const el=document.getElementById('v'+v), rd=document.getElementById('reader');
+  if(!el||!rd) return false;
+  rd.scrollTop+=el.getBoundingClientRect().top-rd.getBoundingClientRect().top-8;
+  return true; }
+/* A different device read further than this one. Offer the move; never snatch the page away. */
+function _offerPlace(p){
+  const ex=document.getElementById('placebar'); if(ex) ex.remove();
+  const d=document.createElement('div'); d.className='placebar'; d.id='placebar';
+  d.innerHTML='<span>You were reading <b>'+escHTML(p.b)+' '+p.c+((+p.v>1)?':'+p.v:'')+'</b> on another device</span>'+
+    '<button class="go">Go there</button><button class="no">Stay here</button>';
+  d.querySelector('.go').onclick=function(){ d.remove(); jumpTo(p.b,+p.c,+p.v||1); };
+  d.querySelector('.no').onclick=function(){ d.remove(); };
+  document.body.appendChild(d);
+  setTimeout(function(){ if(d.parentNode) d.remove(); },25000); }
+/* Re-apply the look after a sync brought newer settings in, so nothing has to reload. */
+function _applyLookNow(){ try{
+  const p=JSON.parse(localStorage.getItem(LS_PREFS)||'{}');
+  if(p.themeMode==='auto'||p.themeMode==='light'||p.themeMode==='dark'){ _themeMode=p.themeMode; applyTheme(); }
+  document.documentElement.classList.toggle('show-dates',!!p.showDates);
+  document.documentElement.classList.toggle('hide-notes',p.hideNotes===true);
+  const nb=document.getElementById('notesBtn'); if(nb) nb.classList.toggle('active',p.hideNotes!==true);
+  const db=document.getElementById('dateBtn'); if(db) db.classList.toggle('active',!!p.showDates);
+}catch(e){} }
 /* ---------- Install the app (PWA) ---------- */
 let _bip=null;
 window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); _bip=e; });
@@ -3911,6 +3995,15 @@ const FB_KEYS={prefs:LS_PREFS,hl:'nok_hl',dict:'nok_userdict',
   hlT:'nok_hl_t',              // when each highlight was made   (union)
   planDone:'nok_plan_done'};   // when each plan day was finished (union)
 const FB_POS_T='nok_fb_post';
+FB_KEYS.place='nok_place';     /* your latest place — newest reading wins, and you are asked */
+FB_KEYS.chpos='nok_chpos';     /* how far you got in each chapter — the further reading wins */
+function _fbMergeMax(mineStr,theirsStr){
+  let a,b; try{ a=JSON.parse(mineStr||'{}'); }catch(e){ a={}; }
+  try{ b=JSON.parse(theirsStr||'{}'); }catch(e){ b={}; }
+  if(!a||typeof a!=='object'||Array.isArray(a)) a={};
+  if(!b||typeof b!=='object'||Array.isArray(b)) b={};
+  let ch=0; Object.keys(b).forEach(function(k){ if(+(b[k]||0)>+(a[k]||0)){ a[k]=+b[k]; ch++; } });
+  return {str:JSON.stringify(a),added:ch}; }
 function fbUser(){ return (window.FB&&window.FB.user)||null; }
 function _fbSnap(){ const o={}; Object.keys(FB_KEYS).forEach(k=>{ o[k]=localStorage.getItem(FB_KEYS[k])||''; }); return o; }
 function _fbUnion(mineStr,theirsStr){
@@ -3954,7 +4047,7 @@ async function fbPull(){
   let cloud=null;
   try{ cloud=await window.FB.get(u.uid); }
   catch(e){ toast('Could not reach your account — are you online?'); return; }
-  let gained=0, moved=false;
+  let gained=0, settings=false;
   if(cloud){
     /* Things that only ever ADD: highlights, dictionary, chapters done, reading positions. */
     ['hl','dict','chrono','rdpos','hlT','planDone'].forEach(k=>{
@@ -3969,20 +4062,36 @@ async function fbPull(){
       const all=new Set(mine.concat(theirs));
       if(all.size>mine.length){ a.days=Array.from(all).sort(); localStorage.setItem(FB_KEYS.streak,JSON.stringify(a)); gained+=all.size-mine.length; }
     }catch(e){} }
-    /* Your place and the plan's start date follow whichever device you used most recently. */
+    /* How far you got in each chapter: the further reading wins. */
+    try{ const mx=_fbMergeMax(localStorage.getItem(FB_KEYS.chpos)||'',cloud.chpos||'');
+      if(mx.added) localStorage.setItem(FB_KEYS.chpos,mx.str); }catch(e){}
+    /* Settings and the plan's start date follow whichever device changed them last — but the page
+       you are on is never taken from you; that is decided by the place rule below. */
     const cloudT=+(cloud.posT||0), mineT=+(localStorage.getItem(FB_POS_T)||0);
     if(cloudT>mineT){
       try{
-        if(cloud.prefs) localStorage.setItem(FB_KEYS.prefs,cloud.prefs);
+        if(cloud.prefs){
+          const cp=JSON.parse(cloud.prefs)||{}, mp=JSON.parse(localStorage.getItem(FB_KEYS.prefs)||'{}')||{};
+          ['book','chapter','view','plan','planResume','planSel'].forEach(function(k){ if(k in mp) cp[k]=mp[k]; else delete cp[k]; });
+          localStorage.setItem(FB_KEYS.prefs,JSON.stringify(cp));
+        }
         if(cloud.anchor) localStorage.setItem(FB_KEYS.anchor,cloud.anchor);
         localStorage.setItem(FB_POS_T,String(cloudT));
       }catch(e){}
-      window._fbLastPos=_fbPosKey(); moved=true;
+      window._fbLastPos=_fbPosKey(); settings=true;
     }
+    /* Your place follows the newest READING — not merely the last device to be opened — and even
+       then this device asks before it moves. */
+    try{
+      const mineP=placeGet(), theirsP=cloud.place?JSON.parse(cloud.place):null;
+      if(theirsP&&theirsP.b&&+(theirsP.t||0)>+((mineP&&mineP.t)||0)+30000){
+        localStorage.setItem(FB_KEYS.place,cloud.place);
+        if(!mineP||theirsP.b!==mineP.b||+theirsP.c!==+mineP.c) _offerPlace(theirsP);
+      }
+    }catch(e){}
   }
   await fbPush();
-  if(moved){ toast(gained?('Synced — '+gained+' brought in, moving to your latest place'):'Synced — moving to your latest place');
-    setTimeout(()=>location.reload(),1400); return; }
+  if(settings){ try{ _applyLookNow(); }catch(e){} }
   toast(gained?('Synced — '+gained+' brought in'):'Synced — everything is up to date');
   if(gained){ if(state.view==='read') renderRead(); else if(state.view==='plan'&&typeof renderPlan==='function') renderPlan(); }
 }
