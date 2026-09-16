@@ -966,7 +966,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.90.0', date:'16 Sep 2026'};
+const BUILD={v:'0.90.1', date:'16 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2434,11 +2434,14 @@ function renderRead(){
   if(typeof _fabSync==='function')_fabSync();
   if(typeof _progSync==='function')_progSync();
   if(typeof _placeArmed!=='undefined') _placeArmed=false;
+  if(typeof _placeDwell==='function') _placeDwell();
   if(window._resumePending){ window._resumePending=false;
     setTimeout(function(){ if(typeof restorePlace==='function'&&restorePlace()){
       const want=document.getElementById('reader').scrollTop;
-      setTimeout(function(){ const rd=document.getElementById('reader');
-        if(rd&&Math.abs(rd.scrollTop-want)>4) rd.scrollTop=want; _progSync(); _fabSync(); },260); } },80); }
+      /* fonts and images can settle late on a phone — hold the place until they have */
+      [260,800].forEach(function(ms){ setTimeout(function(){ const rd=document.getElementById('reader');
+        if(rd&&!_placeArmed&&Math.abs(rd.scrollTop-want)>4) rd.scrollTop=want;
+        _progSync(); _fabSync(); },ms); }); } },80); }
   buildBookList();
 }
 function jumpVerse(v){ const el=document.getElementById('v'+v); if(!el)return;
@@ -3519,8 +3522,16 @@ function _placeSoon(){ if(!_placeArmed) return; clearTimeout(_placeT); _placeT=s
   ['wheel','touchstart','touchmove','pointerdown','mousedown'].forEach(function(ev){
     rd.addEventListener(ev,_placeArm,{passive:true}); });
   document.addEventListener('keydown',_placeArm,{passive:true}); })();
-document.addEventListener('visibilitychange',function(){ if(document.hidden) markPlace(); });
-window.addEventListener('pagehide',function(){ markPlace(); });
+/* Leaving the app records your place — but only if you actually read something. Merely opening
+   the app on another device and putting it down must not claim to be your latest place. */
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){ if(_placeArmed) markPlace(); } else _placeDwell(); });
+window.addEventListener('pagehide',function(){ if(_placeArmed) markPlace(); });
+/* Sitting on a chapter for a minute IS reading it, even a short one you never scrolled. */
+let _dwellT=null;
+function _placeDwell(){ clearTimeout(_dwellT);
+  if(typeof state==='undefined'||state.view!=='read'||document.hidden) return;
+  _dwellT=setTimeout(function(){ if(state.view==='read'&&!document.hidden){ _placeArmed=true; markPlace(); } },60000); }
 /* Put the reader back on the verse they left. Used when the app opens and by "Continue reading"
    on Home — never on a chapter they have just deliberately opened. */
 function restorePlace(){
