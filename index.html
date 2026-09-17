@@ -581,6 +581,8 @@ html.show-dates .mc-item .mc-date{display:inline}
 .you-head .ys{color:var(--soft);font-size:13px;margin-top:2px}
 .you-head .gear .nico{display:inline-flex;width:18px;height:18px}
 .you-head .gear .nico svg{width:18px;height:18px}
+.you-head .yacts{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+.you-head .yacts .gear{margin-left:0}
 .you-head .gear+.gear{margin-left:0}
 .you-head .gear{margin-left:auto;background:transparent;border:1px solid var(--line);border-radius:50%;width:36px;height:36px;color:var(--ink);font-size:17px;flex:0 0 36px}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none;font-family:var(--sans)}
@@ -966,7 +968,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.90.1', date:'16 Sep 2026'};
+const BUILD={v:'0.91.0', date:'17 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2159,6 +2161,7 @@ function renderMenu(){
     ${head('Your journal')}
     ${item('💾','Back up or restore','Save your journal to a file, or bring one back in','backupMenu()')}
     ${head('The app')}
+    ${item(_themeGlyph(),'Appearance',_themeDesc(),'appearanceMenu()')}
     ${item('📲','Install the App','Put it on your home screen — opens full-screen, works offline','installApp()')}
     ${item('🔄','Check for Updates',`You are on version ${BUILD.v} — tap to look for a newer one`,'checkForUpdates()')}
     ${head('Account')}
@@ -3823,8 +3826,29 @@ function applyTheme(){
     b.title = _themeMode==='auto' ? 'Appearance: following your device'
             : (_themeMode==='dark' ? 'Appearance: always dark' : 'Appearance: always light');
   }
+  const yb=document.getElementById('youThemeBtn');
+  if(yb){ yb.textContent=_themeGlyph(); yb.title=_themeLabel(); }
   _syncThemeColor();
 }
+function _themeGlyph(){ return _themeMode==='auto'?'\u25D0':(_themeMode==='dark'?'\u263E':'\u2600'); }
+function _themeLabel(){ return _themeMode==='auto'?'Appearance: following your device'
+  :(_themeMode==='dark'?'Appearance: always dark':'Appearance: always light'); }
+function _themeDesc(){ return _themeMode==='auto'?'Following your device \u2014 tap to choose light or dark yourself'
+  :(_themeMode==='dark'?'Always dark, whatever your device is doing':'Always light, whatever your device is doing'); }
+/* Choose it outright rather than cycling through three states blind. */
+function appearanceMenu(){
+  closeAppearanceMenu();
+  const row=(m,g,t,d)=>'<button class="btn'+(_themeMode===m?' primary':'')+'" onclick="setThemeMode(\''+m+'\');closeAppearanceMenu();if(state.view===\'menu\')renderMenu();else if(state.view===\'you\')renderYou()">'+g+'  '+t+(_themeMode===m?'  \u2713':'')+'</button><p>'+d+'</p>';
+  const ov=document.createElement('div'); ov.className='bkov'; ov.id='apOv';
+  ov.innerHTML='<div class="bkcard"><h3>Appearance</h3>'
+    +row('auto','\u25D0','Follow my device','Light by day, dark at night \u2014 whatever your phone or computer is set to.')
+    +row('light','\u2600','Always light','Stays light even when your device turns dark.')
+    +row('dark','\u263E','Always dark','Stays dark even when your device turns light.')
+    +'<button class="btn" onclick="closeAppearanceMenu()">Close</button></div>';
+  ov.addEventListener('click',e=>{ if(e.target===ov) closeAppearanceMenu(); });
+  document.body.appendChild(ov); }
+function closeAppearanceMenu(){ const o=document.getElementById('apOv'); if(o) o.remove(); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&document.getElementById('apOv')) closeAppearanceMenu(); },true);
 function setThemeMode(m,quiet){ _themeMode=m; applyTheme(); savePrefs();
   if(!quiet) toast(m==='auto'?'Following your device':(m==='dark'?'Always dark':'Always light')); }
 function toggleTheme(){ setThemeMode(_themeMode==='auto'?'light':(_themeMode==='light'?'dark':'auto')); }
@@ -3904,7 +3928,7 @@ function accountMenu(){
   ov.innerHTML='<div class="bkcard">'
     +'<div class="achead"><span class="acav">'+_acLetter()+'</span><b>'+escHTML(u.email||'Signed in')+'</b></div>'
     +'<button class="btn primary" onclick="closeAccountMenu();fbPull();nsSync(true)">Sync now</button>'
-    +'<p>Brings in notes, highlights and your place from your other devices, and sends up whatever is new here.</p>'
+    +'<p>This happens by itself — whenever you open the app, and every few minutes while it is open. The button is only for when you cannot wait.</p>'
     +'<p id="acNsLine" style="margin-top:8px">'+_nsStatusLine()+'</p>'
     +'<button class="btn" onclick="closeAccountMenu();fbSignOutNow()">Sign out</button>'
     +'<p>Stops syncing on this device. Nothing already here is deleted.</p>'
@@ -4053,11 +4077,11 @@ function fbOnAuth(u){
   try{ localStorage.setItem('nok_seen_signin','1'); }catch(e){}   // the invitation has done its job
   fbPull(); nsSync();
 }
-async function fbPull(){
-  const u=fbUser(); if(!u){ toast('You are not signed in'); return; }
+async function fbPull(quiet){
+  const u=fbUser(); if(!u){ if(!quiet) toast('You are not signed in'); return; }
   let cloud=null;
   try{ cloud=await window.FB.get(u.uid); }
-  catch(e){ toast('Could not reach your account — are you online?'); return; }
+  catch(e){ if(!quiet) toast('Could not reach your account — are you online?'); return; }
   let gained=0, settings=false;
   if(cloud){
     /* Things that only ever ADD: highlights, dictionary, chapters done, reading positions. */
@@ -4103,7 +4127,8 @@ async function fbPull(){
   }
   await fbPush();
   if(settings){ try{ _applyLookNow(); }catch(e){} }
-  toast(gained?('Synced — '+gained+' brought in'):'Synced — everything is up to date');
+  if(gained) toast('Synced — '+gained+' brought in');
+  else if(!quiet) toast('Synced — everything is up to date');
   if(gained){ if(state.view==='read') renderRead(); else if(state.view==='plan'&&typeof renderPlan==='function') renderPlan(); }
 }
 async function fbPush(){
@@ -4126,7 +4151,9 @@ async function fbPush(){
 }
 setInterval(()=>{ if(!fbUser()) return;
   const s=JSON.stringify(_fbSnap()); if(s!==window._fbLastSnap) fbPush(); },20000);
-document.addEventListener('visibilitychange',()=>{ if(!fbUser()) return; if(document.hidden){ fbPush(); nsPush(); } else nsSync(); });
+document.addEventListener('visibilitychange',()=>{ if(!fbUser()) return; if(document.hidden){ fbPush(); nsPush(); } else { nsSync(); fbPull(true); } });
+/* Quietly bring in whatever the other device has done, without anyone pressing anything. */
+setInterval(()=>{ if(fbUser()&&!document.hidden) fbPull(true); },300000);
 
 /* ---------- Notes follow your account ----------
    What travels is only what is YOURS: notes the published journal does not have, edits you made to
@@ -4299,8 +4326,10 @@ function renderYou(){
     <div class="you-head"><span class="acav">${u?_acLetter():'✦'}</span>
       <div><div class="yn">${who}</div>
         <div class="ys">${st.daily?st.daily+'-day streak · ':''}${counts.note} note${counts.note===1?'':'s'} · ${counts.hl} highlight${counts.hl===1?'':'s'}${C.length?' · day '+Math.min(C.length,done+1)+' of '+C.length:''}</div></div>
-      <button class="gear" onclick="${u?'accountMenu()':'fbSignIn()'}" title="${u?'Account':'Sign in'}">${u?ICONS.gear:'→'}</button>
-      <button class="gear" onclick="setView('menu')" title="Menu">${ICONS.menu}</button></div>
+      <div class="yacts">
+        <button class="gear" id="youThemeBtn" onclick="appearanceMenu()" title="${_themeLabel()}">${_themeGlyph()}</button>
+        <button class="gear" onclick="${u?'accountMenu()':'fbSignIn()'}" title="${u?'Account':'Sign in'}">${u?ICONS.user:'→'}</button>
+        <button class="gear" onclick="setView('menu')" title="Menu">${ICONS.menu}</button></div></div>
     ${!u?`<div class="hcard" style="padding:14px 16px"><div class="hk">On this device only</div><p class="soft" style="margin:0 0 10px">Sign in with Google and everything here follows you to every device you use.</p><button class="btn primary" onclick="fbSignIn()">Sign in with Google</button></div>`:''}
     <div class="chips">${chip('all','All')}${chip('note','Notes')}${chip('hl','Highlights')}${chip('plan','Plan')}${chip('ms','Milestones')}</div>`;
   if(_youFilter==='plan'&&C.length){ let pi=C.findIndex(rd=>!rd.catchup&&!readingDone(rd,d)); if(pi<0) pi=C.length-1;
