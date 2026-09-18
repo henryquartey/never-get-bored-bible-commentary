@@ -922,8 +922,8 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <button class="fabnotes" id="fabNotes" onclick="toggleNotes()">Hide all commentary</button>
 <nav class="bottomnav" id="bottomnav">
   <button data-view="home" data-ico="home" onclick="setView('home')">Home</button>
-  <button data-view="plan" data-ico="cal" onclick="setView('plan')">Plans</button>
   <button data-view="read" data-ico="book" onclick="setView('read')">Bible</button>
+  <button data-view="plan" data-ico="cal" onclick="setView('plan')">Plans</button>
   <button data-view="discourse" data-ico="chat" onclick="setView('discourse')">Discourse</button>
   <button data-view="you" data-ico="user" onclick="setView('you')" id="navYou">You</button>
 </nav>
@@ -977,7 +977,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.95.1', date:'18 Sep 2026'};
+const BUILD={v:'0.96.0', date:'18 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2442,7 +2442,7 @@ function renderRead(){
       if(notes.length){
         html+=`<div class="notewrap" id="nw${v}">`;
         const r=state.journal==='modern'?refinedFor(name,ch,v):null;
-        if(r){ r.forEach(e=>{ html+=modernNoteHTML(name,ch,v,e); }); }
+        if(r){ r.forEach((e,i)=>{ html+=modernNoteHTML(name,ch,v,e,i); }); }
         else { notes.forEach(nt=>{ html+=noteHTML(nt,name,ch,v); }); }
         html+=`</div>`;
       }
@@ -2485,7 +2485,7 @@ function renderRead(){
       if(notes.length){
         html+=`<div class="notewrap" id="nw${v}">`;
         const r = state.journal==='modern' ? refinedFor(name,ch,v) : null;
-        if(r){ r.forEach(e=>{ html+=modernNoteHTML(name,ch,v,e); }); }
+        if(r){ r.forEach((e,i)=>{ html+=modernNoteHTML(name,ch,v,e,i); }); }
         else { notes.forEach(nt=>{ html+=noteHTML(nt,name,ch,v); }); }
         html+=`</div>`;
       }
@@ -2611,7 +2611,41 @@ function refinedFor(name,ch,v){
 function _refinedArrived(){
   try{ if(state.view==='read') renderRead(); else if(state.view==='mine') renderMine(); }catch(err){}
 }
-function modernNoteHTML(name,ch,v,r){
+/* ---------- Editing your own published notes ----------
+   Legacy stays exactly as first written — always. What you edit here is the refined edition:
+   the version your readers see. Your edit is kept in your own account and follows your devices. */
+const LS_REFEDIT='nok_refedit';
+function _refEdits(){ try{ const o=JSON.parse(localStorage.getItem(LS_REFEDIT)||'{}');
+  return (o&&typeof o==='object'&&!Array.isArray(o))?o:{}; }catch(e){ return {}; } }
+function _refEditKey(name,ch,v,i){ return name+'|'+ch+'|'+v+'|'+i; }
+function _refEditGet(name,ch,v,i){ const e=_refEdits()[_refEditKey(name,ch,v,i)]; return (e&&e.m)?e:null; }
+function editRefined(name,ch,v,i,btn){
+  const arr=refinedFor(name,ch,v)||[]; const e=arr[i]; if(!e){ toast('Nothing to edit here'); return; }
+  const mine=_refEditGet(name,ch,v,i);
+  const cur=mine?mine.m:_refBuild(e,name,ch,v);
+  if(cur==null){ toast('Nothing to edit here'); return; }
+  closeSelMenu&&closeSelMenu(); closeVerseMenu&&closeVerseMenu(); closeCopyMenus&&closeCopyMenus();
+  editing={book:name,ch:ch,v:String(v),id:null,ref:_refEditKey(name,ch,v,i),base:_refBuild(e,name,ch,v)};
+  document.getElementById('edTitle').textContent='Edit your note';
+  showVerseInEditor(name,ch,+v||0);
+  document.getElementById('edText').value=cur;
+  const del=document.getElementById('edDelete');
+  del.style.display=mine?'':'none'; del.textContent=mine?'Undo my edit':'Delete';
+  _lastAuto=null; updateSpellStrip(document.getElementById('edText'));
+  _edLoadColour();
+  document.getElementById('overlay').classList.add('show');
+  setTimeout(()=>document.getElementById('edText').focus(),50); }
+function _saveRefEdit(text){
+  const {book,ch,v,ref,base}=editing;
+  const all=_refEdits();
+  if(!text || text===base) delete all[ref];
+  else all[ref]={m:text,t:Date.now(),b:base||''};
+  try{ localStorage.setItem(LS_REFEDIT,JSON.stringify(all)); }catch(e){}
+  try{ if(fbUser()) fbPush(); }catch(e){}
+  _refGen++; closeEditor(true);
+  if(state.view==='mine') renderMine(); else { renderRead(); setTimeout(()=>jumpVerse(parseInt(v,10)||1),60); }
+  toast(text&&text!==base?'Saved — your readers see this version':'Back to the edition as published'); }
+function modernNoteHTML(name,ch,v,r,i){
   const ref=`${name} ${ch}:${v}`;
   /* Hand-edited entries keep their drafts in `d`; patched ones look the original up by id. */
   let drafts=r.d;
@@ -2621,13 +2655,15 @@ function modernNoteHTML(name,ch,v,r){
       return n?[(n.date||'').slice(0,10)||'original', n.text]:null; }).filter(Boolean);
     if(!drafts.length) drafts=[['original','(the original could not be found)']];
   }
+  const _mine=(typeof i==='number')?_refEditGet(name,ch,v,i):null;
   const stack=drafts.map(dr=>`<div class="draft2"><span class="dl">${escHTML(dr[0])}</span>${escHTML(dr[1])}</div>`).join('');
   const origSide=drafts.map(dr=>escHTML(dr[0]+'\n'+dr[1])).join('\n\n──────\n');
   return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
     <div class="meta"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}</div>
-    <div class="body">${escNote(r.m)}</div>
+    <div class="body">${escNote(_mine&&_mine.m?_mine.m:r.m)}</div>
+    ${_mine?`<div class="chg2" style="color:var(--accent)">✎ You edited this on ${escHTML(new Date(_mine.t).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</div>`:''}
     ${r.e?`<div class="chg2" style="color:var(--accent)">📈 ${escHTML(String(r.e).replace(/<[^>]+>/g,''))}</div>`:''}
-    ${noteActionsHTML(String(v))}
+    ${noteActionsHTML(String(v),(typeof i==='number')?{b:name,c:ch,v:v,i:i}:null)}
     <details class="trk owner-only" data-m="stack">
       <summary>🔍 Track changes — your original & what I changed</summary>
       <div class="sub"><button class="on" onclick="setTrkM(this,'stack')">Stacked</button><button onclick="setTrkM(this,'side')">⇄ Side by side</button></div>
@@ -2931,6 +2967,7 @@ function _edLoadColour(){ try{ const {book,ch,v}=editing;
   _edColour0=_edColour; _edSyncColour(); }
 function saveEditor(){
   const text=sacredCase(document.getElementById('edText').value.trim());
+  if(editing&&editing.ref){ _saveRefEdit(text); return; }
   if(!text){ toast('Nothing to save'); return; }
   const {book,ch,v,id}=editing;
   DATA[book]=DATA[book]||{}; DATA[book][String(ch)]=DATA[book][String(ch)]||{};
@@ -2948,6 +2985,7 @@ function saveEditor(){
   toast('Saved');
 }
 function deleteCurrent(){
+  if(editing&&editing.ref){ _saveRefEdit(''); return; }
   const {book,ch,v,id}=editing; if(!id)return;
   if(!confirm('Delete this note?'))return;
   const arr=DATA[book][String(ch)][String(v)];
@@ -3212,7 +3250,7 @@ function corrMail(kind){
   const ref=window._corrRef||'', snip=window._corrSnip||'';
   location.href='mailto:henryquarteyministries@gmail.com?subject='+encodeURIComponent(kind+' — '+ref+' (Never Get Bored)')
     +'&body='+encodeURIComponent('Note: "'+snip+'…"\n\nMy '+kind.toLowerCase()+':\n\n\n— sent from bible.getwordwisdom.com'); }
-function noteActionsHTML(v){ const hasV=v!=='0'; return `<div class="notetools">
+function noteActionsHTML(v,ed){ const hasV=v!=='0'; return `<div class="notetools">
   <div class="copymenu">
     <button class="copytrig" onclick="toggleCopyMenu(event,this)" title="Copy or share">📋 Copy ▾</button>
     <div class="copypop">
@@ -3223,6 +3261,7 @@ function noteActionsHTML(v){ const hasV=v!=='0'; return `<div class="notetools">
       <button onclick="pickShare(this)">🔗 Share</button>
     </div>
   </div>
+  ${(ed&&isOwner())?`<button class="corrlink" onclick="event.stopPropagation();editRefined('${esc(ed.b)}',${ed.c},${ed.v},${ed.i},this)" title="Edit this note as your readers see it. Legacy keeps the original.">✎ Edit</button>`:''}
   <button class="corrlink" onclick="corrMenu(event,this)" title="Spotted a typo or want to suggest something? It reaches Nii Okai directly">✎ Suggest a correction</button></div>`; }
 function toggleCopyMenu(e,btn){ e.stopPropagation(); const pop=btn.nextElementSibling;
   const open=pop.classList.contains('show'); closeCopyMenus(); if(!open) pop.classList.add('show'); }
@@ -4109,6 +4148,7 @@ const FB_KEYS={prefs:LS_PREFS,hl:'nok_hl',dict:'nok_userdict',
   hlT:'nok_hl_t',              // when each highlight was made   (union)
   planDone:'nok_plan_done'};   // when each plan day was finished (union)
 const FB_POS_T='nok_fb_post';
+FB_KEYS.refedit='nok_refedit'; /* your own edits to the refined edition */
 FB_KEYS.name='nok_name';       /* what the app calls you */
 FB_KEYS.nameX='nok_name_x';    /* or that you asked it not to */
 FB_KEYS.place='nok_place';     /* your latest place — newest reading wins, and you are asked */
@@ -4178,6 +4218,13 @@ async function fbPull(quiet){
       const all=new Set(mine.concat(theirs));
       if(all.size>mine.length){ a.days=Array.from(all).sort(); localStorage.setItem(FB_KEYS.streak,JSON.stringify(a)); gained+=all.size-mine.length; }
     }catch(e){} }
+    /* Your edits to your own notes: the newer edit of each note wins. */
+    try{
+      let a=JSON.parse(localStorage.getItem(FB_KEYS.refedit)||'{}')||{};
+      const b=JSON.parse(cloud.refedit||'{}')||{}; let ch=0;
+      Object.keys(b).forEach(function(k){ if(!a[k]||+(b[k].t||0)>+(a[k].t||0)){ a[k]=b[k]; ch++; } });
+      if(ch){ localStorage.setItem(FB_KEYS.refedit,JSON.stringify(a)); _refGen++; }
+    }catch(e){}
     /* Your name: whatever another device already knows, if this one does not know it yet. */
     try{
       const mineN=(localStorage.getItem(FB_KEYS.name)||'').trim();
