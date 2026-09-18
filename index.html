@@ -965,6 +965,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <script src="data/books.js"></script>
 <script src="data/versions.js"></script>
 <script src="data/apikeys.js" onerror="window.API_KEYS=window.API_KEYS||{}"></script>
+<script src="data/withdrawn.js" defer></script>
 <script src="data/commentary.js" defer onload="_seedArrived()"></script>
 <script src="data/refined.js" defer onload="_refinedArrived()"></script>
 <script src="data/chronological.js"></script>
@@ -976,7 +977,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.92.0', date:'18 Sep 2026'};
+const BUILD={v:'0.93.0', date:'18 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -4242,11 +4243,32 @@ function _nsIndex(obj){ const ix={};
 function _nsStamp(nt){ return String(nt.edited||nt.date||''); }
 /* Bring in anything published since this device last saved. Published corrections win over an
    unedited local copy; a note you edited yourself keeps your edit; deleted notes stay deleted. */
+/* A note withdrawn from the journal must also leave the devices that already had it. Without this
+   the phone keeps its copy and pushes it back up on every publish. Runs once per id, then the
+   tombstone keeps it gone. */
+function _dropWithdrawn(){
+  const ids=window.WITHDRAWN_IDS||[]; if(!ids.length) return false;
+  const want={}; ids.forEach(function(i){ want[i]=1; });
+  const tomb=_nsTomb(); let changed=false;
+  Object.keys(DATA||{}).forEach(function(b){
+    Object.keys(DATA[b]||{}).forEach(function(ch){
+      Object.keys(DATA[b][ch]||{}).forEach(function(v){
+        const keep=(DATA[b][ch][v]||[]).filter(function(nt){ return !(nt&&nt.id&&want[nt.id]); });
+        if(keep.length!==(DATA[b][ch][v]||[]).length){ DATA[b][ch][v]=keep; changed=true;
+          if(!keep.length) delete DATA[b][ch][v]; }
+      });
+    });
+  });
+  ids.forEach(function(i){ if(!tomb[i]){ tomb[i]={t:new Date().toISOString(),b:'',w:1}; changed=true; } });
+  if(changed){ try{ localStorage.setItem(NS_TOMB,JSON.stringify(tomb));
+    localStorage.setItem(LS_KEY,JSON.stringify(DATA)); }catch(e){} }
+  return changed; }
 function _seedMerge(){
   const seed=window.COMMENTARY_SEED||{}; if(!Object.keys(seed).length) return false;
   const tomb=_nsTomb(), ix=_nsIndex(DATA); let changed=false;
   Object.keys(seed).forEach(b=>Object.keys(seed[b]).forEach(ch=>Object.keys(seed[b][ch]).forEach(v=>(seed[b][ch][v]||[]).forEach(sn=>{
     if(!sn||!sn.id||tomb[sn.id]) return;
+    if((window.WITHDRAWN_IDS||[]).indexOf(sn.id)>=0) return;
     const loc=ix[sn.id];
     if(!loc){ DATA[b]=DATA[b]||{}; DATA[b][ch]=DATA[b][ch]||{}; DATA[b][ch][v]=DATA[b][ch][v]||[]; DATA[b][ch][v].push(deepCopy(sn)); changed=true; }
     else if(!loc.nt.edited){ if(loc.nt.text!==sn.text){ loc.nt.text=sn.text; changed=true; } if(sn.date&&loc.nt.date!==sn.date){ loc.nt.date=sn.date; changed=true; } }
@@ -4263,6 +4285,7 @@ function _seedArrived(){
     let ch=false;
     if(!localStorage.getItem(LS_KEY)&&!Object.keys(DATA).length){ DATA=deepCopy(window.COMMENTARY_SEED||{}); ch=true; }
     else ch=_seedMerge();
+    try{ if(_dropWithdrawn()) ch=true; }catch(e){}
     if(first||ch){ if(typeof render==='function'&&state&&state.view) render(); }
     if(!first&&ch) toast('Journal updated');
     if(fbUser()&&typeof nsSync==='function') nsSync();
