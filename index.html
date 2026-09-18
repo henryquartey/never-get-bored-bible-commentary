@@ -820,6 +820,14 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 .placebar .go{background:var(--accent);color:var(--on-accent)}
 .placebar .no{background:transparent;color:var(--soft);font-weight:600}
 @media(max-width:560px){.placebar{bottom:96px;font-size:13px;padding:7px 8px 7px 13px}}
+.hgreet{font-family:var(--serif);font-size:22px;font-weight:600;line-height:1.35;margin:2px 4px 14px;color:var(--ink)}
+.hgreet .hgname{border-bottom:1px dashed var(--line);cursor:pointer}
+.hgreet .hgadd{display:inline-block;font-family:var(--sans);font-size:13px;font-weight:600;
+  color:var(--soft);cursor:pointer;margin-left:8px;white-space:nowrap;vertical-align:2px}
+.hgreet .hgadd:hover{color:var(--ink)}
+.nmin{width:100%;box-sizing:border-box;font-family:var(--sans);font-size:16px;padding:11px 13px;margin:2px 0 10px;
+  border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+@media(max-width:560px){.hgreet{font-size:20px;margin-bottom:12px}}
 </style>
 </head>
 <body>
@@ -968,7 +976,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.91.0', date:'17 Sep 2026'};
+const BUILD={v:'0.92.0', date:'18 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1063,6 +1071,55 @@ function skipWelcome(force){
     document.body.appendChild(ov); return;
   }
   localStorage.setItem('nok_seen_welcome','1'); state.gate=false; setView('home'); }
+/* ---------- What the app calls you ----------
+   A reader asked to be greeted by name. It is kept in your own account and shown to nobody else.
+   Signed in with Google? Your first name is used until you say otherwise. */
+const LS_NAME='nok_name', LS_NAME_X='nok_name_x';
+function readerName(){
+  try{ const n=(localStorage.getItem(LS_NAME)||'').trim(); if(n) return n; }catch(e){}
+  try{ if(localStorage.getItem(LS_NAME_X)) return ''; }catch(e){}
+  const u=(typeof fbUser==='function')?fbUser():null;
+  if(u){
+    const d=(u.displayName||'').trim(); if(d) return d.split(/\s+/)[0];
+    const e=(u.email||'').split('@')[0]; if(e) return e.charAt(0).toUpperCase()+e.slice(1);
+  }
+  return ''; }
+function _greetWord(){ const h=new Date().getHours();
+  return h<12?'Good morning':(h<17?'Good afternoon':'Good evening'); }
+function greetingHTML(){
+  const nm=readerName();
+  let dis=''; try{ dis=localStorage.getItem(LS_NAME_X)||''; }catch(e){}
+  if(nm) return '<div class="hgreet">'+_greetWord()+', <span class="hgname" onclick="nameMenu()" title="Change what the app calls you">'+escHTML(nm)+'</span></div>';
+  if(dis) return '<div class="hgreet">'+_greetWord()+'</div>';
+  return '<div class="hgreet">'+_greetWord()+'<span class="hgadd" onclick="nameMenu()">Tell me your name \u2192</span></div>'; }
+function nameMenu(){
+  closeNameMenu();
+  let cur=''; try{ cur=(localStorage.getItem(LS_NAME)||'').trim(); }catch(e){}
+  if(!cur) cur=readerName();
+  const ov=document.createElement('div'); ov.className='bkov'; ov.id='nmOv';
+  ov.innerHTML='<div class="bkcard"><h3>What should I call you?</h3>'
+    +'<p>The app will greet you by this name when you open it. It is kept in your own account \u2014 no other reader can see it.</p>'
+    +'<input id="nmIn" class="nmin" type="text" maxlength="40" autocomplete="given-name" placeholder="Your name">'
+    +'<button class="btn primary" onclick="saveReaderName()">Save</button>'
+    +'<button class="btn" onclick="clearReaderName()">Do not greet me by name</button>'
+    +'<button class="btn" onclick="closeNameMenu()">Cancel</button></div>';
+  ov.addEventListener('click',e=>{ if(e.target===ov) closeNameMenu(); });
+  document.body.appendChild(ov);
+  const i=document.getElementById('nmIn');
+  if(i){ i.value=cur; i.focus(); i.select(); i.addEventListener('keydown',e=>{ if(e.key==='Enter') saveReaderName(); }); } }
+function closeNameMenu(){ const o=document.getElementById('nmOv'); if(o) o.remove(); }
+function _nameRepaint(){ if(state.view==='home') renderHome(); else if(state.view==='menu') renderMenu(); else if(state.view==='you') renderYou(); }
+function saveReaderName(){
+  const i=document.getElementById('nmIn'); const v=(i?i.value:'').trim().replace(/\s+/g,' ');
+  if(!v){ clearReaderName(); return; }
+  try{ localStorage.setItem(LS_NAME,v); localStorage.removeItem(LS_NAME_X); }catch(e){}
+  closeNameMenu(); _nameRepaint(); toast(_greetWord()+', '+v);
+  try{ if(fbUser()) fbPush(); }catch(e){} }
+function clearReaderName(){
+  try{ localStorage.removeItem(LS_NAME); localStorage.setItem(LS_NAME_X,'1'); }catch(e){}
+  closeNameMenu(); _nameRepaint(); toast('No name \u2014 just \u201c'+_greetWord()+'\u201d from now on');
+  try{ if(fbUser()) fbPush(); }catch(e){} }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&document.getElementById('nmOv')) closeNameMenu(); },true);
 function deepCopy(o){return JSON.parse(JSON.stringify(o||{}))}
 function savePrefs(){localStorage.setItem(LS_PREFS,JSON.stringify({
   version:state.version,book:state.book,chapter:state.chapter,
@@ -2055,6 +2112,7 @@ function renderHome(){
       <p class="soft">Chronological Bible in a Year — read the Word in the order it happened</p>
       <div class="hrow">${btn}<button class="btn" onclick="setView('plan')">See the plan</button></div></div>`; })() : '';
   const html=`<div class="page homefeed">
+    ${greetingHTML()}
     <div class="hcard hero">
       <div class="hk">NEVER GET BORED</div>
       <h2>Nii Okai’s Journal Through Scripture</h2>
@@ -2161,6 +2219,8 @@ function renderMenu(){
     ${head('Your journal')}
     ${item('💾','Back up or restore','Save your journal to a file, or bring one back in','backupMenu()')}
     ${head('The app')}
+    ${item('✎','Your name',(()=>{ const nm=readerName();
+      return nm?('The app greets you as “'+escHTML(nm)+'” — tap to change it'):'Tell the app what to call you when you open it'; })(),'nameMenu()')}
     ${item(_themeGlyph(),'Appearance',_themeDesc(),'appearanceMenu()')}
     ${item('📲','Install the App','Put it on your home screen — opens full-screen, works offline','installApp()')}
     ${item('🔄','Check for Updates',`You are on version ${BUILD.v} — tap to look for a newer one`,'checkForUpdates()')}
@@ -4030,6 +4090,8 @@ const FB_KEYS={prefs:LS_PREFS,hl:'nok_hl',dict:'nok_userdict',
   hlT:'nok_hl_t',              // when each highlight was made   (union)
   planDone:'nok_plan_done'};   // when each plan day was finished (union)
 const FB_POS_T='nok_fb_post';
+FB_KEYS.name='nok_name';       /* what the app calls you */
+FB_KEYS.nameX='nok_name_x';    /* or that you asked it not to */
 FB_KEYS.place='nok_place';     /* your latest place — newest reading wins, and you are asked */
 FB_KEYS.chpos='nok_chpos';     /* how far you got in each chapter — the further reading wins */
 function _fbMergeMax(mineStr,theirsStr){
@@ -4097,6 +4159,12 @@ async function fbPull(quiet){
       const all=new Set(mine.concat(theirs));
       if(all.size>mine.length){ a.days=Array.from(all).sort(); localStorage.setItem(FB_KEYS.streak,JSON.stringify(a)); gained+=all.size-mine.length; }
     }catch(e){} }
+    /* Your name: whatever another device already knows, if this one does not know it yet. */
+    try{
+      const mineN=(localStorage.getItem(FB_KEYS.name)||'').trim();
+      if(!mineN && cloud.name && String(cloud.name).trim()) localStorage.setItem(FB_KEYS.name,String(cloud.name).trim());
+      if(!localStorage.getItem(FB_KEYS.nameX) && cloud.nameX) localStorage.setItem(FB_KEYS.nameX,String(cloud.nameX));
+    }catch(e){}
     /* How far you got in each chapter: the further reading wins. */
     try{ const mx=_fbMergeMax(localStorage.getItem(FB_KEYS.chpos)||'',cloud.chpos||'');
       if(mx.added) localStorage.setItem(FB_KEYS.chpos,mx.str); }catch(e){}
