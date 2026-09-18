@@ -1,17 +1,18 @@
-/* Online translations — NIV, NKJV, NASB, AMP, MSG (API.Bible) · ESV (Crossway) · NLT (Tyndale)
+/* Online translations.
  *
  * IMPORTANT: this file is published with the website, so EVERY VISITOR CAN READ IT.
- * Never put a real key in it. The keys live on a small Cloudflare Worker instead — see
+ * No real key ever goes in it. The keys live on a small Cloudflare Worker — see
  * tools/bible-api-proxy/READ ME - how to set up the key proxy.txt
  *
- * 1. API_PROXY  — the address of your Worker. Leave it empty and no online translation appears.
- * 2. API_ENABLED — which of the three the Worker actually holds a key for. A translation only
- *    shows in the version picker when its source is true here.
- *      apibible -> NIV, NKJV, NASB, AMP, MSG      esv -> ESV      nlt -> NLT
+ * API_PROXY   — the Worker's address.
+ * API_ENABLED — the starting guess at which keys it holds. The app asks the Worker itself
+ *               on every open (/enabled), so adding a key on Cloudflare is enough; this file
+ *               does not have to change.
+ *      apibible -> NIV, NLT, AMP and the public-domain Bibles      esv -> ESV      nlt -> unused
  */
-window.API_PROXY  = '';
-window.API_ENABLED = { apibible:false, esv:false, nlt:false };
+window.API_PROXY  = 'https://bible-api.quarteyjnr.workers.dev';
+window.API_ENABLED = { apibible:true, esv:true, nlt:false };
 
-/* Testing on the Mac only. If API_PROXY is empty the app will use these instead and talk to the
-   Bible publishers directly. Fine on your own machine; NEVER fill these in before a publish. */
+/* Testing on the Mac only. If API_PROXY is empty the app talks to the publishers directly with
+   these. Fine on your own machine; NEVER fill these in before a publish. */
 window.API_KEYS = { apibible:'', esv:'', nlt:'' };
