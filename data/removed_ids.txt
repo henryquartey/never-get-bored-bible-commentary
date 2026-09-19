@@ -7,3 +7,7 @@ jprp8suywm   # duplicate of the 1 Samuel 10:22 note
 1dbp7a3wm7   # duplicate of the 1 Samuel 17:12 note
 2vhn54mh8p   # duplicate of the 1 Samuel 28:10 note
 5bxba9xncl   # duplicate of the Psalms 44:19 note
+
+# Split across Exodus 19 Sep 2026. This note was filed on Genesis 20 but quoted Exodus 20:24,
+# Exodus 21:19 and Exodus 32:7. Its opening already existed word-for-word at Exodus 20:0.
+93464eefba   # the stray Genesis 20:0 copy
