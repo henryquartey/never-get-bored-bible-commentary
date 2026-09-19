@@ -828,6 +828,30 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 .nmin{width:100%;box-sizing:border-box;font-family:var(--sans);font-size:16px;padding:11px 13px;margin:2px 0 10px;
   border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
 @media(max-width:560px){.hgreet{font-size:20px;margin-bottom:12px}}
+.artcard{position:relative;overflow:hidden;border:none!important;color:#fff;
+  background:linear-gradient(152deg,var(--a1) 0%,var(--a2) 54%,var(--a3) 100%);
+  box-shadow:0 2px 6px rgba(0,0,0,.10),0 18px 44px rgba(0,0,0,.22)}
+.artcard::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(118% 88% at 80% 6%,rgba(255,255,255,.24),transparent 58%),
+             radial-gradient(96% 76% at 4% 104%,rgba(0,0,0,.42),transparent 64%)}
+.artcard::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(rgba(255,255,255,.10) .6px,transparent .6px);
+  background-size:4px 4px}
+.artcard>*{position:relative;z-index:1}
+.artcard .hk{color:rgba(255,255,255,.82)}
+.artcard .href{color:rgba(255,255,255,.9)}
+.artcard .hverse{font-size:21px;line-height:1.52;margin:12px 0 14px;text-shadow:0 1px 20px rgba(0,0,0,.28)}
+.artcard .btn{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.5);color:#fff}
+.artcard .btn:hover{background:rgba(255,255,255,.3)}
+.artcard .hnote{background:rgba(255,255,255,.13);border-left-color:rgba(255,255,255,.62);
+  color:rgba(255,255,255,.96);border-radius:0 10px 10px 0}
+.artcard .hnote .hk{color:rgba(255,255,255,.78)}
+.artcard .seasontag{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.45);color:#fff}
+.artcard .artname{margin:12px 0 0;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  color:rgba(255,255,255,.55)}
+@media(min-width:620px){.artcard .hverse{font-size:23px}}
+.hcard.notd{border-left:4px solid var(--accent)}
+.streakrow b{font-size:26px}
 </style>
 </head>
 <body>
@@ -977,7 +1001,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.96.1', date:'19 Sep 2026'};
+const BUILD={v:'0.97.1', date:'19 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1027,7 +1051,7 @@ function init(){
   { const off=document.documentElement.classList.contains('hide-notes');
     const nb=document.getElementById('notesBtn'); nb.classList.toggle('active',!off); }
   // first-visit welcome gate
-  if(!localStorage.getItem('nok_seen_welcome')){ state.gate=true; state.view='about'; }
+  if(!_welcomeSeen()){ state.gate=true; state.view='about'; }
   // legacy UI preference
   if(localStorage.getItem('nok_legacy')){ document.body.classList.add('legacy');
     const ub=document.getElementById('uiSwitch'); if(ub) ub.textContent='✨ New UI';
@@ -1056,7 +1080,27 @@ function setupResizer(){
   window.addEventListener('mouseup',()=>{ if(!drag)return; drag=false; rz.classList.remove('dragging'); document.body.style.userSelect='';
     try{ localStorage.setItem('nok_sidew',parseInt(sb.style.width)); }catch(e){} });
 }
-function enterFromWelcome(){ localStorage.setItem('nok_seen_welcome','1'); localStorage.setItem('nok_dates_unlocked','1');
+/* ---------- Seen the welcome ----------
+   Safari throws away a site's stored data after about a week of not visiting, which was putting
+   the welcome back in front of readers who had already read it. So it is remembered in three
+   ways: the flag, a long-lived cookie, and any trace at all of a previous visit. */
+function _welcomeSeen(){
+  try{ if(localStorage.getItem('nok_seen_welcome')) return true; }catch(e){}
+  try{ if(/(?:^|;\s*)nok_w=1/.test(document.cookie||'')) return true; }catch(e){}
+  try{
+    /* only things the READER causes — the app itself writes the plan anchor on first load,
+       so that one can never count as evidence of a previous visit. */
+    const trace=['nok_streak','nok_place','nok_chpos','nok_hl','nok_chrono_ch','nok_plan_done',LS_PREFS];
+    for(let i=0;i<trace.length;i++){ const x=localStorage.getItem(trace[i]);
+      if(x&&x!=='{}'&&x!=='[]'&&x!=='null') return true; }
+  }catch(e){}
+  return false; }
+function _markWelcomeSeen(){
+  try{ localStorage.setItem('nok_seen_welcome','1'); }catch(e){}
+  try{ document.cookie='nok_w=1; max-age=63072000; path=/; samesite=lax'; }catch(e){} }
+/* Anyone can ask for it again — it just never asks for itself twice. */
+function showWelcomeAgain(){ state.gate=false; setView('about'); }
+function enterFromWelcome(){ _markWelcomeSeen(); localStorage.setItem('nok_dates_unlocked','1');
   document.getElementById('dateBtn').style.display=''; state.gate=false; setView('home'); }
 function skipWelcome(force){
   if(!force && !localStorage.getItem('nok_skip_nudge')){
@@ -1072,7 +1116,7 @@ function skipWelcome(force){
     </div>`;
     document.body.appendChild(ov); return;
   }
-  localStorage.setItem('nok_seen_welcome','1'); state.gate=false; setView('home'); }
+  _markWelcomeSeen(); state.gate=false; setView('home'); }
 /* ---------- What the app calls you ----------
    A reader asked to be greeted by name. It is kept in your own account and shown to nobody else.
    Signed in with Google? Your first name is used until you say otherwise. */
@@ -1122,6 +1166,21 @@ function clearReaderName(){
   closeNameMenu(); _nameRepaint(); toast('No name \u2014 just \u201c'+_greetWord()+'\u201d from now on');
   try{ if(fbUser()) fbPush(); }catch(e){} }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&document.getElementById('nmOv')) closeNameMenu(); },true);
+/* A different set of colours behind the Verse of the Day each day — painted with light, not
+   photographs, so it costs nothing to load and works with no signal at all. */
+const ART_DAYS=[
+  ['Dusk over the hills','#2b3a67','#4a5d8a','#6d5f7a'],
+  ['Olive and wheat',    '#3c4a2a','#5d6b33','#8a7a3c'],
+  ['Deep water',         '#10333f','#1d5560','#357b7c'],
+  ['Wine and stone',     '#4a2230','#6d3346','#8f5060'],
+  ['Desert evening',     '#5a2f22','#8a4a2c','#b06a3a'],
+  ['Before the storm',   '#26303a','#3d4a58','#5b6a78'],
+  ['Cedar',              '#22352b','#35543f','#4f7551'],
+  ['The night watch',    '#2e2445','#46356a','#63518c']];
+function _artOfDay(){
+  const n=new Date(), start=new Date(n.getFullYear(),0,0);
+  const day=Math.floor((n-start)/86400000);
+  return ART_DAYS[day%ART_DAYS.length]; }
 function deepCopy(o){return JSON.parse(JSON.stringify(o||{}))}
 function savePrefs(){localStorage.setItem(LS_PREFS,JSON.stringify({
   version:state.version,book:state.book,chapter:state.chapter,
@@ -2142,6 +2201,14 @@ function renderHome(){
       </div>
       <audio id="welcomeAudio" preload="none"><source src="audio/welcome.mp3" type="audio/mpeg"><source src="audio/welcome.m4a" type="audio/mp4"></audio>
     </div>
+    ${vd?(()=>{ const S=_votdSeason(vd), A=_artOfDay(); return `<div class="hcard artcard" style="--a1:${A[1]};--a2:${A[2]};--a3:${A[3]}">
+      <div class="hk">${ICONS.book} Verse of the Day${S?` <span class="seasontag">${S.icon} ${escHTML(S.name)}</span>`:''}</div>
+      <div class="href">${vd[0]} ${vd[1]}:${vd[2]} · ${state.version}</div>
+      ${vtext?`<div class="hverse">“${escHTML(vtext)}”</div>`:`<div class="hverse" style="color:var(--soft)">Loading Scripture…</div>`}
+      ${note?`<div class="hnote"><div class="hk" style="margin-bottom:4px">${ICONS.chat} Nii Okai’s note</div>${cnHTML(note.text,4)}</div>`:''}
+      <button class="btn" onclick="jumpTo('${esc(vd[0])}',${vd[1]},${vd[2]},${note?'{note:1}':'null'})">Open in Bible →</button>
+      <p class="artname">${escHTML(A[0])}</p>
+    </div>`; })():''}
     ${(()=>{ const n=_notdPick(); if(!n) return ''; const vt=_srVerse(state.version,n.b,n.ch,n.v)||_srVerse('KJV',n.b,n.ch,n.v);
       return `<div class="hcard notd"><div class="hk">${ICONS.pen} Nii Okai’s note of the day</div>
       <div class="href">${escHTML(n.b)} ${n.ch}:${n.v}${n.date?` <span style="color:var(--soft);font-weight:600">· written ${new Date(n.date).toLocaleDateString(undefined,{month:'short',year:'numeric'})}</span>`:''}</div>
@@ -2170,13 +2237,6 @@ function renderHome(){
       </div>
       <p class="soft" style="margin:8px 0 0">Open the app each day to keep the fire burning.</p>
     </div>`})()}
-    ${vd?(()=>{ const S=_votdSeason(vd); return `<div class="hcard">
-      <div class="hk">${ICONS.book} Verse of the Day${S?` <span class="seasontag">${S.icon} ${escHTML(S.name)}</span>`:''}</div>
-      <div class="href">${vd[0]} ${vd[1]}:${vd[2]} · ${state.version}</div>
-      ${vtext?`<div class="hverse">“${escHTML(vtext)}”</div>`:`<div class="hverse" style="color:var(--soft)">Loading Scripture…</div>`}
-      ${note?`<div class="hnote"><div class="hk" style="margin-bottom:4px">${ICONS.chat} Nii Okai’s note</div>${cnHTML(note.text,4)}</div>`:''}
-      <button class="btn primary" onclick="jumpTo('${esc(vd[0])}',${vd[1]},${vd[2]},${note?'{note:1}':'null'})">Open in Bible →</button>
-    </div>`; })():''}
     ${planCard}
     ${BLOG_URL?`<div class="hcard">
       <div class="hk">${ICONS.pen} From the Blog</div>
@@ -2238,6 +2298,7 @@ function renderMenu(){
     ${head('Your journal')}
     ${item('💾','Back up or restore','Save your journal to a file, or bring one back in','backupMenu()')}
     ${head('The app')}
+    ${item('👋','The welcome','Nii Okai’s invitation — read or listen to it again any time','showWelcomeAgain()')}
     ${item('✎','Your name',(()=>{ const nm=readerName();
       return nm?('The app greets you as “'+escHTML(nm)+'” — tap to change it'):'Tell the app what to call you when you open it'; })(),'nameMenu()')}
     ${item(_themeGlyph(),'Appearance',_themeDesc(),'appearanceMenu()')}
