@@ -852,6 +852,17 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 @media(min-width:620px){.artcard .hverse{font-size:23px}}
 .hcard.notd{border-left:4px solid var(--accent)}
 .streakrow b{font-size:26px}
+.hcard.hero{position:relative;overflow:hidden}
+.hcard.hero::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(112% 82% at 86% -4%,rgba(255,255,255,.16),transparent 60%),
+             radial-gradient(92% 72% at -4% 108%,rgba(0,0,0,.30),transparent 62%)}
+.hcard.hero>*{position:relative;z-index:1}
+.hcard.tinted{position:relative;overflow:hidden;border-left:4px solid var(--a2)}
+.hcard.tinted::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.11;
+  background:linear-gradient(118deg,var(--a1) 0%,var(--a3) 62%,transparent 100%)}
+.hcard.tinted>*{position:relative;z-index:1}
+.you-head .acav{background:linear-gradient(145deg,var(--a1),var(--a3));color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
 </style>
 </head>
 <body>
@@ -1001,7 +1012,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.97.1', date:'19 Sep 2026'};
+const BUILD={v:'0.98.0', date:'19 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1069,6 +1080,7 @@ function init(){
   window._resumePending=true;          /* opening the app returns you to the verse you left */
   buildVersionSelect();
   buildBookList();
+  try{ _applyArtVars(); }catch(e){}
   render();
   try{ _olProbe(); }catch(e){}
 }
@@ -1177,6 +1189,10 @@ const ART_DAYS=[
   ['Before the storm',   '#26303a','#3d4a58','#5b6a78'],
   ['Cedar',              '#22352b','#35543f','#4f7551'],
   ['The night watch',    '#2e2445','#46356a','#63518c']];
+/* Put the day's colours on the page itself, so cards other than the Verse of the Day can
+   borrow a thread of them without shouting. */
+function _applyArtVars(){ try{ const a=_artOfDay(), r=document.documentElement.style;
+  r.setProperty('--a1',a[1]); r.setProperty('--a2',a[2]); r.setProperty('--a3',a[3]); }catch(e){} }
 function _artOfDay(){
   const n=new Date(), start=new Date(n.getFullYear(),0,0);
   const day=Math.floor((n-start)/86400000);
@@ -2185,7 +2201,7 @@ function renderHome(){
   const planCard = pi>=0 ? (()=>{ const rd=C[pi];
     const refs=rd.r&&rd.r.length?fmtRefs(rd.r):'Catch-up & reflection';
     const btn=rd.r&&rd.r.length?`<button class="btn primary" onclick="planRead(${pi},0)">📖 Read today’s passage</button>`:'';
-    return `<div class="hcard"><div class="hk">${ICONS.cal} Today in the Plan</div>
+    return `<div class="hcard tinted"><div class="hk">${ICONS.cal} Today in the Plan</div>
       <h3>Day ${pi+1} · ${escHTML(refs)}</h3>
       <p class="soft">Chronological Bible in a Year — read the Word in the order it happened</p>
       <div class="hrow">${btn}<button class="btn" onclick="setView('plan')">See the plan</button></div></div>`; })() : '';
@@ -2228,7 +2244,7 @@ function renderHome(){
       <p class="soft" style="margin:0 0 10px">Your reading place, plan day and highlights follow you between your phone and your computer. They are kept in your own account — no one else using the app can see them.</p>
       <div class="hrow"><button class="btn primary" onclick="fbSignIn()">Sign in with Google</button>
         <button class="btn" onclick="dismissSignin()">Not now</button></div></div>`:''}
-    ${(()=>{const st=_streakStats();return `<div class="hcard">
+    ${(()=>{const st=_streakStats();return `<div class="hcard tinted">
       <div class="hk">${ICONS.flame} Your Streak</div>
       <div class="streakrow">
         <div><b>${st.daily}</b><span>day streak</span></div>
@@ -2870,6 +2886,9 @@ function jumpTo(name,ch,v,opts){
 
 /* ---------- Views & nav ---------- */
 function setView(v){
+  /* Tapping Plans while you are already inside a plan passage means “show me the plan”, not
+     “keep me here”. From anywhere else it still takes you straight back to your reading. */
+  if(v==='plan' && state.view==='read' && state.plan){ state.plan=null; state.view='plan'; setViewTabs(); render(); toggleSidebar(false); return; }
   if(v==='plan' && planResume){ planRead(planResume.day,planResume.ci); return; } // resume where you left off in the plan
   if(v==='menu'){ if(state.view==='menu'){ v=state._back||'home'; } else { state._back=state.view; } } // tap Menu again to go back
   state.plan=null; state.view=v; setViewTabs(); render(); toggleSidebar(false); }
