@@ -1012,11 +1012,16 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.98.0', date:'19 Sep 2026'};
+const BUILD={v:'0.98.1', date:'19 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
-function isOwner(){ try{ return localStorage.getItem('nok_owner')==='1'; }catch(e){ return false; } }
+function isOwner(){
+  try{ if(localStorage.getItem('nok_owner')==='1') return true; }catch(e){}
+  /* Signed in with Nii Okai's own account? Then this is Nii Okai's device. */
+  try{ const u=(typeof fbUser==='function')?fbUser():null;
+    if(u&&typeof _nsIsOwner==='function'&&_nsIsOwner(u)) return true; }catch(e){}
+  return false; }
 let state={version:'KJV',book:0,chapter:1,view:'home',dirty:false,journal:'modern',plan:null,compare:null,refcomm:false,jsort:'bible'};
 let _refTried={};
 let DATA={};            // working commentary
@@ -4274,6 +4279,9 @@ function _fbPosKey(){ return (localStorage.getItem(LS_PREFS)||'')+'|'+(localStor
 function fbOnAuth(u){
   fbMenuRefresh();
   if(!u) return;
+  /* remember it, so the owner tools are there even before sign-in finishes next time */
+  try{ if(_nsIsOwner(u)) localStorage.setItem('nok_owner','1'); }catch(e){}
+  try{ document.body.classList.remove('is-reader'); if(state&&state.view) render(); }catch(e){}
   window._fbLastPos=_fbPosKey();
   try{ localStorage.setItem('nok_seen_signin','1'); }catch(e){}   // the invitation has done its job
   fbPull(); nsSync();
