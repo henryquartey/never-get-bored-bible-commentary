@@ -977,7 +977,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.96.0', date:'18 Sep 2026'};
+const BUILD={v:'0.96.1', date:'19 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1138,7 +1138,7 @@ function buildVersionSelect(){
   _olRegister();
   const ents=Object.entries(window.VERSIONS); const off=ents.filter(([c])=>!ONLINE_VERSIONS[c]), on=ents.filter(([c])=>ONLINE_VERSIONS[c]);
   sel.innerHTML=off.map(([c,n])=>`<option value="${c}" title="${n}" ${c===state.version?'selected':''}>${c}</option>`).join('')
-    +(on.length?`<optgroup label="Online">`+on.map(([c,n])=>`<option value="${c}" title="${n}" ${c===state.version?'selected':''}>${c} ☁</option>`).join('')+`</optgroup>`:'');
+    +(on.length?`<option disabled>── Online ──</option>`+on.map(([c,n])=>`<option value="${c}" title="${n}" ${c===state.version?'selected':''}>${c} ☁</option>`).join(''):'');
 }
 
 /* ---------- Online translations (publishers' own servers; keys live in data/apikeys.js) ----------
