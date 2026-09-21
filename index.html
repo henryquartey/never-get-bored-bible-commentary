@@ -85,6 +85,9 @@ body.is-reader #uiSwitch{display:none!important}
 .note .draft2{font-size:13px;color:var(--soft);white-space:pre-wrap;border-left:2px solid var(--line);padding-left:10px;margin:6px 0}
 .note .draft2 .dl{display:block;font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:2px}
 .note .chg2{font-size:12px;font-style:italic;color:var(--soft);margin-top:6px}
+.note .sittings{font-size:12px;color:var(--soft);margin-top:6px;opacity:.9}
+.note .sittings b{font-weight:600;color:var(--soft)}
+.note .sittings .openorig{background:none;border:0;padding:0;margin-left:6px;font:inherit;color:var(--accent);cursor:pointer;text-decoration:underline}
 .note .dl{display:block;font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:3px}
 .note .trk[data-m="stack"] .tk-side{display:none}
 .note .trk[data-m="side"] .tk-stack{display:none}
@@ -745,18 +748,28 @@ body:not(.legacy) .main{padding-bottom:54px}
 .bp-sheet{background:var(--panel);width:min(480px,100%);margin:auto auto 0;max-height:86vh;display:flex;flex-direction:column;
   border-radius:18px 18px 0 0;padding:14px 16px calc(10px + env(safe-area-inset-bottom));box-shadow:var(--shadow)}
 @media(min-width:861px){.bp-sheet{margin:auto;border-radius:18px;max-height:80vh}}
-.bp-head{display:flex;align-items:center;margin-bottom:8px;font-weight:700;font-family:var(--sans)}
+.bp-head{display:flex;flex:0 0 auto;align-items:center;margin-bottom:8px;font-weight:700;font-family:var(--sans)}
 .bp-head span{flex:1;text-align:center}
 .bp-x{background:var(--bg);border:1px solid var(--line);border-radius:50%;width:32px;height:32px;color:var(--ink);cursor:pointer}
-.bp-list{overflow:auto;flex:1;min-height:200px}
+.bp-list{overflow:auto;flex:1 1 auto;min-height:120px}
 .bp-book{padding:11px 6px;font-family:var(--serif);font-size:18px;cursor:pointer;border-bottom:1px solid var(--line)}
 .bp-book.cur{color:var(--accent);font-weight:700}
 .bp-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;padding:10px 2px 14px;border-bottom:1px solid var(--line)}
 .bp-grid button{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 0;font-size:15px;color:var(--ink);cursor:pointer;font-family:var(--sans)}
 .bp-grid button.cur{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
-.bp-foot{display:flex;border:1px solid var(--line);border-radius:20px;overflow:hidden;margin-top:10px;font-family:var(--sans)}
-.bp-foot button{flex:1;padding:8px;border:none;background:transparent;color:var(--ink);cursor:pointer;font-weight:600}
+.bp-foot{display:flex;flex:0 0 auto;border:1px solid var(--line);border-radius:20px;overflow:hidden;margin-top:10px;font-family:var(--sans)}
+.bp-foot button{flex:1;padding:9px 6px;border:none;background:transparent;color:var(--ink);cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap}
 .bp-foot button.on{background:var(--accent-soft);color:var(--accent)}
+.bp-foot2{margin-top:6px}
+.bp-vwrap{padding:4px 2px 14px;border-bottom:1px solid var(--line)}
+.bp-vhead{display:flex;align-items:center;gap:8px;padding:6px 2px 10px;font-family:var(--sans);font-size:13px}
+.bp-vhead b{flex:1;text-align:center;font-size:15px;font-family:var(--serif)}
+.bp-vhead button{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:6px 11px;color:var(--ink);cursor:pointer;font:inherit;white-space:nowrap}
+.bp-vhead button.go{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-soft);font-weight:600}
+.bp-grid.vg{grid-template-columns:repeat(6,1fr);padding:0 2px 2px;border-bottom:0}
+.bp-grid.vg button{padding:9px 0;font-size:14px;position:relative}
+.bp-grid.vg button.hasn::after{content:"";position:absolute;left:50%;bottom:3px;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:.75}
+.bp-hint{font-family:var(--sans);font-size:12px;color:var(--soft);text-align:center;padding:2px 0 6px}
 #chapselWrap{display:none!important}
 /* reading controls appear only in Bible reading & search */
 body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:none!important}
@@ -951,6 +964,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
     <div class="bp-head"><button class="bp-x" onclick="closeBookPicker()">✕</button><span>Books</span><span style="width:32px"></span></div>
     <div class="bp-list" id="bpList"></div>
     <div class="bp-foot"><button id="bpTrad" class="on" onclick="bpOrder('trad')">Traditional</button><button id="bpAlpha" onclick="bpOrder('alpha')">Alphabetical</button></div>
+    <div class="bp-foot bp-foot2"><button id="bpPickCh" onclick="bpPick('chapter')">Straight to the chapter</button><button id="bpPickV" onclick="bpPick('verse')">Pick a verse too</button></div>
   </div>
 </div>
 
@@ -1012,7 +1026,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.98.1', date:'19 Sep 2026'};
+const BUILD={v:'0.98.2', date:'21 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2339,23 +2353,59 @@ function renderMenu(){
   document.getElementById('reader').scrollTop=0;
 }
 /* ---------- Book & chapter picker ---------- */
-let _bpOpen=-1,_bpAlpha=false;
-function openBookPicker(){ _bpOpen=state.book; _renderBP();
+let _bpOpen=-1,_bpAlpha=false,_bpCh=0;
+/* Two ways to travel, and you choose. "Straight to the chapter" is the old behaviour: tap a
+   chapter and you are there. "Pick a verse too" shows the verses of that chapter first, so you
+   can land on the exact verse. The choice is remembered on this device. (21 Sep 2026) */
+const LS_VPICK='nok_vpick';
+function _vpick(){ try{ return localStorage.getItem(LS_VPICK)==='verse'?'verse':'chapter'; }catch(e){ return 'chapter'; } }
+function bpPick(m){ try{ localStorage.setItem(LS_VPICK, m==='verse'?'verse':'chapter'); }catch(e){}
+  if(m!=='verse') _bpCh=0; _bpSyncPick(); _renderBP(); }
+function _bpSyncPick(){ const v=_vpick()==='verse';
+  const a=document.getElementById('bpPickCh'), b=document.getElementById('bpPickV');
+  if(a) a.classList.toggle('on',!v); if(b) b.classList.toggle('on',v); }
+function openBookPicker(){ _bpOpen=state.book; _bpCh=0; _bpSyncPick(); _renderBP();
   document.getElementById('bpOv').classList.add('show');
   setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:'center'}); },30); }
 function closeBookPicker(){ document.getElementById('bpOv').classList.remove('show'); }
 function bpOrder(m){ _bpAlpha=(m==='alpha');
   document.getElementById('bpTrad').classList.toggle('on',!_bpAlpha);
   document.getElementById('bpAlpha').classList.toggle('on',_bpAlpha); _renderBP(); }
-function bpToggle(i){ _bpOpen=(_bpOpen===i?-1:i); _renderBP();
+function bpToggle(i){ _bpOpen=(_bpOpen===i?-1:i); _bpCh=0; _renderBP();
   setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:'nearest'}); },20); }
-function bpGo(i,ch){ closeBookPicker(); state.book=i; state.chapter=ch; state.plan=null; state.view='read';
-  setViewTabs(); savePrefs(); render(); }
+function bpBack(){ _bpCh=0; _renderBP();
+  setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:'nearest'}); },20); }
+function bpGo(i,ch){
+  if(_vpick()==='verse'){ _bpOpen=i; _bpCh=ch; _renderBP();
+    setTimeout(()=>{ const el=document.querySelector('.bp-vwrap'); if(el) el.scrollIntoView({block:'nearest'}); },20);
+    return; }
+  bpJump(i,ch,0); }
+function bpJump(i,ch,v){ closeBookPicker(); _bpCh=0;
+  state.book=i; state.chapter=ch; state.plan=null; state.view='read';
+  setViewTabs(); savePrefs(); render();
+  if(v) setTimeout(()=>{ try{ jumpVerse(v); markPlace(v); }catch(e){} },140); }
 function _renderBP(){ const idx=window.BOOKS.map((b,i)=>i);
   if(_bpAlpha) idx.sort((a,b)=>window.BOOKS[a].name.localeCompare(window.BOOKS[b].name));
   document.getElementById('bpList').innerHTML=idx.map(i=>{ const b=window.BOOKS[i]; const open=i===_bpOpen;
-    return `<div class="bp-book ${open?'cur':''}" onclick="bpToggle(${i})">${b.name}</div>
-      ${open?`<div class="bp-grid">${b.chapters.map((_,c)=>`<button class="${i===state.book&&c+1===state.chapter?'cur':''}" onclick="event.stopPropagation();bpGo(${i},${c+1})">${c+1}</button>`).join('')}</div>`:''}`;
+    let inner='';
+    if(open && _bpCh){
+      const nv=b.chapters[_bpCh-1]||0;
+      /* A quiet dot marks a verse you have written on, so the grid doubles as a map of the journal. */
+      const rawCh=((window.DATA||{})[b.name]||{})[String(_bpCh)]||{};
+      const vs=[]; for(let n=1;n<=nv;n++){
+        let has=(rawCh[String(n)]||[]).length>0;
+        if(!has && state.journal==='modern'){ try{ has=!!refinedFor(b.name,_bpCh,n); }catch(e){} }
+        vs.push(`<button class="${has?'hasn':''}" onclick="event.stopPropagation();bpJump(${i},${_bpCh},${n})">${n}</button>`); }
+      inner=`<div class="bp-vwrap">
+        <div class="bp-vhead"><button onclick="event.stopPropagation();bpBack()">\u2190 Chapters</button>
+          <b>${b.name} ${_bpCh}</b>
+          <button class="go" onclick="event.stopPropagation();bpJump(${i},${_bpCh},0)">Whole chapter</button></div>
+        <div class="bp-hint">${nv} verse${nv===1?'':'s'} \u00b7 tap one to land on it \u00b7 <span style="color:var(--accent)">\u2022</span> marks a note</div>
+        <div class="bp-grid vg">${vs.join('')}</div></div>`;
+    } else if(open){
+      inner=`<div class="bp-grid">${b.chapters.map((_,c)=>`<button class="${i===state.book&&c+1===state.chapter?'cur':''}" onclick="event.stopPropagation();bpGo(${i},${c+1})">${c+1}</button>`).join('')}</div>`;
+    }
+    return `<div class="bp-book ${open?'cur':''}" onclick="bpToggle(${i})">${b.name}</div>${inner}`;
   }).join(''); }
 function toggleLegacy(){ const on=!document.body.classList.contains('legacy');
   document.body.classList.toggle('legacy',on);
@@ -2515,16 +2565,17 @@ function renderRead(){
       const hs=(((window.HEADINGS||{})[name]||{})[String(ch)]||{})[String(v)];
       if(hs) hs.forEach(h=>{ html+=`<div class="sheading s${h[0]}">${escHTML(h[1])}</div>`; });
       const notes=chData[String(v)]||[];
+      const refC=state.journal==='modern'?refinedFor(name,ch,v):null;
+      const shownC=refC?refC.length:notes.length;
       const hlcC=hlGet(name,ch,v);
-      html+=`<div class="cmprow${notes.length?' has-note':''}${hlcC?' hl-'+hlcC:''}" id="v${v}" data-v="${v}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${notes.length?1:0})">
-        <div class="cmpv">${v}${notes.length?`<button class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" title="Show / hide Nii Okai’s commentary">💬</button>`:''}
+      html+=`<div class="cmprow${shownC?' has-note':''}${hlcC?' hl-'+hlcC:''}" id="v${v}" data-v="${v}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${shownC?1:0})">
+        <div class="cmpv">${v}${shownC?`<button class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" title="Show / hide Nii Okai’s commentary">💬</button>`:''}
           <button class="vmenu-btn" onclick="event.stopPropagation();verseMenu(event,'${esc(name)}',${ch},${v})" title="Copy · Share · Note">⋯</button></div>
         <div class="cmpcol">${(verses[String(v)]||'—')}</div>
         <div class="cmpcol cmpb">${(vB[String(v)]||'—')}</div></div>`;
-      if(notes.length){
+      if(shownC){
         html+=`<div class="notewrap" id="nw${v}">`;
-        const r=state.journal==='modern'?refinedFor(name,ch,v):null;
-        if(r){ r.forEach((e,i)=>{ html+=modernNoteHTML(name,ch,v,e,i); }); }
+        if(refC){ refC.forEach((e,i)=>{ html+=modernNoteHTML(name,ch,v,e,i); }); }
         else { notes.forEach(nt=>{ html+=noteHTML(nt,name,ch,v); }); }
         html+=`</div>`;
       }
@@ -2547,7 +2598,10 @@ function renderRead(){
         <div class="chips">${noted.map(v=>`<span class="chip" onclick="jumpVerse(${v})">v${v}</span>`).join('')}</div></div>`;
     }
     const chNotes=chData['0']||[];
-    chNotes.forEach(nt=>{ html+=noteHTML(nt,name,ch,'0','Chapter note'); });
+    /* A chapter note has a refined version too — it used to show the raw original either way. (21 Sep 2026) */
+    const chRef = state.journal==='modern' ? refinedFor(name,ch,'0') : null;
+    if(chRef){ chRef.forEach((e,i)=>{ html+=modernNoteHTML(name,ch,'0',e,i); }); }
+    else { chNotes.forEach(nt=>{ html+=noteHTML(nt,name,ch,'0','Chapter note'); }); }
     for(let v=1;v<=vcount;v++){
       const hs=(((window.HEADINGS||{})[name]||{})[String(ch)]||{})[String(v)];
       if(hs) hs.forEach(h=>{ html+=`<div class="sheading s${h[0]}">${escHTML(h[1])}</div>`; });
@@ -2562,12 +2616,13 @@ function renderRead(){
       const mark=shown?`<span onclick="event.stopPropagation();toggleVerse(${v})" ontouchend="event.stopPropagation();event.preventDefault();toggleVerse(${v})" title="${_openNow?'Hide':'Read'} Nii Okai’s note${shown>1?'s':''} on this verse" class="cmark${_openNow?' on':''}">${ICONS.chat}${shown>1?'<b>'+shown+'</b>':''}</span>`:'';
       const ncTier=shown?(shown>=3?' nc3':shown===2?' nc2':' nc1'):'';
       const hlc=hlGet(name,ch,v);
-      html+=`<div class="verse ${notes.length?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" data-hint="${notes.length?'Click for options · double-click to read the note':'Click for options · double-click to write a note'}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${notes.length?1:0})">
+      html+=`<div class="verse ${shown?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" data-hint="${shown?'Click for options · double-click to read the note':'Click for options · double-click to write a note'}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${shown?1:0})">
         <span class="vn" onclick="event.stopPropagation();openEditor('${esc(name)}',${ch},${v})" title="Add a note">${v}</span>${txt||'<i style="color:var(--soft)">(verse not in this translation)</i>'}${mark}</div>`;
-      if(notes.length){
+      /* A thought can sit in the refined edition on a verse that carries no raw note — that is
+         how a mis-filed note is put right without altering Legacy. Render on either. (21 Sep 2026) */
+      if(shown){
         html+=`<div class="notewrap" id="nw${v}">`;
-        const r = state.journal==='modern' ? refinedFor(name,ch,v) : null;
-        if(r){ r.forEach((e,i)=>{ html+=modernNoteHTML(name,ch,v,e,i); }); }
+        if(hasRef){ hasRef.forEach((e,i)=>{ html+=modernNoteHTML(name,ch,v,e,i); }); }
         else { notes.forEach(nt=>{ html+=noteHTML(nt,name,ch,v); }); }
         html+=`</div>`;
       }
@@ -2727,6 +2782,21 @@ function _saveRefEdit(text){
   _refGen++; closeEditor(true);
   if(state.view==='mine') renderMine(); else { renderRead(); setTimeout(()=>jumpVerse(parseInt(v,10)||1),60); }
   toast(text&&text!==base?'Saved — your readers see this version':'Back to the edition as published'); }
+const _MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function _draftStamp(label){ const L=String(label||'');
+  let m=L.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return +m[1]*10000+ +m[2]*100+ +m[3];
+  m=L.match(/([A-Za-z]{3})[a-z]*\s+((?:19|20)\d{2})/); if(m&&_MON[m[1].toLowerCase()]) return +m[2]*10000+_MON[m[1].toLowerCase()]*100;
+  m=L.match(/(19|20)\d{2}/); if(m) return +m[0]*10000;
+  return 0; }
+/* Oldest first, so "Track changes" reads the way the thought actually grew. Drafts with no
+   readable date keep their position rather than being shuffled to the front. (21 Sep 2026) */
+function _draftSort(list){ try{
+  const d=list.map((x,i)=>({x:x,i:i,t:_draftStamp(x&&x[0])}));
+  if(d.some(o=>!o.t)) return list;
+  d.sort((a,b)=>a.t-b.t||a.i-b.i);
+  return d.map(o=>o.x); }catch(e){ return list; } }
+function _openTrk(btn){ try{ const n=btn.closest('.note'); const d=n&&n.querySelector('details.trk');
+  if(d){ d.open=true; d.scrollIntoView({behavior:'smooth',block:'nearest'}); } }catch(e){} }
 function modernNoteHTML(name,ch,v,r,i){
   const ref=`${name} ${ch}:${v}`;
   /* Hand-edited entries keep their drafts in `d`; patched ones look the original up by id. */
@@ -2738,11 +2808,21 @@ function modernNoteHTML(name,ch,v,r,i){
     if(!drafts.length) drafts=[['original','(the original could not be found)']];
   }
   const _mine=(typeof i==='number')?_refEditGet(name,ch,v,i):null;
+  /* A verse you returned to more than once is merged into one entry in the refined edition.
+     Say so plainly, so a second or third sitting is never silently invisible. (21 Sep 2026) */
+  drafts=_draftSort(drafts);
+  let sittings='';
+  if(drafts.length>1){
+    const yrs=drafts.map(dr=>{ const m=String(dr[0]).match(/(19|20)\d{2}/); return m?+m[0]:0; }).filter(Boolean).sort();
+    const span=yrs.length?(yrs[0]===yrs[yrs.length-1]?String(yrs[0]):yrs[0]+'\u2013'+yrs[yrs.length-1]):'';
+    sittings=`<div class="sittings">\u270d\ufe0f Written across <b>${drafts.length}</b> sittings${span?' \u00b7 '+span:''} <button class="openorig owner-only" onclick="_openTrk(this)">see them</button></div>`;
+  }
   const stack=drafts.map(dr=>`<div class="draft2"><span class="dl">${escHTML(dr[0])}</span>${escHTML(dr[1])}</div>`).join('');
   const origSide=drafts.map(dr=>escHTML(dr[0]+'\n'+dr[1])).join('\n\n──────\n');
   return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
     <div class="meta"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}</div>
     <div class="body">${escNote(_mine&&_mine.m?_mine.m:r.m)}</div>
+    ${sittings}
     ${_mine?`<div class="chg2" style="color:var(--accent)">✎ You edited this on ${escHTML(new Date(_mine.t).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</div>`:''}
     ${r.e?`<div class="chg2" style="color:var(--accent)">📈 ${escHTML(String(r.e).replace(/<[^>]+>/g,''))}</div>`:''}
     ${noteActionsHTML(String(v),(typeof i==='number')?{b:name,c:ch,v:v,i:i}:null)}
@@ -2824,12 +2904,19 @@ function renderMine(){
      note under that verse, so the date sorts work in both editions. */
   const all=[];
   window.BOOKS.forEach((b,bi)=>{
-    const bd=DATA[b.name]; if(!bd)return;
-    Object.keys(bd).sort((a,c)=>+a-+c).forEach(ch=>{
-      Object.keys(bd[ch]).sort((a,c)=>+a-+c).forEach(v=>{
+    const bd=DATA[b.name]||{};
+    /* A put-right note can live in the refined edition on a verse the raw journal never had,
+       so walk both stores and merge the chapter and verse keys. (21 Sep 2026) */
+    const rb=(!legacy&&window.REFINED)?(REFINED[b.name]||{}):{};
+    const chs=[...new Set([...Object.keys(bd),...Object.keys(rb)])].sort((a,c)=>+a-+c);
+    if(!chs.length) return;
+    chs.forEach(ch=>{
+      const raw=bd[ch]||{}; const ref=rb[ch]||{};
+      const vs=[...new Set([...Object.keys(raw),...Object.keys(ref)])].sort((a,c)=>+a-+c);
+      vs.forEach(v=>{
         if(!legacy){ const r=refinedFor(b.name,ch,v);          // refined edition: one row per entry, each with its own date
-          if(r){ r.forEach(e=>all.push({book:b.name,bi,ch,v,text:e.m,date:e.dt||(bd[ch][v][0]||{}).date})); return; } }
-        bd[ch][v].forEach(nt=>all.push({book:b.name,bi,ch,v,text:nt.text,date:nt.date}));
+          if(r){ r.forEach(e=>all.push({book:b.name,bi,ch,v,text:e.m,date:e.dt||((raw[v]||[])[0]||{}).date})); return; } }
+        (raw[v]||[]).forEach(nt=>all.push({book:b.name,bi,ch,v,text:nt.text,date:nt.date}));
       });
     });
   });

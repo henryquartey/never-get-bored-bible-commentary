@@ -11,3 +11,15 @@ jprp8suywm   # duplicate of the 1 Samuel 10:22 note
 # Split across Exodus 19 Sep 2026. This note was filed on Genesis 20 but quoted Exodus 20:24,
 # Exodus 21:19 and Exodus 32:7. Its opening already existed word-for-word at Exodus 20:0.
 93464eefba   # the stray Genesis 20:0 copy
+
+# Genesis 30:41, 21 Sep 2026. YouVersion had glued six other notes onto the end of a copy of the
+# 30:41 note, each one labelled by Henry with its own verse: Genesis 31:13, 31:15, 31:19, 31:29,
+# 31:38 and 31:53. All six were checked against the whole journal and all six already exist, word
+# for word, on the verses he named. Nothing moved, nothing lost — only the glued copy withdrawn.
+8dd8f28469   # the glued-together Genesis 30:41 copy
+
+# Sweep of the whole journal, 21 Sep 2026. Two more notes with the same YouVersion glue signature:
+# the note quotes another passage in full and then carries that passage's note. In both cases every
+# glued thought already exists, word for word, on the verse it belongs to, so nothing is lost.
+32bcfb93dc   # Genesis 7:0 — held only the Genesis 8:2 and 8:22 notes, both already on those verses
+05d883209b   # Genesis 33:20 — held "Rightly so" (already on 33:20) plus the 34:12 and 34:26 notes
