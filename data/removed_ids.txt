@@ -23,3 +23,14 @@ jprp8suywm   # duplicate of the 1 Samuel 10:22 note
 # glued thought already exists, word for word, on the verse it belongs to, so nothing is lost.
 32bcfb93dc   # Genesis 7:0 — held only the Genesis 8:2 and 8:22 notes, both already on those verses
 05d883209b   # Genesis 33:20 — held "Rightly so" (already on 33:20) plus the 34:12 and 34:26 notes
+
+# Luke 18:25, 21 Sep 2026. Same glue signature: the note opens with the Matthew 19:21 text and a
+# bible.com link, then carries the Matthew 19:21 note itself — which you had already written on
+# Matthew 19:21 two minutes earlier the same morning. Only the quoted header was unique to this
+# copy. Your question on Luke 18:25 ("I don't understand...") stays where it is, and the answer
+# stays on Matthew 19:21 where you filed it.
+gm7dqau7ij   # the stray Luke 18:25 copy of the Matthew 19:21 note
+
+# Genesis 15 chapter note, 21 Sep 2026. Its entire text was the two words "Note 1" — an empty
+# placeholder left behind by the YouVersion import. Henry asked for it to go.
+1357eeb4e6   # the empty "Note 1" chapter note on Genesis 15
