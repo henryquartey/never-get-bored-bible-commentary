@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Never Get Bored — Nii Okai's Journal Through Scripture</title>
 <link rel="manifest" href="manifest.webmanifest">
+<meta name="description" content="Never Get Bored — a verse-by-verse journal through Scripture by Nii Okai. Over 4,000 personal notes across all 66 books, with the King James text, reading plans and audio.">
+<link rel="canonical" href="https://bible.getwordwisdom.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Never Get Bored">
+<meta property="og:title" content="Never Get Bored — Nii Okai's Journal Through Scripture">
+<meta property="og:description" content="A verse-by-verse journal through Scripture by Nii Okai. Over 4,000 personal notes across all 66 books, with the King James text, reading plans and audio.">
+<meta property="og:url" content="https://bible.getwordwisdom.com/">
+<meta property="og:image" content="https://bible.getwordwisdom.com/icon-1024.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Never Get Bored — Nii Okai's Journal Through Scripture">
+<meta name="twitter:description" content="A verse-by-verse journal through Scripture by Nii Okai. Over 4,000 personal notes across all 66 books.">
+<meta name="twitter:image" content="https://bible.getwordwisdom.com/icon-1024.png">
 <meta name="theme-color" content="#FAFAF8">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=2">
@@ -127,6 +139,31 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .searchwrap input{background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:8px;
   padding:8px 10px 8px 32px;font-size:13.5px;width:180px;font-family:inherit}
 .searchwrap::before{content:"⌕";position:absolute;left:10px;top:7px;color:var(--soft);font-size:16px}
+/* iOS Safari zooms the WHOLE page in when you tap a field whose text is under 16px, and it never
+   zooms back out — which is why the chapter looked blown up and the bottom bar went off screen
+   after a search. 16px on every field on a touch screen stops it. (22 Sep 2026) */
+@media (pointer:coarse){
+  input,select,textarea,.searchwrap input,.chapsel select,.versel,.jsortrow select,.modal textarea,.nmin{font-size:16px!important}
+  .searchwrap input{padding:7px 10px 7px 30px}
+  .chapsel select,.versel{padding:6px 26px 6px 8px}
+}
+/* the translation box is a menu — show that it opens */
+.versel,.chapsel select{appearance:none;-webkit-appearance:none;padding-right:24px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M2.5 4.5L6 8l3.5-3.5' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat:no-repeat;background-position:right 7px center;background-size:11px}
+/* Compare-across-translations rows are tappable and each carries its own copy button */
+.cvrow{position:relative;cursor:pointer;border-radius:10px;padding:12px 10px;margin:0 -10px}
+.cvrow:hover{background:var(--accent-soft)}
+.cvhd{display:flex;align-items:center;gap:8px}
+.cvhd .cvver{flex:1;min-width:0}
+.cvcopy{background:var(--bg);border:1px solid var(--line);color:var(--soft);border-radius:8px;
+  padding:4px 9px;font:600 11.5px/1 var(--sans);cursor:pointer;flex-shrink:0}
+.cvcopy:hover{border-color:var(--accent);color:var(--accent)}
+.cvgo{font:600 11.5px/1 var(--sans);color:var(--accent);margin-top:6px;opacity:.85}
+.cvmiss{font:400 12.5px/1.45 var(--sans);color:var(--soft);padding:12px 0 4px}
+.srback{display:inline-flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--line);
+  color:var(--ink);border-radius:20px;padding:8px 15px;font:600 13.5px/1 var(--sans);cursor:pointer;margin-bottom:16px}
+.srback:hover{border-color:var(--accent);color:var(--accent)}
 
 .reader{overflow-y:auto;flex:1;min-height:0;padding:30px 16px 40px}
 .page{max-width:1080px;margin:0 auto}
@@ -1026,7 +1063,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.98.2', date:'21 Sep 2026'};
+const BUILD={v:'0.99.0', date:'22 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3594,17 +3631,46 @@ function compareVerse(name,ch,v){
   versions.forEach(ver=>{ if(ONLINE_VERSIONS[ver]) ensureVersion(ver,done,name,ch); else if(window.BIBLE&&window.BIBLE[ver]) done(); else ensureVersion(ver,done); });
 }
 function renderCompareVerse(name,ch,v,versions){
-  const rows=versions.map(ver=>{ const txt=(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(v)]||'—';
-    return `<div class="cvrow"><div class="cvver">${ver}<span>${escHTML(window.VERSIONS[ver]||'')}</span></div>
-      <div class="cvtxt">${escHTML(txt)}</div></div>`; }).join('');
+  /* A translation that did not load is one quiet line at the foot, not an empty row each. */
+  const got=versions.filter(ver=>(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(v)]);
+  const missing=versions.filter(ver=>got.indexOf(ver)<0);
+  let rows=got.map(ver=>{ const txt=(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(v)];
+    return `<div class="cvrow" onclick="cvOpen('${esc(ver)}','${esc(name)}',${ch},${v})">
+      <div class="cvhd"><div class="cvver">${ver}<span>${escHTML(window.VERSIONS[ver]||'')}</span></div>
+      <button class="cvcopy" onclick="event.stopPropagation();cvCopy(this,'${esc(ver)}')">\ud83d\udccb Copy</button></div>
+      <div class="cvtxt">${escHTML(txt)}</div>
+      <div class="cvgo">Read the whole chapter in ${ver} \u2192</div></div>`; }).join('');
+  if(missing.length) rows+=`<div class="cvmiss">Did not load just now: ${escHTML(missing.join(', '))} \u2014 they need a connection.</div>`;
   let ov=document.getElementById('cvOv'); if(!ov){ ov=document.createElement('div'); ov.id='cvOv'; ov.className='complete-ov'; document.body.appendChild(ov); }
   ov.innerHTML=`<div class="cvcard">
     <div class="cvhead"><b>${name} ${ch}:${v}</b> — across translations<button class="cvclose" onclick="closeCompareVerse()">✕</button></div>
     <div class="cvbody">${rows}</div>
     <div class="cvfoot"><button class="btn" onclick="_clip(document.getElementById('cvOv').dataset.all,'Copied all versions')">📋 Copy all</button>
       <button class="btn primary" onclick="closeCompareVerse()">Close</button></div></div>`;
-  ov.dataset.all=versions.map(ver=>`${ver}: ${(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(v)]||'—'}`).join('\n');
+  ov.dataset.all=got.map(ver=>`${ver}: ${(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(v)]}`).join('\n\n');
+  ov.dataset.ref=`${name} ${ch}:${v}`;
+  window._cvTexts={}; versions.forEach(ver=>{ window._cvTexts[ver]=(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(v)]||''; });
   ov.classList.add('show');
+}
+/* Tap a translation to read the whole chapter in it; the small button copies that one alone. */
+function cvOpen(ver,name,ch,v){
+  closeCompareVerse();
+  /* Move to the passage FIRST, then switch translation — an online version is fetched for the
+     chapter you are on, so the order matters. (22 Sep 2026) */
+  state.book=window.BOOKS.findIndex(b=>b.name===name); state.chapter=ch; state.view='read'; state.plan=null;
+  if(ver!==state.version){
+    state.version=ver;
+    const sel=document.getElementById('verSelect'); if(sel) sel.value=ver;
+  }
+  setViewTabs(); savePrefs();
+  ensureVersion(ver,()=>{ render(); setTimeout(()=>{ try{ jumpVerse(v); markPlace(v); }catch(e){} },160); },name,ch);
+}
+function cvCopy(btn,ver){
+  const ov=document.getElementById('cvOv'); const t=(window._cvTexts||{})[ver]||'';
+  if(!t) return;
+  _clip(`${t}\n\n\u2014 ${ov.dataset.ref} (${ver})`,`Copied the ${ver} wording`);
+  const o=btn.textContent; btn.textContent='\u2713 Copied';
+  setTimeout(()=>{ btn.textContent=o; },1400);
 }
 function closeCompareVerse(){ const o=document.getElementById('cvOv'); if(o) o.classList.remove('show'); }
 /* ---------- Highlight-to-act: select text (even across two verses) → popup menu ---------- */
@@ -3889,6 +3955,7 @@ document.addEventListener('mousedown',e=>{ if(!(e.target&&e.target.closest&&e.ta
 /* ---------- Search ---------- */
 let searchTimer=null;
 function onSearch(q){ clearTimeout(searchTimer); searchTimer=setTimeout(()=>doSearch(q),180); }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&state.view==='search') exitSearch(); });
 /* ---------- Search that understands what you mean ----------
    • references in any shape: "jn 3 16", "1sam2:25", "ps 23:1-6", "revelations 21", "I Samuel 2"
    • misspellings: "shepard", "genisis", "pslam" — corrected against the Bible's own vocabulary
@@ -3990,6 +4057,15 @@ function _srTopics(nq){ const out=[]; const words=nq.split(' ');
   return out.sort((a,b)=>b.sc-a.sc).slice(0,2).map(x=>x.T); }
 function _srRef(r){ const m=r.match(/^(.*?) (\d+):(\d+)$/); return m?{bk:m[1],ch:+m[2],v:+m[3]}:null; }
 function _srVerse(ver,bk,ch,v){ const b=((window.BIBLE||{})[ver]||{})[bk]; return b?(((b[String(ch)]||{})[String(v)])||''):''; }
+/* Leaving a search: empty the box, let go of the keyboard and return to the chapter. Without
+   this there was no way back out of the results on a phone. (22 Sep 2026) */
+function exitSearch(){
+  const b=document.getElementById('search');
+  if(b){ b.value=''; b.blur(); }
+  clearTimeout(searchTimer);
+  const tb=document.querySelector('.topbar'); if(tb) tb.classList.remove('searching');
+  state.view='read'; setViewTabs(); savePrefs(); render();
+}
 function doSearch(q){
   q=q.trim();
   if(q.length<2){ if(state.view==='search'){ state.view='read'; setViewTabs(); render(); } return; }
@@ -4000,7 +4076,8 @@ function doSearch(q){
   const ver=state.version, kjv=window.BIBLE.KJV?'KJV':null;
   if(!window.BIBLE[ver]){ ensureVersion(ver,()=>{ if(state.view==='search') doSearch(q); }); }
   const nq=_srNorm(q);
-  let html=`<div class="page">`;
+  const _bk=(window.BOOKS[state.book]||{}).name||'the Bible';
+  let html=`<div class="page"><button class="srback" onclick="exitSearch()">\u2190 Back to ${escHTML(_bk+' '+state.chapter)}</button>`;
   /* 1. a reference, in any shape */
   const ref=parseRefQuery(q);
   if(ref){ const B=window.BOOKS.find(b=>b.name===ref.book);
@@ -4043,6 +4120,10 @@ function doSearch(q){
     scrip.sort((a,b)=>b.sc-a.sc); }
   const total=comm.length+scrip.length;
   if(words.length) html+=`<div class="mc-head"><h2>“${escHTML(q)}”</h2><span class="mc-count">${comm.length} in Nii Okai’s notes · ${scrip.length} in Scripture</span></div>`;
+  /* An online translation is fetched one chapter at a time, so there is no whole text here to
+     search. Say so instead of quietly returning King James results. (22 Sep 2026) */
+  if(words.length && !(_srIndex(ver)||[]).length && ver!=="KJV")
+    html+=`<div class="soft" style="margin:-6px 0 12px;line-height:1.45">${escHTML(ver)} is fetched from the internet a chapter at a time, so the whole of it cannot be searched. These are King James matches — tap one and it opens in ${escHTML(ver)}.</div>`;
   const hlw=(t,max)=>{ let out=t; const allw=[].concat(...alts); const first=allw.find(w=>_srNorm(t).indexOf(w)>=0); const i=first?_srNorm(t).indexOf(first):-1; if(i>80) out='…'+t.slice(Math.max(0,i-60)); if(out.length>max) out=out.slice(0,max)+'…'; let h=escHTML(out); allw.forEach(w=>{ if(w.length>1) h=h.replace(new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>'); }); return h; };
   const noteRow=r=>{ const rf=r.v==='0'?`${r.bk} ${r.ch}`:`${r.bk} ${r.ch}:${r.v}`; return `<div class="sr-item" onclick="jumpTo('${esc(r.bk)}',${r.ch},${r.v==='0'?1:r.v})"><div class="r">${rf}<span class="sr-tag">Nii Okai</span></div><div class="t">${hlw(r.text,180)}</div></div>`; };
   const scripFirst=scrip.length&&(!comm.length||scrip[0].sc>comm[0].sc);   // Bible wording → Scripture leads; otherwise Nii Okai leads
@@ -4052,11 +4133,10 @@ function doSearch(q){
   if(scripFirst){ scripAll(); notesTop(); } else { notesTop(); scripAll(); }
   if(comm.length>5){ html+='<div class="book-group" style="padding-left:0">More from Nii Okai’s notes</div>'; comm.slice(5,45).forEach(r=>{ html+=noteRow(r); }); }
   /* 5. when the app can't answer, hand the question to the web the way people actually ask it */
-  const weak=!ref&&total<3;
+  const weak=!ref&&total===0;
   html+=`<div class="hcard" style="margin-top:${weak?'6px':'18px'};${weak?'':'opacity:.9'}"><div class="hk">${ICONS.search} ${weak?'Nothing close enough here':'Not what you meant?'}</div>
     <p class="soft" style="margin:6px 0 10px">${weak?'Try a reference like <b>jn 3 16</b>, a phrase you remember, or a topic like <b>verses about fear</b> — or ask the web.':'Ask the web with your words — it comes back with the reference, and you can look it up here.'}</p>
-    <div class="hrow"><button class="btn primary" onclick="window.open('https://www.google.com/search?q='+encodeURIComponent(${JSON.stringify(q)}+' bible verse'),'_blank','noopener')">Search Google</button>
-    <button class="btn" onclick="window.open('https://www.biblegateway.com/quicksearch/?quicksearch='+encodeURIComponent(${JSON.stringify(q)})+'&version=KJV','_blank','noopener')">Bible Gateway</button></div></div>`;
+    <div class="hrow"><button class="btn primary" onclick="window.open('https://www.google.com/search?q='+encodeURIComponent(${JSON.stringify(q)}+' bible verse'),'_blank','noopener')">Search Google</button></div></div>`;
   html+='</div>';
   document.getElementById('reader').innerHTML=html;
   document.getElementById('reader').scrollTop=0;
