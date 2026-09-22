@@ -1063,7 +1063,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'0.99.0', date:'22 Sep 2026'};
+const BUILD={v:'0.99.1', date:'22 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2603,7 +2603,8 @@ function renderRead(){
       if(hs) hs.forEach(h=>{ html+=`<div class="sheading s${h[0]}">${escHTML(h[1])}</div>`; });
       const notes=chData[String(v)]||[];
       const refC=state.journal==='modern'?refinedFor(name,ch,v):null;
-      const shownC=refC?refC.length:notes.length;
+      const extraC=refC?_uncoveredNotes(name,ch,v,notes,refC):[];
+      const shownC=refC?refC.length+extraC.length:notes.length;
       const hlcC=hlGet(name,ch,v);
       html+=`<div class="cmprow${shownC?' has-note':''}${hlcC?' hl-'+hlcC:''}" id="v${v}" data-v="${v}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${shownC?1:0})">
         <div class="cmpv">${v}${shownC?`<button class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" title="Show / hide Nii Okai’s commentary">💬</button>`:''}
@@ -2612,7 +2613,8 @@ function renderRead(){
         <div class="cmpcol cmpb">${(vB[String(v)]||'—')}</div></div>`;
       if(shownC){
         html+=`<div class="notewrap" id="nw${v}">`;
-        if(refC){ refC.forEach((e,i)=>{ html+=modernNoteHTML(name,ch,v,e,i); }); }
+        if(refC){ refC.forEach((e,i)=>{ html+=modernNoteHTML(name,ch,v,e,i); });
+          extraC.forEach(nt=>{ html+=noteHTML(nt,name,ch,v); }); }
         else { notes.forEach(nt=>{ html+=noteHTML(nt,name,ch,v); }); }
         html+=`</div>`;
       }
@@ -2648,7 +2650,8 @@ function renderRead(){
       /* The number on the chip must be the number of notes the reader will actually SEE.
          In the refined edition repeated drafts of one thought are merged, so a verse with 2 raw
          notes can show 1 — the chip used to say "2" and then open a single note. (14 Sep 2026) */
-      const shown = hasRef ? hasRef.length : notes.length;
+      const extra = hasRef ? _uncoveredNotes(name,ch,v,notes,hasRef) : [];
+      const shown = hasRef ? hasRef.length+extra.length : notes.length;
       const _openNow=!document.documentElement.classList.contains('hide-notes');
       const mark=shown?`<span onclick="event.stopPropagation();toggleVerse(${v})" ontouchend="event.stopPropagation();event.preventDefault();toggleVerse(${v})" title="${_openNow?'Hide':'Read'} Nii Okai’s note${shown>1?'s':''} on this verse" class="cmark${_openNow?' on':''}">${ICONS.chat}${shown>1?'<b>'+shown+'</b>':''}</span>`:'';
       const ncTier=shown?(shown>=3?' nc3':shown===2?' nc2':' nc1'):'';
@@ -2659,7 +2662,8 @@ function renderRead(){
          how a mis-filed note is put right without altering Legacy. Render on either. (21 Sep 2026) */
       if(shown){
         html+=`<div class="notewrap" id="nw${v}">`;
-        if(hasRef){ hasRef.forEach((e,i)=>{ html+=modernNoteHTML(name,ch,v,e,i); }); }
+        if(hasRef){ hasRef.forEach((e,i)=>{ html+=modernNoteHTML(name,ch,v,e,i); });
+          extra.forEach(nt=>{ html+=noteHTML(nt,name,ch,v); }); }
         else { notes.forEach(nt=>{ html+=noteHTML(nt,name,ch,v); }); }
         html+=`</div>`;
       }
@@ -2773,6 +2777,16 @@ function _refBuild(e,name,ch,v){
   (e.q||[]).forEach(sp=>{ out+=txt.slice(i,sp[0])+sp[2]; i=sp[1]; });
   e._m=out+txt.slice(i); e._g=_refGen;
   return e._m;
+}
+/* A note you write in the app has no refined entry yet, so it was vanishing from the refined
+   edition while the older note on the same verse still showed. Any live note the refined
+   entries do not already account for is rendered after them. (22 Sep 2026) */
+function _uncoveredNotes(name,ch,v,notes,ref){
+  if(!ref||!ref.length||!notes||!notes.length) return [];
+  const rec=new Set(window.RECAST_IDS||[]);
+  const ids=new Set(), txt=new Set();
+  ref.forEach(e=>{ (e.s||[]).forEach(x=>ids.add(x)); (e.d||[]).forEach(d=>txt.add(d[1])); });
+  return notes.filter(n=>n&&!ids.has(n.id)&&!txt.has(n.text)&&!rec.has(n.id));
 }
 function refinedFor(name,ch,v){
   const x=(window.REFINED&&REFINED[name]&&REFINED[name][String(ch)]&&REFINED[name][String(ch)][String(v)])||null;
@@ -2952,7 +2966,9 @@ function renderMine(){
       const vs=[...new Set([...Object.keys(raw),...Object.keys(ref)])].sort((a,c)=>+a-+c);
       vs.forEach(v=>{
         if(!legacy){ const r=refinedFor(b.name,ch,v);          // refined edition: one row per entry, each with its own date
-          if(r){ r.forEach(e=>all.push({book:b.name,bi,ch,v,text:e.m,date:e.dt||((raw[v]||[])[0]||{}).date})); return; } }
+          if(r){ r.forEach(e=>all.push({book:b.name,bi,ch,v,text:e.m,date:e.dt||((raw[v]||[])[0]||{}).date}));
+            _uncoveredNotes(b.name,ch,v,raw[v]||[],r).forEach(nt=>all.push({book:b.name,bi,ch,v,text:nt.text,date:nt.date}));
+            return; } }
         (raw[v]||[]).forEach(nt=>all.push({book:b.name,bi,ch,v,text:nt.text,date:nt.date}));
       });
     });
@@ -4115,15 +4131,22 @@ function doSearch(q){
   let comm=[];
   if(words.length){ for(const bk in DATA)for(const ch in DATA[bk])for(const v in DATA[bk][ch]) DATA[bk][ch][v].forEach(nt=>{ const sc=score(nt.text); if(sc) comm.push({bk,ch,v,text:nt.text,sc}); }); comm.sort((a,b)=>b.sc-a.sc); }
   let scrip=[]; const seen=new Set();
-  if(words.length){ [ver,kjv].filter((x,i,a)=>x&&a.indexOf(x)===i).forEach(vv=>{ const idx=_srIndex(vv)||[];
+  /* Search every translation the reader already has loaded — the one they are reading, the KJV,
+     and any other they have opened — not the KJV alone. Nothing extra is downloaded. (22 Sep 2026) */
+  const searchable=[ver,kjv].concat(Object.keys(window.BIBLE||{}))
+    .filter(x=>x&&!ONLINE_VERSIONS[x]&&window.BIBLE[x])
+    .filter((x,i,a)=>a.indexOf(x)===i);
+  if(words.length){ searchable.forEach(vv=>{ const idx=_srIndex(vv)||[];
     for(const e of idx){ const k=e.bk+'|'+e.ch+'|'+e.v; if(seen.has(k)) continue; const sc=scoreN(e.n); if(sc){ seen.add(k); scrip.push({bk:e.bk,ch:e.ch,v:e.v,text:_srVerse(ver,e.bk,e.ch,e.v)||e.t,sc,ver:vv}); } } });
     scrip.sort((a,b)=>b.sc-a.sc); }
   const total=comm.length+scrip.length;
   if(words.length) html+=`<div class="mc-head"><h2>“${escHTML(q)}”</h2><span class="mc-count">${comm.length} in Nii Okai’s notes · ${scrip.length} in Scripture</span></div>`;
   /* An online translation is fetched one chapter at a time, so there is no whole text here to
      search. Say so instead of quietly returning King James results. (22 Sep 2026) */
-  if(words.length && !(_srIndex(ver)||[]).length && ver!=="KJV")
-    html+=`<div class="soft" style="margin:-6px 0 12px;line-height:1.45">${escHTML(ver)} is fetched from the internet a chapter at a time, so the whole of it cannot be searched. These are King James matches — tap one and it opens in ${escHTML(ver)}.</div>`;
+  if(words.length && searchable.length>1)
+    html+=`<div class="soft" style="margin:-6px 0 10px;line-height:1.45">Searched: ${escHTML(searchable.join(', '))}.</div>`;
+  if(words.length && ONLINE_VERSIONS[ver])
+    html+=`<div class="soft" style="margin:-4px 0 12px;line-height:1.45">${escHTML(ver)} lives on the internet, not on your phone. <span id="olsrState">Asking ${escHTML(ver)}…</span></div><div id="olsrOut"></div>`;
   const hlw=(t,max)=>{ let out=t; const allw=[].concat(...alts); const first=allw.find(w=>_srNorm(t).indexOf(w)>=0); const i=first?_srNorm(t).indexOf(first):-1; if(i>80) out='…'+t.slice(Math.max(0,i-60)); if(out.length>max) out=out.slice(0,max)+'…'; let h=escHTML(out); allw.forEach(w=>{ if(w.length>1) h=h.replace(new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>'); }); return h; };
   const noteRow=r=>{ const rf=r.v==='0'?`${r.bk} ${r.ch}`:`${r.bk} ${r.ch}:${r.v}`; return `<div class="sr-item" onclick="jumpTo('${esc(r.bk)}',${r.ch},${r.v==='0'?1:r.v})"><div class="r">${rf}<span class="sr-tag">Nii Okai</span></div><div class="t">${hlw(r.text,180)}</div></div>`; };
   const scripFirst=scrip.length&&(!comm.length||scrip[0].sc>comm[0].sc);   // Bible wording → Scripture leads; otherwise Nii Okai leads
@@ -4140,6 +4163,50 @@ function doSearch(q){
   html+='</div>';
   document.getElementById('reader').innerHTML=html;
   document.getElementById('reader').scrollTop=0;
+  if(words.length && ONLINE_VERSIONS[ver]) _olSearch(ver,q);
+}
+/* ---------- Searching a licensed translation ----------
+   NIV, ESV, NLT and AMP are not stored on the phone, so there is nothing local to search.
+   When the reader has a connection we ask the publisher's own search instead, through the
+   same Worker that fetches the chapters. (22 Sep 2026) */
+const _olSrCache={};
+async function _olSearch(ver,q){
+  const say=t=>{ const e=document.getElementById('olsrState'); if(e) e.textContent=t; };
+  const key=ver+'|'+q.toLowerCase().trim();
+  const draw=rows=>{
+    const o=document.getElementById('olsrOut'); if(!o) return;
+    if(!rows.length){ say('Nothing found in '+ver+'.'); return; }
+    say('Found '+rows.length+' in '+ver+'.');
+    o.innerHTML='<div class="book-group" style="padding-left:0">'+escHTML(ver)+'</div>'+rows.map(r=>
+      `<div class="sr-item" onclick="jumpTo('${esc(r.bk)}',${r.ch},${r.v})"><div class="r">${escHTML(r.bk+' '+r.ch+':'+r.v)}<span class="sr-tag">${escHTML(ver)}</span></div><div class="t">${escHTML(r.text.length>220?r.text.slice(0,220)+'\u2026':r.text)}</div></div>`).join('');
+  };
+  if(_olSrCache[key]) return draw(_olSrCache[key]);
+  if(!navigator.onLine){ say('You are offline, so '+ver+' cannot be searched.'); return; }
+  const P=_olProxy(); if(!P){ say(ver+' cannot be searched from here.'); return; }
+  try{
+    const o=ONLINE_VERSIONS[ver]; let rows=[];
+    if(o.src==='apibible'){
+      const id=await _olApiBibleId(ver);
+      const r=await fetch(P+'/apibible/v1/bibles/'+id+'/search?limit=30&sort=relevance&query='+encodeURIComponent(q));
+      if(!r.ok) throw new Error('search '+r.status);
+      const j=await r.json();
+      rows=((j.data&&j.data.verses)||[]).map(x=>_olSrRef(x.reference,x.text)).filter(Boolean);
+    } else if(o.src==='esv'){
+      const r=await fetch(P+'/esv/v3/passage/search/?page-size=30&q='+encodeURIComponent(q));
+      if(!r.ok) throw new Error('search '+r.status);
+      const j=await r.json();
+      rows=((j.results)||[]).map(x=>_olSrRef(x.reference,x.content)).filter(Boolean);
+    } else { say(ver+' has no search of its own.'); return; }
+    _olSrCache[key]=rows; draw(rows);
+  }catch(e){ say(ver+' could not be searched just now.'); }
+}
+/* "1 Samuel 17:45" or "Gen 1:1" from the publisher, back into our own book names */
+function _olSrRef(ref,text){
+  if(!ref) return null;
+  const m=String(ref).replace(/[\u2013\u2014]/g,'-').match(/^\s*((?:[1-3]\s*)?[A-Za-z][A-Za-z .]*?)\s*(\d+):(\d+)/);
+  if(!m) return null;
+  const bk=_srBook(m[1]); if(!bk) return null;
+  return {bk,ch:+m[2],v:+m[3],text:String(text||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim()};
 }
 function hl(text,q,max){
   let t=text; const i=t.toLowerCase().indexOf(q.toLowerCase());

@@ -34,3 +34,52 @@ gm7dqau7ij   # the stray Luke 18:25 copy of the Matthew 19:21 note
 # Genesis 15 chapter note, 21 Sep 2026. Its entire text was the two words "Note 1" — an empty
 # placeholder left behind by the YouVersion import. Henry asked for it to go.
 1357eeb4e6   # the empty "Note 1" chapter note on Genesis 15
+
+# Glued notes, 2026-09-22. Each one is the other notes on its own verse stuck end to end by a
+# YouVersion re-import. Every thought in them already exists separately on the same verse.
+# Full list: THE BIBLE/REPEATED NOTES - what changed.txt
+74b4202d1f   # 1 Samuel 10:25 — 2024-06-04
+ee153b0d65   # 1 Samuel 10:9 — 2024-06-04
+e245a97368   # 1 Samuel 12:19 — 2024-06-13
+753f76c0b8   # 1 Samuel 13:5 — 2024-06-13
+59fdc83508   # 1 Samuel 14:40 — 2024-06-13
+93c144f687   # 1 Samuel 5:7 — 2024-06-04
+a1df4a47d4   # 1 Samuel 6:5 — 2024-06-04
+f375a58448   # 1 Samuel 8:17 — 2024-06-04
+568aa349b1   # Deuteronomy 1:35 — 2024-05-08
+6b84a7aa5c   # Deuteronomy 10:14 — 2024-05-13
+b6c9a49f1d   # Deuteronomy 25:15 — 2024-05-17
+9688d9f3f6   # Deuteronomy 26:11 — 2024-05-17
+e988fce4d1   # Deuteronomy 29:6 — 2024-05-17
+510576a893   # Deuteronomy 31:21 — 2024-05-17
+32cdadf8a7   # Deuteronomy 9:20 — 2024-05-13
+eb7a3a582e   # Exodus 2:19 — 2024-04-08
+6936930f07   # Exodus 2:23 — 2024-04-08
+8b336fda35   # Exodus 3:11 — 2024-04-08
+f5ee4e8aa3   # Exodus 3:12 — 2024-04-08
+dfe1c1bd3f   # Exodus 4:31 — 2024-04-08
+906492f0b1   # Genesis 13:2 — 2023-10-27
+f13be63069   # Genesis 15:2 — 2023-10-27
+5fb6c9ed7b   # Genesis 16:4 — 2023-10-27
+4e90e4bcf2   # Genesis 35:22 — 2023-10-27
+efd61316fd   # Genesis 37:20 — 2023-10-27
+c72f939a88   # Genesis 4:14 — 2023-10-27
+917bfa9f4e   # Leviticus 15:18 — 2024-04-09
+148635d025   # Leviticus 9:24 — 2024-04-09
+4575b7baf3   # Numbers 10:35 — 2024-04-29
+55aaf3d530   # Numbers 11:2 — 2024-04-22
+a5063c3d34   # Numbers 11:9 — 2024-04-22
+69969a047a   # Numbers 12:13 — 2024-04-22
+07fcf36122   # Numbers 16:46 — 2024-04-22
+0c0950685d   # Numbers 20:3 — 2024-04-22
+a4ec017a77   # Numbers 22:12 — 2024-04-22
+748b48ec93   # Numbers 23:13 — 2024-04-22
+f9aac669aa   # Numbers 23:14 — 2024-04-22
+150659ec22   # Numbers 23:19 — 2024-04-22
+6cc0a89a34   # Numbers 23:3 — 2024-04-22
+1c561496df   # Numbers 24:1 — 2024-04-22
+6a7f6dfa11   # Ruth 1:1 — 2024-05-24
+
+# Glued notes, 2026-09-22. Each one is the other notes on its own verse stuck end to end by a
+# YouVersion re-import. Every thought in them already exists separately on the same verse.
+# Full list: THE BIBLE/REPEATED NOTES - what changed.txt
