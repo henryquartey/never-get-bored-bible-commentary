@@ -83,3 +83,17 @@ f9aac669aa   # Numbers 23:14 — 2024-04-22
 # Glued notes, 2026-09-22. Each one is the other notes on its own verse stuck end to end by a
 # YouVersion re-import. Every thought in them already exists separately on the same verse.
 # Full list: THE BIBLE/REPEATED NOTES - what changed.txt
+
+# A third glue pattern, 25 Sep 2026. These notes are another note from their OWN verse stuck to a
+# note from a NEARBY verse — the re-import ran across verse boundaries, which the earlier sweeps
+# could not see. Every piece already sits on the verse Henry wrote it on. tools/glue_sweep3.py
+ad60141fad   # Exodus 3:1  — held 3:1 plus the 3:8 note about the priesthood
+0f31db4c61   # Exodus 3:13 — held 3:13 plus the 3:14 note
+2604861a4c   # Genesis 19:3 — held 19:3 plus the 19:8 and 19:9 notes
+3e62884564   # Genesis 21:7 — held 21:7 plus the 21:14 note
+41100bedd5   # Genesis 4:8  — held the whole of the 4:9 and 4:10 notes
+986f615768   # Matthew 2:1  — held both of the 2:2 notes
+
+# Exodus 1 chapter note, 27 Sep 2026. Its whole text was a notice to readers from when Henry was
+# writing Exodus daily — "THIS CHAPTER IS STILL WORK IN PROGRESS…". Henry asked for it to go.
+b10a626683   # the "work in progress" notice at the top of Exodus 1
