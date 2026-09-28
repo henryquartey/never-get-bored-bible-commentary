@@ -1,5 +1,13 @@
 # Folds notes Nii Okai writes in the app (synced through his Google account) into the
-# published journal, every 10 minutes, on GitHub's own servers — no Mac needed.
+# published journal, on GitHub's own servers — no Mac needed.
+#
+# HOW OFTEN IT REALLY RUNS: the schedule below asks for every 10 minutes, but GitHub
+# throttles timed jobs on quiet repositories. In practice this fires every three to six
+# hours. That is normal and there is nothing to fix.
+#
+# IF IT CANNOT REACH THE GOOGLE ACCOUNT the job now goes RED instead of quietly saying
+# everything is fine. A red run means the notes did not come through; it does not mean
+# anything was lost — the next run, or a publish from the Mac, picks them up.
 name: Fold in notes from the app
 on:
   schedule:
@@ -16,12 +24,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Bring in notes from the account
-        run: python3 .github/cloud_notes_merge.py data/commentary.js || echo "account not reachable yet"
+        run: |
+          set -o pipefail
+          python3 .github/cloud_notes_merge.py data/commentary.js | tee merge.out
+          rc=${PIPESTATUS[0]}
+          if [ "$rc" -eq 2 ]; then
+            echo "::error::Could not reach the Google account, so no notes were folded in this time."
+            exit 1
+          fi
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::The merge step failed (exit $rc)."
+            exit "$rc"
+          fi
       - name: Publish if anything changed
         run: |
-          if git diff --quiet -- data/commentary.js; then echo "nothing new"; exit 0; fi
+          cat merge.out >> "$GITHUB_STEP_SUMMARY" || true
+          rm -f merge.out
+          if git diff --quiet -- data/commentary.js; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Nothing new from the app." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           git config user.name "Nii Okai's journal"
           git config user.email "quarteyjr@gmail.com"
           git add data/commentary.js
           git commit -m "Notes from the app $(date -u '+%Y-%m-%d %H:%M')"
           git push
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Published to the website." >> "$GITHUB_STEP_SUMMARY"
