@@ -382,6 +382,18 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
 .note{background:var(--note-bg);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;
   margin:10px 0 16px;padding:14px 16px;box-shadow:var(--shadow);font-family:var(--sans);font-size:calc(1em*var(--fs,1))}
 .note .meta{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+/* An arrow on the note itself, so a long note can be folded away while you are reading it
+   without going back up to the verse line. Tap it again to open the note. (27 Sep 2026) */
+.note .ncol{margin-left:auto;flex:0 0 auto;border:1px solid var(--line);background:transparent;color:var(--soft);
+  border-radius:6px;width:24px;height:24px;line-height:1;font-size:11px;cursor:pointer;font-family:var(--sans);
+  display:inline-flex;align-items:center;justify-content:center;transition:transform .15s,background .15s}
+.note .ncol:hover{background:var(--note-line)}
+.note .nteaser{display:none;font-size:13px;color:var(--soft);font-style:italic;cursor:pointer}
+.note.ncollapsed .body,.note.ncollapsed .sittings,.note.ncollapsed .chg2,
+.note.ncollapsed .notetools,.note.ncollapsed .trk{display:none!important}
+.note.ncollapsed .nteaser{display:block}
+.note.ncollapsed{padding-bottom:9px}
+.note.ncollapsed .meta{margin-bottom:4px}
 .note.nhl-y{border-left-color:#ca8a04}.note.nhl-y .who.mine{color:#ca8a04}
 .note.nhl-g{border-left-color:#16a34a}.note.nhl-g .who.mine{color:#16a34a}
 .note.nhl-b{border-left-color:#2563eb}.note.nhl-b .who.mine{color:#2563eb}
@@ -1063,7 +1075,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.0.1', date:'25 Sep 2026'};
+const BUILD={v:'1.0.2', date:'27 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2834,6 +2846,33 @@ function _saveRefEdit(text){
   if(state.view==='mine') renderMine(); else { renderRead(); setTimeout(()=>jumpVerse(parseInt(v,10)||1),60); }
   toast(text&&text!==base?'Saved — your readers see this version':'Back to the edition as published'); }
 const _MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+/* Notes copied out of the YouVersion app arrive with a tail the app adds: the reference of
+   the verse you were reading, the verse itself in square brackets, and a bible.com link.
+   That is the app's furniture, not his writing, so the refined edition drops it.
+   A reference to some OTHER verse is his own cross-reference and is left alone - the
+   tell-tale of a paste is the bible.com link. Legacy keeps every character as it came in.
+   (27 Sep 2026) */
+const _DM=/[\u202a-\u202e\u200e\u200f]/g;
+function _stripImport(t,name,ch,v){ if(!t) return t;
+  let L=String(t).replace(_DM,'').split('\n'), kill=L.map(()=>false);
+  const URLRE=/^https?:\/\/(www\.)?bible\.com\//i, VRS=/^\[\d{1,3}\]\s/;
+  const REF=/^(?:([1-3]|I{1,3})\s+)?([A-Z][A-Za-z]{1,14})\.?\s+(\d{1,3}):(\d{1,3})(?:\s*[-\u2013]\s*(\d{1,3}))?(?:\s+[A-Z]{2,6})?\s*$/;
+  const nxt=i=>{ let j=i+1; while(j<L.length&&!L[j].trim()) j++; return j; };
+  const prv=i=>{ let j=i-1; while(j>=0&&!L[j].trim()) j--; return j; };
+  const same=x=>{ const m=REF.exec(x); if(!m) return false;
+    let pre=({I:'1',II:'2',III:'3'})[m[1]]||m[1]||null;
+    const bk=String(name||''), wp=/^[1-3] /.test(bk)?bk[0]:null, wn=wp?bk.slice(2):bk;
+    if(pre!==wp) return false;
+    if(wn.toLowerCase().indexOf(m[2].toLowerCase().slice(0,3))!==0) return false;
+    if(+m[3]!==+ch) return false;
+    const lo=+m[4], hi=m[5]?+m[5]:lo; return lo<=+v&&+v<=hi; };
+  let hasurl=false;
+  L.forEach((x,i)=>{ if(URLRE.test(x.trim())){ kill[i]=true; hasurl=true; } });
+  if(!hasurl) return L.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  L.forEach((x,i)=>{ if(!kill[i]&&x.trim()&&same(x.trim())) kill[i]=true; });
+  L.forEach((x,i)=>{ if(kill[i]||!VRS.test(x.trim())) return;
+    const j=prv(i), k=nxt(i); if((j>=0&&kill[j])||(k<L.length&&kill[k])) kill[i]=true; });
+  return L.filter((x,i)=>!kill[i]).join('\n').replace(/\n{3,}/g,'\n\n').trim(); }
 function _draftStamp(label){ const L=String(label||'');
   let m=L.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return +m[1]*10000+ +m[2]*100+ +m[3];
   m=L.match(/([A-Za-z]{3})[a-z]*\s+((?:19|20)\d{2})/); if(m&&_MON[m[1].toLowerCase()]) return +m[2]*10000+_MON[m[1].toLowerCase()]*100;
@@ -2846,6 +2885,18 @@ function _draftSort(list){ try{
   if(d.some(o=>!o.t)) return list;
   d.sort((a,b)=>a.t-b.t||a.i-b.i);
   return d.map(o=>o.x); }catch(e){ return list; } }
+/* Fold one note away. The chip on the verse line hides every note on that verse; this
+   arrow is for the single card you are looking at. (27 Sep 2026) */
+function _noteCollapse(btn){ try{ const n=btn.closest('.note'); if(!n) return;
+  const on=n.classList.toggle('ncollapsed');
+  btn.textContent=on?'\u25B8':'\u25BE';
+  btn.title=on?'Open this note':'Fold this note away';
+  btn.setAttribute('aria-expanded',on?'false':'true');
+  if(on) n.scrollIntoView({block:'nearest'}); }catch(e){} }
+function _noteExpand(el){ try{ const n=el.closest('.note'); const b=n&&n.querySelector('.ncol');
+  if(b&&n.classList.contains('ncollapsed')) _noteCollapse(b); }catch(e){} }
+function _teaser(t){ const x=String(t||'').replace(/\s+/g,' ').trim();
+  return x.length>90?x.slice(0,90).replace(/\s+\S*$/,'')+'\u2026':x; }
 function _openTrk(btn){ try{ const n=btn.closest('.note'); const d=n&&n.querySelector('details.trk');
   if(d){ d.open=true; d.scrollIntoView({behavior:'smooth',block:'nearest'}); } }catch(e){} }
 function modernNoteHTML(name,ch,v,r,i){
@@ -2871,8 +2922,9 @@ function modernNoteHTML(name,ch,v,r,i){
   const stack=drafts.map(dr=>`<div class="draft2"><span class="dl">${escHTML(dr[0])}</span>${escHTML(dr[1])}</div>`).join('');
   const origSide=drafts.map(dr=>escHTML(dr[0]+'\n'+dr[1])).join('\n\n──────\n');
   return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
-    <div class="meta"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}</div>
-    <div class="body">${escNote(_mine&&_mine.m?_mine.m:r.m)}</div>
+    <div class="meta"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}<button class="ncol" aria-expanded="true" title="Fold this note away" onclick="event.stopPropagation();_noteCollapse(this)">▾</button></div>
+    <div class="nteaser" onclick="_noteExpand(this)">${escHTML(_teaser(_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v)))}</div>
+    <div class="body">${escNote(_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v))}</div>
     ${sittings}
     ${_mine?`<div class="chg2" style="color:var(--accent)">✎ You edited this on ${escHTML(new Date(_mine.t).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</div>`:''}
     ${r.e?`<div class="chg2" style="color:var(--accent)">📈 ${escHTML(String(r.e).replace(/<[^>]+>/g,''))}</div>`:''}
@@ -2882,7 +2934,7 @@ function modernNoteHTML(name,ch,v,r,i){
       <div class="sub"><button class="on" onclick="setTrkM(this,'stack')">Stacked</button><button onclick="setTrkM(this,'side')">⇄ Side by side</button></div>
       <div class="tk-stack">${stack}<div class="chg2">✎ ${escHTML(r.c||'Spelling and punctuation only.')}</div></div>
       <div class="tk-side"><div class="sxs2">
-        <div><span class="dl">✨ Modern</span><div class="draft2" style="border-color:var(--note-line)">${escHTML(r.m)}</div></div>
+        <div><span class="dl">✨ Modern</span><div class="draft2" style="border-color:var(--note-line)">${escHTML(_stripImport(r.m,name,ch,v))}</div></div>
         <div><span class="dl">📝 Original</span><div class="draft2">${origSide}</div></div></div>
         <div class="chg2">✎ ${escHTML(r.c||'Spelling and punctuation only.')}</div></div>
     </details></div>`;
