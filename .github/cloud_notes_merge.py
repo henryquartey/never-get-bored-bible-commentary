@@ -92,7 +92,17 @@ def main():
     try:
         pub = fetch_published(from_json)
     except Exception as e:
-        print("could not reach Firestore: %s" % e); sys.exit(2)
+        # Keep what step 1 found even when the account cannot be reached - otherwise a publish
+        # from a machine without that access would push a copy missing the website's notes.
+        # (28 Sep 2026)
+        if unioned:
+            tmp = path + ".tmp"
+            io.open(tmp, "w", encoding="utf-8").write(head + json.dumps(seed, ensure_ascii=False, separators=(",", ":")) + ";")
+            os.replace(tmp, path)
+            print("could not reach Firestore (%s) - kept %d note(s) found in the other copy" % (e, unioned))
+        else:
+            print("could not reach Firestore: %s" % e)
+        sys.exit(2)
 
     for b, doc in pub.items():
         n, x = doc["n"], doc["x"]

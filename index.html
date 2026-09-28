@@ -384,10 +384,14 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
 .note .meta{display:flex;align-items:center;gap:8px;margin-bottom:7px}
 /* An arrow on the note itself, so a long note can be folded away while you are reading it
    without going back up to the verse line. Tap it again to open the note. (27 Sep 2026) */
-.note .ncol{margin-left:auto;flex:0 0 auto;border:1px solid var(--line);background:transparent;color:var(--soft);
-  border-radius:6px;width:24px;height:24px;line-height:1;font-size:11px;cursor:pointer;font-family:var(--sans);
-  display:inline-flex;align-items:center;justify-content:center;transition:transform .15s,background .15s}
-.note .ncol:hover{background:var(--note-line)}
+.note .meta{flex-wrap:wrap}
+.note .meta.nfold{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.note .ncol{margin-left:auto;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
+  width:30px;height:30px;margin-top:-6px;margin-bottom:-6px;margin-right:-6px;border:none;border-radius:8px;
+  background:transparent;color:var(--ink);opacity:.5;cursor:pointer;transition:opacity .15s,background .15s}
+.note .ncol svg{width:18px;height:18px}
+.note .meta.nfold:hover .ncol,.note.ncollapsed .ncol{opacity:.95}
+.note .ncol:hover{background:var(--line)}
 .note .nteaser{display:none;font-size:13px;color:var(--soft);font-style:italic;cursor:pointer}
 .note.ncollapsed .body,.note.ncollapsed .sittings,.note.ncollapsed .chg2,
 .note.ncollapsed .notetools,.note.ncollapsed .trk{display:none!important}
@@ -1075,7 +1079,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.0.2', date:'27 Sep 2026'};
+const BUILD={v:'1.0.3', date:'28 Sep 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2393,6 +2397,7 @@ function renderMenu(){
       ?item('<span class="acav">'+_acLetter()+'</span>','Signed in as '+(fbUser().email||'your Google account'),'Your place and highlights follow you to every device','accountMenu()')
       :item(ICONS.user,'Sign in with Google','Keep your reading place and highlights on every device you use','fbSignIn()')}
     ${isOwner()?head('Owner tools'):''}
+    ${isOwner()?`<div class="mitem" id="goLiveItem" onclick="goLive()"><span class="mi">🚀</span><div><div class="mt">Go live</div><div class="md" id="goLiveDesc">Checking whether anything is waiting…</div></div><span class="chev">›</span></div>`:''}
     ${isOwner()?item(ICONS.download,'Export My Notes','Save your commentary to a file for publishing','exportCommentary()'):''}
     ${isOwner()?item(ICONS.upload,'Import Notes','Bring commentary back in from a file',"document.getElementById('importFile').click()"):''}
     ${isOwner()?item('👁','Preview as a Reader','See the app exactly as your readers see it','togglePreview()'):''}
@@ -2400,7 +2405,27 @@ function renderMenu(){
     <p style="text-align:center;color:var(--soft);font-size:11.5px;font-family:var(--sans)">Never Get Bored · v${BUILD.v} · built ${BUILD.date}</p>
   </div></div>`;
   document.getElementById('reader').scrollTop=0;
+  if(isOwner()) _checkDraft();
 }
+/* Go live from any device. Claude puts finished work on a GitHub branch called "draft"; it is not
+   on the website until you tap Go live, which opens the "Go live" button on GitHub. The Mac does
+   not need to be on. This line checks, in public, whether a draft is waiting. (28 Sep 2026) */
+const GH_REPO='henryquartey/never-get-bored-bible-commentary';
+const GOLIVE_URL='https://github.com/'+GH_REPO+'/actions/workflows/golive.yml';
+function goLive(){ window.open(GOLIVE_URL,'_blank','noopener'); }
+async function _checkDraft(){ const el=document.getElementById('goLiveDesc'); if(!el) return;
+  try{
+    const r=await fetch('https://api.github.com/repos/'+GH_REPO+'/compare/main...draft',{cache:'no-store'});
+    if(r.status===404){ el.textContent='Nothing waiting — the website is up to date'; return; }
+    if(!r.ok) throw new Error(r.status);
+    const c=await r.json();
+    if(!c.ahead_by){ el.textContent='Nothing waiting — the website is up to date'; return; }
+    const ver=async br=>{ try{ const t=await (await fetch('https://raw.githubusercontent.com/'+GH_REPO+'/'+br+'/index.html?'+Date.now(),{cache:'no-store'})).text();
+      const m=t.match(/BUILD=\{v:'([^']+)'/); return m?m[1]:''; }catch(e){ return ''; } };
+    const [v,live]=await Promise.all([ver('draft'),ver('main')]);
+    if(v&&live&&v===live){ el.textContent='Nothing waiting — the website already has version '+live; return; }
+    el.innerHTML='<b style="color:var(--accent)">'+(v?'Version '+escHTML(v):'An update')+' is waiting</b> — tap to put it on the website';
+  }catch(e){ el.textContent='Open the Go live button on GitHub'; } }
 /* ---------- Book & chapter picker ---------- */
 let _bpOpen=-1,_bpAlpha=false,_bpCh=0;
 /* Two ways to travel, and you choose. "Straight to the chapter" is the old behaviour: tap a
@@ -2668,7 +2693,7 @@ function renderRead(){
       const mark=shown?`<span onclick="event.stopPropagation();toggleVerse(${v})" ontouchend="event.stopPropagation();event.preventDefault();toggleVerse(${v})" title="${_openNow?'Hide':'Read'} Nii Okai’s note${shown>1?'s':''} on this verse" class="cmark${_openNow?' on':''}">${ICONS.chat}${shown>1?'<b>'+shown+'</b>':''}</span>`:'';
       const ncTier=shown?(shown>=3?' nc3':shown===2?' nc2':' nc1'):'';
       const hlc=hlGet(name,ch,v);
-      html+=`<div class="verse ${shown?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" data-hint="${shown?'Click for options · double-click to read the note':'Click for options · double-click to write a note'}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${shown?1:0})">
+      html+=`<div class="verse ${shown?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" data-hint="${shown?'Click for options · double-click to read the note · triple-click to write another':'Click for options · double-click to write a note'}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${shown?1:0})">
         <span class="vn" onclick="event.stopPropagation();openEditor('${esc(name)}',${ch},${v})" title="Add a note">${v}</span>${txt||'<i style="color:var(--soft)">(verse not in this translation)</i>'}${mark}</div>`;
       /* A thought can sit in the refined edition on a verse that carries no raw note — that is
          how a mis-filed note is put right without altering Legacy. Render on either. (21 Sep 2026) */
@@ -2739,6 +2764,15 @@ function dblAddNote(name,ch,v){ try{ const s=window.getSelection(); if(s&&s.remo
 /* One tap on a verse → the options menu. Double-tap → read the note (or write one if there isn't any).
    The single-tap action waits 280 ms so a double-tap can cancel it. */
 let _vTapT=null;
+/* Triple-click (or triple-tap) a verse that already has notes to write another one. Double-click
+   still reads the notes; the third click puts that back and opens a fresh note. (28 Sep 2026) */
+function _tripleNew(name,ch,v){
+  const row=document.getElementById('v'+v); if(!row||!row.classList.contains('has-note')) return;
+  clearTimeout(_vTapT); closeVerseMenu(); if(typeof closeSelMenu==='function') closeSelMenu();
+  window._noSelUntil=Date.now()+900;
+  try{ const s=window.getSelection(); if(s&&s.removeAllRanges) s.removeAllRanges(); }catch(e){}
+  toggleVerse(v);                                            // undo what the double-click just did
+  openEditor(name,ch,v); }
 function vTap(ev,name,ch,v){
   if(IS_TOUCH) return;                                     // touch has its own tap controller
   window._tapVer=_colVer(ev.target);
@@ -2760,7 +2794,12 @@ function vDbl(ev,name,ch,v,hasNote){ if(IS_TOUCH) return; if(VSEL.on) return; cl
   window._noSelUntil=Date.now()+900;                        // stop the text-selection popup this dbl-click would trigger
   try{ const s=window.getSelection(); if(s&&s.removeAllRanges) s.removeAllRanges(); }catch(e){}
   if(typeof closeSelMenu==='function') closeSelMenu();
+  window._lastDbl={name:name,ch:ch,v:v,has:!!hasNote,t:Date.now()};
   if(hasNote) toggleVerse(v); else openEditor(name,ch,v); }
+document.addEventListener('click',e=>{ const d=window._lastDbl;
+  if(e.detail!==3||!d||Date.now()-d.t>700) return;
+  window._lastDbl=null; e.stopPropagation(); e.preventDefault();
+  if(d.has&&!VSEL.on) _tripleNew(d.name,d.ch,d.v); },true);
 /* menu → 'Read Nii Okai's note': make sure it's open, then bring it into view */
 function vmReadNote(ev,v){ ev.stopPropagation(); closeVerseMenu();
   const el=document.getElementById('v'+v); if(!el) return;
@@ -2887,11 +2926,12 @@ function _draftSort(list){ try{
   return d.map(o=>o.x); }catch(e){ return list; } }
 /* Fold one note away. The chip on the verse line hides every note on that verse; this
    arrow is for the single card you are looking at. (27 Sep 2026) */
-function _noteCollapse(btn){ try{ const n=btn.closest('.note'); if(!n) return;
-  const on=n.classList.toggle('ncollapsed');
-  btn.textContent=on?'\u25B8':'\u25BE';
-  btn.title=on?'Open this note':'Fold this note away';
-  btn.setAttribute('aria-expanded',on?'false':'true');
+function _ncolHTML(folded){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="'+(folded?'M6 9l6 6 6-6':'M6 15l6-6 6 6')+'"/></svg>'; }
+function _noteCollapse(el){ try{ const n=el.closest('.note'); if(!n) return;
+  const btn=n.querySelector('.ncol'); const on=n.classList.toggle('ncollapsed');
+  if(btn){ btn.innerHTML=_ncolHTML(on); btn.setAttribute('aria-expanded',on?'false':'true');
+    btn.setAttribute('aria-label',on?'Open this note':'Fold this note away'); }
+  const m=n.querySelector('.meta.nfold'); if(m) m.title=on?'Tap to open this note':'Tap to fold this note away';
   if(on) n.scrollIntoView({block:'nearest'}); }catch(e){} }
 function _noteExpand(el){ try{ const n=el.closest('.note'); const b=n&&n.querySelector('.ncol');
   if(b&&n.classList.contains('ncollapsed')) _noteCollapse(b); }catch(e){} }
@@ -2922,7 +2962,7 @@ function modernNoteHTML(name,ch,v,r,i){
   const stack=drafts.map(dr=>`<div class="draft2"><span class="dl">${escHTML(dr[0])}</span>${escHTML(dr[1])}</div>`).join('');
   const origSide=drafts.map(dr=>escHTML(dr[0]+'\n'+dr[1])).join('\n\n──────\n');
   return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
-    <div class="meta"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}<button class="ncol" aria-expanded="true" title="Fold this note away" onclick="event.stopPropagation();_noteCollapse(this)">▾</button></div>
+    <div class="meta nfold" onclick="_noteCollapse(this)" title="Tap to fold this note away"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}<button class="ncol" aria-expanded="true" aria-label="Fold this note away" onclick="event.stopPropagation();_noteCollapse(this)">${_ncolHTML(false)}</button></div>
     <div class="nteaser" onclick="_noteExpand(this)">${escHTML(_teaser(_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v)))}</div>
     <div class="body">${escNote(_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v))}</div>
     ${sittings}
@@ -3843,6 +3883,9 @@ document.addEventListener('mousedown',e=>{ window._vPoint={x:e.clientX,y:e.clien
     const ct=e.changedTouches&&e.changedTouches[0];
     if(st&&ct&&(moved||Math.abs(ct.clientX-st.x)>10||Math.abs(ct.clientY-st.y)>10||Date.now()-st.t>700)){
       clearTimeout(timer); lastKey=''; return; }        // a scroll or a long press, not a tap
+    { const dt=window._dblTap;                                // third quick tap → a new note on that verse
+      if(dt&&Date.now()-dt.t<380){ window._dblTap=null; clearTimeout(timer); lastKey='';
+        if(dt.has&&!VSEL.on) _tripleNew(dt.name,dt.ch,dt.v); return; } }
     const t=e.target;
     if(t.closest&&t.closest('.vn,.cmark,.vmenu-btn,.corrlink,a,button,select,input,textarea,.note,.notewrap,.vmenu,.copypop')) return;
     const row=t.closest&&t.closest('.verse,.cmprow'); if(!row||!row.dataset.v) return;
@@ -3855,6 +3898,7 @@ document.addEventListener('mousedown',e=>{ window._vPoint={x:e.clientX,y:e.clien
     if(key===lastKey&&now-lastT<320){                       // double tap → the note
       clearTimeout(timer); lastKey='';
       const has=row.classList.contains('has-note');
+      window._dblTap={t:now,has:has,name:name,ch:ch,v:v};
       closeVerseMenu(); if(typeof closeSelMenu==='function')closeSelMenu();
       if(has) toggleVerse(v); else openEditor(name,ch,v);
       return; }
