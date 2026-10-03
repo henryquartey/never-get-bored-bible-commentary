@@ -148,6 +148,20 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
   .chapsel select,.versel{padding:6px 26px 6px 8px}
 }
 /* the translation box is a menu — show that it opens */
+/* Translation list — one look on every device. The phone used to show its own wheel picker;
+   now phone and Mac both get this list, with the full name under each short code. (28 Sep 2026) */
+.vspop{position:fixed;z-index:9000;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 12px 32px rgba(0,0,0,.18);padding:5px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  font-family:var(--sans);animation:vsIn .12s ease-out}
+@keyframes vsIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.vspop .vsi{display:flex;align-items:baseline;gap:10px;width:100%;text-align:left;border:none;background:transparent;
+  color:var(--ink);padding:8px 10px 8px 8px;border-radius:8px;cursor:pointer;font:inherit}
+.vspop .vsi:hover,.vspop .vsi:focus-visible{background:var(--line);outline:none}
+.vspop .vsi .ck{flex:0 0 14px;font-size:13px;font-weight:700}
+.vspop .vsi .cd{flex:0 0 auto;min-width:48px;font-size:14px;font-weight:700;letter-spacing:.2px}
+.vspop .vsi .nm{flex:1 1 auto;font-size:12.5px;color:var(--soft);line-height:1.3}
+.vspop .vsi.on{background:var(--note-bg,var(--line))}
+.vspop .vsh{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--soft);padding:9px 10px 4px 32px}
 .versel,.chapsel select{appearance:none;-webkit-appearance:none;padding-right:24px;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M2.5 4.5L6 8l3.5-3.5' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   background-repeat:no-repeat;background-position:right 7px center;background-size:11px}
@@ -394,7 +408,8 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
 .note .ncol:hover{background:var(--line)}
 .note .nteaser{display:none;font-size:13px;color:var(--soft);font-style:italic;cursor:pointer}
 .note.ncollapsed .body,.note.ncollapsed .sittings,.note.ncollapsed .chg2,
-.note.ncollapsed .notetools,.note.ncollapsed .trk{display:none!important}
+.note.ncollapsed .notetools,.note.ncollapsed .trk,.note.ncollapsed .tools{display:none!important}
+.note .meta.nfold .date{margin-left:0}
 .note.ncollapsed .nteaser{display:block}
 .note.ncollapsed{padding-bottom:9px}
 .note.ncollapsed .meta{margin-bottom:4px}
@@ -461,6 +476,8 @@ html.hide-notes .verse.revealed + .notewrap .note{display:block}   /* tap a vers
 /* date visibility toggle */
 .note .date{display:none}
 html.show-dates .note .date{display:inline}
+/* in the Journal edition every card shows its date, like the hand-read cards do; the 📅 switch is for Legacy (3 Oct 2026) */
+.note .date.jdate{display:inline}
 .mc-item .mc-date{display:none}
 html.show-dates .mc-item .mc-date{display:inline}
 
@@ -1079,7 +1096,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.0.3', date:'28 Sep 2026'};
+const BUILD={v:'1.0.5', date:'3 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1401,6 +1418,49 @@ function toggleCompare(){
   ensureVersion(def,()=>{ if(state.view==='read') renderRead(); });
 }
 function setCompare(v){ state.compare=v; ensureVersion(v,()=>{ if(state.view==='read') renderRead(); }); }
+
+/* ---------- Translation list (replaces the phone's own picker) ---------- */
+let _vsSel=null;
+function _vsClose(){ const p=document.getElementById('vspop'); if(p) p.remove(); _vsSel=null;
+  document.removeEventListener('keydown',_vsKey,true); }
+function _vsKey(e){ if(e.key==='Escape'){ e.preventDefault(); _vsClose(); } }
+function _vsOpen(sel){
+  if(_vsSel===sel){ _vsClose(); return; }
+  _vsClose(); _vsSel=sel;
+  const names=window.VERSIONS||{};
+  let html='';
+  Array.from(sel.options).forEach(o=>{
+    if(o.disabled){ html+=`<div class="vsh">${escHTML(o.textContent.replace(/[─\s]+/g,' ').trim())}</div>`; return; }
+    const code=o.value, on=code===sel.value, cloud=/☁/.test(o.textContent);
+    const nm=o.title||names[code]||'';
+    html+=`<button type="button" class="vsi${on?' on':''}" data-v="${escHTML(code)}" role="option" aria-selected="${on}">
+      <span class="ck">${on?'✓':''}</span><span class="cd">${escHTML(code)}${cloud?' ☁':''}</span><span class="nm">${escHTML(nm)}</span></button>`;
+  });
+  const p=document.createElement('div'); p.id='vspop'; p.className='vspop'; p.setAttribute('role','listbox'); p.innerHTML=html;
+  document.body.appendChild(p);
+  const r=sel.getBoundingClientRect(), vw=window.innerWidth, vh=window.innerHeight;
+  const w=Math.min(340,vw-16); p.style.width=w+'px';
+  p.style.left=Math.max(8,Math.min(r.left,vw-w-8))+'px';
+  const below=vh-r.bottom-12, above=r.top-12;
+  if(below>=240||below>=above){ p.style.top=(r.bottom+6)+'px'; p.style.maxHeight=Math.max(160,below)+'px'; }
+  else { p.style.maxHeight=Math.max(160,above)+'px'; p.style.top=Math.max(8,r.top-6-Math.min(p.scrollHeight,above))+'px'; }
+  const cur=p.querySelector('.vsi.on'); if(cur) p.scrollTop=Math.max(0,cur.offsetTop-p.clientHeight/2+cur.offsetHeight/2);
+  p.addEventListener('click',e=>{ const b=e.target.closest('.vsi'); if(!b) return;
+    const v=b.dataset.v; _vsClose();
+    if(v!==sel.value){ sel.value=v; sel.dispatchEvent(new Event('change',{bubbles:true})); } });
+  document.addEventListener('keydown',_vsKey,true);
+}
+/* open the list instead of the built-in picker, by mouse, finger or keyboard */
+(function(){
+  const hit=e=>e.target&&e.target.closest&&e.target.closest('select.versel');
+  document.addEventListener('mousedown',e=>{ const s=hit(e); if(s){ e.preventDefault(); s.focus({preventScroll:true}); _vsOpen(s); }
+    else if(_vsSel&&!(e.target.closest&&e.target.closest('#vspop'))) _vsClose(); },true);
+  document.addEventListener('touchstart',e=>{ const s=hit(e); if(s){ e.preventDefault(); _vsOpen(s); }
+    else if(_vsSel&&!(e.target.closest&&e.target.closest('#vspop'))) _vsClose(); },{capture:true,passive:false});
+  document.addEventListener('keydown',e=>{ const s=hit(e); if(s&&(e.key==='Enter'||e.key===' '||e.key==='ArrowDown'||e.key==='ArrowUp')){ e.preventDefault(); _vsOpen(s); } },true);
+  window.addEventListener('resize',()=>_vsClose());
+  document.addEventListener('scroll',e=>{ if(_vsSel&&!(e.target&&e.target.closest&&e.target.closest('#vspop'))) _vsClose(); },true);
+})();
 
 /* ---------- Sidebar / books ---------- */
 function buildBookList(){
@@ -2985,11 +3045,14 @@ function noteHTML(nt,name,ch,v,label){
   const seedV=(((window.COMMENTARY_SEED||{})[name]||{})[String(ch)]||{})[String(v)];
   const own=!(seedV&&seedV.some&&seedV.some(x=>x.id===nt.id));
   let nhl=''; try{ if(own&&v!=='0'){ const c=hlGet(name,ch,v); if(c) nhl=' nhl-'+c; } }catch(e){}
+  /* the fold arrow, in the Journal edition only — Legacy keeps its cards exactly as they were (3 Oct 2026) */
+  const fold=(typeof state!=='undefined'&&state.journal==='modern');
   return `<div class="note${nhl}" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
-    <div class="meta"><span class="who ${own?'mine':''}">${own?'MY NOTE':'NII OKAI'}</span><span class="vref">${ref}</span>
+    <div class="meta${fold?' nfold':''}"${fold?' onclick="_noteCollapse(this)" title="Tap to fold this note away"':''}><span class="who ${own?'mine':''}">${own?'MY NOTE':'NII OKAI'}</span><span class="vref">${ref}</span>
       ${label?`<span class="badge">${label}</span>`:''}
       ${nt.src==='import'?'<span class="badge">imported</span>':''}
-      ${d?`<span class="date">${d}</span>`:''}</div>
+      ${d?`<span class="date${fold?' jdate':''}">${d}</span>`:''}${fold?`<button class="ncol" aria-expanded="true" aria-label="Fold this note away" onclick="event.stopPropagation();_noteCollapse(this)">${_ncolHTML(false)}</button>`:''}</div>
+    ${fold?`<div class="nteaser" onclick="_noteExpand(this)">${escHTML(_teaser(nt.text))}</div>`:''}
     <div class="body" onclick="noteBodyClick(event,this,'${esc(name)}',${ch},'${v}','${nt.id}')" ondblclick="noteBodyDbl(event,'${esc(name)}',${ch},'${v}','${nt.id}')" title="Click to edit here · double-click for the full editor">${escNote(nt.text)}</div>
     ${noteActionsHTML(String(v))}
     <div class="tools">
