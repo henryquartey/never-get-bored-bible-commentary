@@ -1125,7 +1125,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.2', date:'10 Oct 2026'};
+const BUILD={v:'1.2.3', date:'10 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1148,6 +1148,7 @@ function init(){
     else if(q.get('owner')==='off'){ localStorage.removeItem('nok_owner'); history.replaceState(null,'',location.pathname); }
   }catch(e){}
   document.body.classList.toggle('is-reader',!isOwner());
+  try{ _loadRefC(); }catch(e){}
   // first-time readers: the year plan begins at Day 1 TODAY (not the calendar), so no "missed days" on arrival
   try{ if(!localStorage.getItem('nok_plan_anchor') && !Object.keys(chDone()).length){
     const n=new Date(); const iso=new Date(n.getFullYear(),n.getMonth(),n.getDate()).toISOString().slice(0,10);
@@ -2781,7 +2782,7 @@ function renderRead(){
       let ciOpen=false; try{ ciOpen=localStorage.getItem('nok_ci_open')==='1'; }catch(e){}
       html+=`<div class="chapindex ci-compact${ciOpen?' open':''}">
         <div class="lbl-row">
-          <button type="button" class="ci-sum" onclick="_ciToggle(this)" aria-expanded="${ciOpen}">${ICONS.chat} Notes on ${noted.length} verse${noted.length===1?'':'s'}<svg class="ci-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+          <button type="button" class="ci-sum" onclick="_ciToggle(this)" aria-expanded="${ciOpen}">${ICONS.chat} Select chapter notes here<svg class="ci-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           <button class="ci-toggle" onclick="toggleNotes()">${off?'Show all commentary':'Hide all commentary'}</button>
         </div>
         <div class="chips">${noted.map(v=>`<span class="chip" onclick="jumpVerse(${v})">v${v}</span>`).join('')}</div></div>`;
@@ -3100,6 +3101,14 @@ function _pqPutBack(n){ const q=(window.PENDING_Q||[]).find(function(x){ return 
   _pqClose();
   if(done){ _refGen++; renderRead(); toast('Your word is back — your readers see your version'); }
   else toast('Could not find that sentence — use Edit on the note instead'); }
+/* The owner-only change notes travel in their own file (data/refined_c.js), so readers download
+   less; it is loaded only in owner mode. (10 Oct 2026) */
+function _refC(name,ch,v,r,i){ if(r&&r.c) return r.c;
+  const a=((window.REFINED_C||{})[name+'|'+ch+'|'+v])||[]; return (typeof i==='number'&&a[i])||''; }
+function _loadRefC(){ if(window.REFINED_C||window._refCLoading||!isOwner()) return; window._refCLoading=true;
+  const s=document.createElement('script'); s.src='data/refined_c.js?v='+encodeURIComponent(BUILD.v); s.defer=true;
+  s.onload=function(){ try{ if(state.view==='read'&&!document.querySelector('details.trk[open]')) renderRead(); }catch(e){} };
+  s.onerror=function(){ window._refCLoading=false; }; document.head.appendChild(s); }
 function modernNoteHTML(name,ch,v,r,i){
   const ref=`${name} ${ch}:${v}`;
   /* Hand-edited entries keep their drafts in `d`; patched ones look the original up by id. */
@@ -3133,11 +3142,11 @@ function modernNoteHTML(name,ch,v,r,i){
     <details class="trk owner-only" data-m="stack">
       <summary>🔍 Track changes — your original & what I changed</summary>
       <div class="sub"><button class="on" onclick="setTrkM(this,'stack')">Stacked</button><button onclick="setTrkM(this,'side')">⇄ Side by side</button></div>
-      <div class="tk-stack">${stack}<div class="chg2">✎ ${escHTML(r.c||'Spelling and punctuation only.')}</div></div>
+      <div class="tk-stack">${stack}<div class="chg2">✎ ${escHTML(_refC(name,ch,v,r,i)||'Spelling and punctuation only.')}</div></div>
       <div class="tk-side"><div class="sxs2">
         <div><span class="dl">✨ Modern</span><div class="draft2" style="border-color:var(--note-line)">${escHTML(_stripImport(r.m,name,ch,v))}</div></div>
         <div><span class="dl">📝 Original</span><div class="draft2">${origSide}</div></div></div>
-        <div class="chg2">✎ ${escHTML(r.c||'Spelling and punctuation only.')}</div></div>
+        <div class="chg2">✎ ${escHTML(_refC(name,ch,v,r,i)||'Spelling and punctuation only.')}</div></div>
     </details></div>`;
 }
 function noteHTML(nt,name,ch,v,label){
