@@ -12,15 +12,15 @@
 <meta property="og:title" content="Never Get Bored — Nii Okai's Journal Through Scripture">
 <meta property="og:description" content="A verse-by-verse journal through Scripture by Nii Okai. Over 4,000 personal notes across all 66 books, with the King James text, reading plans and audio.">
 <meta property="og:url" content="https://bible.getwordwisdom.com/">
-<meta property="og:image" content="https://bible.getwordwisdom.com/icon-1024.png?v=3">
+<meta property="og:image" content="https://bible.getwordwisdom.com/icon-1024.png?v=4">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Never Get Bored — Nii Okai's Journal Through Scripture">
 <meta name="twitter:description" content="A verse-by-verse journal through Scripture by Nii Okai. Over 4,000 personal notes across all 66 books.">
-<meta name="twitter:image" content="https://bible.getwordwisdom.com/icon-1024.png?v=3">
+<meta name="twitter:image" content="https://bible.getwordwisdom.com/icon-1024.png?v=4">
 <meta name="theme-color" content="#FAFAF8">
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=3">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=4">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=4">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Bible Journal N.O">
@@ -414,7 +414,24 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
   width:30px;height:30px;margin-top:-6px;margin-bottom:-6px;margin-right:-6px;border:none;border-radius:8px;
   background:transparent;color:var(--ink);opacity:.5;cursor:pointer;transition:opacity .15s,background .15s}
 .note .ncol svg{width:18px;height:18px}
-.note mark.pq{background:rgba(255,145,0,.30);color:inherit;border-radius:3px;padding:0 2px;box-shadow:inset 0 -2px 0 rgba(230,120,0,.9);cursor:help}
+.note mark.pq{background:rgba(255,145,0,.30);color:inherit;border-radius:3px;padding:0 2px;box-shadow:inset 0 -2px 0 rgba(230,120,0,.9);cursor:pointer}
+#pqbar{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:9999;display:none;width:max-content;max-width:min(560px,calc(100vw - 32px));
+  background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 32px rgba(0,0,0,.35);padding:12px 14px;font:14px/1.45 var(--sans)}
+#pqbar.show{display:block}
+#pqbar .pqb{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+#pqbar button{font:600 13px var(--sans);padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+#pqbar .pqback{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+#pqbar .pqx{margin-left:auto;padding:7px 10px}
+/* the chapter's "verses with notes" panel folds to one line in the new UI; Legacy keeps the full panel (10 Oct 2026) */
+.chapindex.ci-compact{padding:8px 14px}
+.chapindex.ci-compact .lbl-row{margin-bottom:0}
+.chapindex.ci-compact .chips{display:none;margin-top:8px}
+.chapindex.ci-compact.open .chips{display:flex}
+.chapindex .ci-sum{display:inline-flex;align-items:center;gap:6px;background:none;border:0;padding:4px 0;cursor:pointer;
+  font:700 11px var(--sans);text-transform:uppercase;letter-spacing:.7px;color:var(--accent)}
+.chapindex .ci-sum svg{width:14px;height:14px}
+.chapindex .ci-sum .ci-chev{transition:transform .2s;flex:none}
+.chapindex.ci-compact.open .ci-sum .ci-chev{transform:rotate(180deg)}
 .note .meta.nfold:hover .ncol,.note.ncollapsed .ncol{opacity:.95}
 .note .ncol:hover{background:var(--line)}
 .note .nteaser{display:none;font-size:13px;color:var(--soft);font-style:italic;cursor:pointer}
@@ -1108,7 +1125,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.0.9', date:'10 Oct 2026'};
+const BUILD={v:'1.1.0', date:'10 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2751,12 +2768,23 @@ function renderRead(){
         <button class="ci-toggle">Nearest: ${escHTML(nn.b)} ${nn.ch} · ${nn.n} note${nn.n===1?'':'s'} →</button></div></div>`; }
     if(noted.length){
       const off=document.documentElement.classList.contains('hide-notes');
+      if(document.body.classList.contains('legacy')){
       html+=`<div class="chapindex">
         <div class="lbl-row">
           <div class="lbl">${ICONS.chat} To view commentary — tap a verse</div>
           <button class="ci-toggle" onclick="toggleNotes()">${off?'Show all commentary':'Hide all commentary'}</button>
         </div>
         <div class="chips">${noted.map(v=>`<span class="chip" onclick="jumpVerse(${v})">v${v}</span>`).join('')}</div></div>`;
+      } else {
+      /* one quiet line; the verse chips drop down only when asked for (Henry, 10 Oct 2026) */
+      let ciOpen=false; try{ ciOpen=localStorage.getItem('nok_ci_open')==='1'; }catch(e){}
+      html+=`<div class="chapindex ci-compact${ciOpen?' open':''}">
+        <div class="lbl-row">
+          <button type="button" class="ci-sum" onclick="_ciToggle(this)" aria-expanded="${ciOpen}">${ICONS.chat} Notes on ${noted.length} verse${noted.length===1?'':'s'}<svg class="ci-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+          <button class="ci-toggle" onclick="toggleNotes()">${off?'Show all commentary':'Hide all commentary'}</button>
+        </div>
+        <div class="chips">${noted.map(v=>`<span class="chip" onclick="jumpVerse(${v})">v${v}</span>`).join('')}</div></div>`;
+      }
     }
     const chNotes=chData['0']||[];
     /* A chapter note has a refined version too — it used to show the raw original either way. (21 Sep 2026) */
@@ -2827,6 +2855,8 @@ function renderRead(){
         _progSync(); _fabSync(); },ms); }); } },80); }
   buildBookList();
 }
+function _ciToggle(btn){ const box=btn.closest('.chapindex'); const on=!box.classList.contains('open');
+  box.classList.toggle('open',on); btn.setAttribute('aria-expanded',on); try{ localStorage.setItem('nok_ci_open',on?'1':'0'); }catch(e){} }
 function jumpVerse(v){ const el=document.getElementById('v'+v); if(!el)return;
   el.classList.remove('collapsed'); el.classList.add('revealed');
   el.scrollIntoView({behavior:'smooth',block:'center'});
@@ -3025,18 +3055,48 @@ function _teaser(t){ const x=String(t||'').replace(/\s+/g,' ').trim();
   return x.length>90?x.slice(0,90).replace(/\s+\S*$/,'')+'\u2026':x; }
 function _openTrk(btn){ try{ const n=btn.closest('.note'); const d=n&&n.querySelector('details.trk');
   if(d){ d.open=true; d.scrollIntoView({behavior:'smooth',block:'nearest'}); } }catch(e){} }
-/* Words waiting for Henry's answer (data/pending.js, built by tools/review/pending.py).
-   Owner only: the word shows in orange, and a tap shows the question. Readers never see it,
-   and Legacy is untouched. (10 Oct 2026) */
+/* Words in data/pending.js (built by tools/review/pending.py). Owner only, Journal mode only -
+   readers never see it and Legacy is untouched.
+   k:'c' - a word Claude changed on his own judgement (Henry, 10 Oct 2026: "indicate in my journal the
+           changes you have made so I can change them anytime I am reading them"). Shown in orange;
+           a tap offers "Keep" or "Put back" his own word, saved as his own edit and synced like any edit.
+   k:'q' - a word still waiting for his answer; a tap shows the question.  (10 Oct 2026) */
+function _pqKept(){ try{ return JSON.parse(localStorage.getItem('nok_pq_kept')||'[]'); }catch(e){ return []; } }
 function _pqMark(html,name,ch,v){
   try{ if(!isOwner()||!window.PENDING_Q||!window.PENDING_Q.length) return html;
+    const kept=_pqKept();
     window.PENDING_Q.forEach(function(q){ if(q.b!==name||String(q.c)!==String(ch)||String(q.v)!==String(v)) return;
-      let w=escHTML(sacredCase(q.w)), i=html.indexOf(w);
-      if(i<0){ w=escHTML(q.w); i=html.indexOf(w); } if(i<0) return;
-      if(q.x){ const pre=escHTML(sacredCase(q.p||'')).length; i+=pre; w=html.substr(i,escHTML(q.x).length); }
-      const t='Question '+q.n+': \u201c'+q.w+'\u201d \u2192 \u201c'+q.s+'\u201d?';
-      html=html.slice(0,i)+'<mark class="pq" title="'+escHTML(t).replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();toast(this.title)">'+w+'</mark>'+html.slice(i+w.length); });
+      const chg=q.k==='c'; if(chg&&kept.indexOf(q.n)>=0) return;
+      const phrase=chg?q.s:q.w, pre=chg?(q.ps||''):(q.p||''), x=chg?q.xs:q.x;
+      let w=escHTML(sacredCase(phrase)), i=html.indexOf(w);
+      if(i<0){ w=escHTML(phrase); i=html.indexOf(w); } if(i<0) return;
+      if(x){ i+=escHTML(sacredCase(pre)).length; w=html.substr(i,escHTML(x).length); }
+      const t=chg?('Claude changed your “'+(q.x||'')+'” to “'+(q.xs||'')+'” — tap to keep it or put yours back')
+                 :('Question '+q.n+': “'+q.w+'” → “'+q.s+'”?');
+      html=html.slice(0,i)+'<mark class="pq'+(chg?' pqc':'')+'" title="'+escHTML(t).replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();'+(chg?'_pqOpen('+q.n+')':'toast(this.title)')+'">'+w+'</mark>'+html.slice(i+w.length); });
   }catch(e){} return html; }
+function _pqW(t){ return String(t||'').replace(/^[\s,.;:!?…]+|[\s,.;:!?…]+$/g,''); }
+function _pqOpen(n){ const q=(window.PENDING_Q||[]).find(function(x){ return x.n===n; }); if(!q) return;
+  let b=document.getElementById('pqbar'); if(!b){ b=document.createElement('div'); b.id='pqbar'; document.body.appendChild(b); }
+  b.innerHTML='<div class="pqt">Claude changed your <b>“'+escHTML(_pqW(q.x))+'”</b> to <b>“'+escHTML(_pqW(q.xs))+'”</b> in '+escHTML(q.b+' '+q.c+':'+q.v)+'.</div>'
+    +'<div class="pqb"><button type="button" onclick="_pqKeep('+n+')">Keep the change</button>'
+    +'<button type="button" class="pqback" onclick="_pqPutBack('+n+')">Put back “'+escHTML(_pqW(q.x))+'”</button>'
+    +'<button type="button" class="pqx" onclick="_pqClose()" aria-label="Close">✕</button></div>';
+  b.classList.add('show'); }
+function _pqClose(){ const b=document.getElementById('pqbar'); if(b) b.classList.remove('show'); }
+function _pqKeep(n){ const k=_pqKept(); if(k.indexOf(n)<0) k.push(n); try{ localStorage.setItem('nok_pq_kept',JSON.stringify(k)); }catch(e){}
+  _pqClose(); _refGen++; renderRead(); toast('Kept — the mark is gone on this device'); }
+function _pqPutBack(n){ const q=(window.PENDING_Q||[]).find(function(x){ return x.n===n; }); if(!q) return;
+  const arr=refinedFor(q.b,q.c,q.v)||[]; let done=false;
+  arr.forEach(function(e,i){ if(done) return;
+    const mine=_refEditGet(q.b,q.c,q.v,i), base=_refBuild(e,q.b,q.c,q.v), cur=mine?mine.m:base;
+    if(cur&&cur.indexOf(q.s)>=0){ const all=_refEdits();
+      all[_refEditKey(q.b,q.c,q.v,i)]={m:cur.replace(q.s,q.w),t:Date.now(),b:base||''};
+      try{ localStorage.setItem(LS_REFEDIT,JSON.stringify(all)); }catch(err){}
+      try{ if(fbUser()) fbPush(); }catch(err){} done=true; } });
+  _pqClose();
+  if(done){ _refGen++; renderRead(); toast('Your word is back — your readers see your version'); }
+  else toast('Could not find that sentence — use Edit on the note instead'); }
 function modernNoteHTML(name,ch,v,r,i){
   const ref=`${name} ${ch}:${v}`;
   /* Hand-edited entries keep their drafts in `d`; patched ones look the original up by id. */

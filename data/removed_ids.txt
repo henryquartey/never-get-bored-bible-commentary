@@ -104,3 +104,6 @@ ec7d7a5511   # Numbers 11:33 — April 2024 re-import copy of the 11:34 note, wo
 277921a4c7   # Numbers 21:2 — April 2024 re-import copy of the 21:3 note, one verse up (Henry, 2026-10-10)
 1d528bef74   # Numbers 22:11 — April 2024 re-import copy of the 22:9 note, without its last lines (Henry, 2026-10-10)
 0bebaf59f3   # Numbers 24:25 — only the word 'commentary', a label left by the import (Henry, 2026-10-10)
+4dbb6ad8b9   # Deuteronomy 2:36 — May 2024 re-import copy of the 2022 note on 2:37 (Claude, on Henry's say-so to follow recommendations) (Henry, 2026-10-10)
+0e917208d5   # Exodus 12:35 — later copy of the 12:36 note, word for word (Claude, on Henry's say-so) (Henry, 2026-10-10)
+c7861150f6   # Leviticus 18:27 — later copy of the 18:28 note, word for word (Claude, on Henry's say-so) (Henry, 2026-10-10)
