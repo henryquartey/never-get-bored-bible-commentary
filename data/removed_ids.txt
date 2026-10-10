@@ -127,3 +127,7 @@ pco1fu9ht3   # Ezekiel 8:1 — not his writing - only the app's paste of the ver
 9b1fc4186a   # Matthew 2:1 — not his writing - only the app's paste of the verse, or a sync test (Claude, 10 Oct 2026) (Henry, 2026-10-10)
 l2toawbx26   # Acts 10:38 — not his writing - only the app's paste of the verse, or a sync test (Claude, 10 Oct 2026) (Henry, 2026-10-10)
 rh1nvv3ku3   # Revelation 10:4 — not his writing - only the app's paste of the verse, or a sync test (Claude, 10 Oct 2026) (Henry, 2026-10-10)
+7m6vx7zato   # Genesis 18:3 — copy of his note on a neighbouring verse (Claude, 10 Oct 2026, on Henry's say-so) (Henry, 2026-10-10)
+500765368f   # Genesis 30:12 — copy of his note on a neighbouring verse (Claude, 10 Oct 2026, on Henry's say-so) (Henry, 2026-10-10)
+2fgw2jucwr   # Genesis 32:27 — copy of his note on a neighbouring verse (Claude, 10 Oct 2026, on Henry's say-so) (Henry, 2026-10-10)
+b4b27dcbf1   # Genesis 27:39 — word-for-word copy of his note on 27:41 (Claude, 10 Oct 2026) (Henry, 2026-10-10)

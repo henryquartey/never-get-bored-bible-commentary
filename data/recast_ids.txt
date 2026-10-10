@@ -3,3 +3,4 @@
 # 21 Sep 2026 — Genesis 25:31 held four separate thoughts; they now sit on Genesis 25:31, 24:21,
 # 32:28 and 26:3 in the refined edition. The original is untouched in Legacy.
 cc7350e846   # the four-thought Genesis 25:31 note
+3de4a37c9d   # Exodus 32:26 — placed on Exodus 6:1 and 17:11, the verses it is about (10 Oct 2026)
