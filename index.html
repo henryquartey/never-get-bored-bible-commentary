@@ -414,6 +414,8 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
   width:30px;height:30px;margin-top:-6px;margin-bottom:-6px;margin-right:-6px;border:none;border-radius:8px;
   background:transparent;color:var(--ink);opacity:.5;cursor:pointer;transition:opacity .15s,background .15s}
 .note .ncol svg{width:18px;height:18px}
+.note .privp{background:rgba(120,120,140,.14);border-bottom:1px dashed rgba(120,120,140,.7);border-radius:3px;padding:0 2px}
+.note .privb{font:600 11px var(--sans);letter-spacing:.3px;color:var(--soft,#777);border:1px dashed currentColor;border-radius:999px;padding:1px 8px;margin-left:6px}
 .note mark.pq{background:rgba(255,145,0,.30);color:inherit;border-radius:3px;padding:0 2px;box-shadow:inset 0 -2px 0 rgba(230,120,0,.9);cursor:pointer}
 #pqbar{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:9999;display:none;width:max-content;max-width:min(560px,calc(100vw - 32px));
   background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 32px rgba(0,0,0,.35);padding:12px 14px;font:14px/1.45 var(--sans)}
@@ -1114,6 +1116,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <script src="data/apikeys.js" onerror="window.API_KEYS=window.API_KEYS||{}"></script>
 <script src="data/withdrawn.js" defer></script>
 <script src="data/pending.js" defer></script>
+<script src="data/private.js" defer></script>
 <script src="data/commentary.js" defer onload="_seedArrived()"></script>
 <script src="data/refined.js" defer onload="_refinedArrived()"></script>
 <script src="data/chronological.js"></script>
@@ -1125,7 +1128,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.4', date:'10 Oct 2026'};
+const BUILD={v:'1.2.5', date:'10 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1167,6 +1170,7 @@ function init(){
     if(p.showDates){ document.documentElement.classList.add('show-dates'); }
     if(p.hideNotes===true){ document.documentElement.classList.add('hide-notes'); } // default: MY journal is shown
     if(p.journal==='original'||p.journal==='modern') state.journal=p.journal;
+    if(state.journal==='original'&&!isOwner()) state.journal='modern';   /* Legacy is for the owner only (10 Oct 2026) */
     if(['bible','chrono','new','old','most'].includes(p.jsort)) state.jsort=p.jsort;
     if(p.refcomm) state.refcomm=true;
     if(['read','plan','home','discourse','menu','mine','you','explore'].includes(p.view)) state.view=p.view;
@@ -2926,7 +2930,7 @@ function vmReadNote(ev,v){ ev.stopPropagation(); closeVerseMenu();
   const hidden = document.documentElement.classList.contains('hide-notes') ? !el.classList.contains('revealed') : el.classList.contains('collapsed');
   if(hidden) toggleVerse(v);
   const nw=document.getElementById('nw'+v); if(nw) setTimeout(()=>nw.scrollIntoView({behavior:'smooth',block:'center'}),60); }
-function setJournalMode(m){ state.journal=m; savePrefs();
+function setJournalMode(m){ if(m==='original'&&!isOwner()) m='modern'; /* Legacy is for the owner only (10 Oct 2026) */ state.journal=m; savePrefs();
   if(state.view==='mine') renderMine(); else if(state.view==='read') renderRead(); }
 function setTrkM(btn,m){ const t=btn.closest('.trk'); t.dataset.m=m;
   t.querySelectorAll('.sub button').forEach(b=>b.classList.toggle('on', b.textContent.toLowerCase().includes(m==='side'?'side':'stack'))); }
@@ -2964,10 +2968,11 @@ function refinedFor(name,ch,v){
   if(!x) return null;
   const a=Array.isArray(x)?x:[x];
   const out=[];
-  for(const e of a){ const m=_refBuild(e,name,ch,v); if(m!=null){ if(e.m==null) e.m=m; out.push(e); } }
+  for(const e of a){ if(e._x) continue; const m=_refBuild(e,name,ch,v); if(m!=null){ if(e.m==null) e.m=m; out.push(e); } }
   return out.length?out:null;
 }
 function _refinedArrived(){
+  try{ _privApply(); }catch(e){}
   try{ if(state.view==='read') renderRead(); else if(state.view==='mine') renderMine(); }catch(err){}
 }
 /* ---------- Editing your own published notes ----------
@@ -3109,7 +3114,42 @@ function _loadRefC(){ if(window.REFINED_C||window._refCLoading||!isOwner()) retu
   const s=document.createElement('script'); s.src='data/refined_c.js?v='+encodeURIComponent(BUILD.v); s.defer=true;
   s.onload=function(){ try{ if(state.view==='read'&&!document.querySelector('details.trk[open]')) renderRead(); }catch(e){} };
   s.onerror=function(){ window._refCLoading=false; }; document.head.appendChild(s); }
+/* ---------- Private passages (data/private.js, built by tools/review/build_private.py) ----------
+   Henry, 10 Oct 2026: "hide all the sensitive ones". Readers never see them - not in the Journal,
+   search, the home page or the Journal list; their raw originals are dropped from this reader's
+   in-memory journal. The owner sees everything, with the private part marked 🔒. */
+function _privH(t){ let h=5381; for(let k=0;k<t.length;k++){ h=(Math.imul(h,33)^t.charCodeAt(k))>>>0; } return h>>>0; }
+function _privSpan(e,q){ const m=(e&&typeof e.m==='string')?e.m:''; const t=m.substr(q.o,q.l); return (t.length===q.l&&_privH(t)===q.h)?t:null; }
+function _privApply(){
+  if(isOwner()||!window.PRIVATE||!window.PRIVATE.length) return;
+  try{
+    const byCard={};
+    window.PRIVATE.forEach(function(q){ const k=q.b+'|'+q.c+'|'+q.v+'|'+q.i; (byCard[k]=byCard[k]||[]).push(q); });
+    Object.keys(byCard).forEach(function(k){ const qs=byCard[k], q0=qs[0];
+      const arr=(((window.REFINED||{})[q0.b]||{})[q0.c]||{})[q0.v]; const e=arr&&arr[q0.i];
+      if(e&&!e._px){
+        if(qs.some(function(q){ return q.w||_privSpan(e,q)==null; })) e._x=1;     /* whole note, or text moved: hide it all */
+        else { let m=e.m; qs.slice().sort(function(a,b){ return b.o-a.o; }).forEach(function(q){ m=m.slice(0,q.o)+m.slice(q.o+q.l); });
+          e.m=m.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim(); }
+        e._px=1; } });
+    window.PRIVATE.forEach(function(q){ if(!q.ids||!q.ids.length) return;
+      if(typeof DATA!=='undefined'&&DATA){ const vv=((DATA[q.b]||{})[q.c]||{})[q.v];
+        if(vv){ const keep=vv.filter(function(nt){ return !(nt&&q.ids.indexOf(nt.id)>=0); });
+          if(keep.length!==vv.length){ if(keep.length) DATA[q.b][q.c][q.v]=keep; else delete DATA[q.b][q.c][q.v]; } } }
+      const sv=(((window.COMMENTARY_SEED||{})[q.b]||{})[q.c]||{})[q.v];
+      if(sv){ const k2=sv.filter(function(nt){ return !(nt&&q.ids.indexOf(nt.id)>=0); }); if(k2.length!==sv.length) window.COMMENTARY_SEED[q.b][q.c][q.v]=k2; } });
+  }catch(err){} }
+function _privFor(name,ch,v,i){ if(!isOwner()||!window.PRIVATE) return [];
+  return window.PRIVATE.filter(function(q){ return q.b===name&&String(q.c)===String(ch)&&String(q.v)===String(v)&&q.i===i; }); }
+function _privMarkHTML(text,name,ch,v,i,r){ const ps=_privFor(name,ch,v,i).filter(function(q){ return !q.w; }); if(!ps.length) return null;
+  const spans=ps.map(function(q){ const t=_privSpan(r,q); return t?{t:t}:null; }).filter(Boolean); if(!spans.length) return null;
+  let out='', rest=text;
+  spans.sort(function(a,b){ return text.indexOf(a.t)-text.indexOf(b.t); }).forEach(function(sp){ const k=rest.indexOf(sp.t); if(k<0) return;
+    out+=escNote(rest.slice(0,k))+'<span class="privp" title="Hidden from readers — only you see this">🔒 '+escNote(sp.t)+'</span>'; rest=rest.slice(k+sp.t.length); });
+  return out+escNote(rest); }
 function modernNoteHTML(name,ch,v,r,i){
+  if(r&&r._x) return '';
+  const _privWhole=_privFor(name,ch,v,i).some(function(q){ return q.w; });
   const ref=`${name} ${ch}:${v}`;
   /* Hand-edited entries keep their drafts in `d`; patched ones look the original up by id. */
   let drafts=r.d;
@@ -3132,9 +3172,9 @@ function modernNoteHTML(name,ch,v,r,i){
   const stack=drafts.map(dr=>`<div class="draft2"><span class="dl">${escHTML(dr[0])}</span>${escHTML(dr[1])}</div>`).join('');
   const origSide=drafts.map(dr=>escHTML(dr[0]+'\n'+dr[1])).join('\n\n──────\n');
   return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
-    <div class="meta nfold" onclick="_noteCollapse(this)" title="Tap to fold this note away"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}<button class="ncol" aria-expanded="true" aria-label="Fold this note away" onclick="event.stopPropagation();_noteCollapse(this)">${_ncolHTML(false)}</button></div>
+    <div class="meta nfold" onclick="_noteCollapse(this)" title="Tap to fold this note away"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${_privWhole?'<span class="privb" title="This whole note is hidden from readers">\uD83D\uDD12 Private</span>':''}${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}<button class="ncol" aria-expanded="true" aria-label="Fold this note away" onclick="event.stopPropagation();_noteCollapse(this)">${_ncolHTML(false)}</button></div>
     <div class="nteaser" onclick="_noteExpand(this)">${escHTML(_teaser(_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v)))}</div>
-    <div class="body">${_pqMark(escNote(_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v)),name,ch,v)}</div>
+    <div class="body">${(function(){ const _t=_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v); const _pm=_privMarkHTML(_t,name,ch,v,i,r); return _pm!=null?_pm:_pqMark(escNote(_t),name,ch,v); })()}</div>
     ${sittings}
     ${_mine?`<div class="chg2" style="color:var(--accent)">✎ You edited this on ${escHTML(new Date(_mine.t).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</div>`:''}
     ${r.e?`<div class="chg2" style="color:var(--accent)">📈 ${escHTML(String(r.e).replace(/<[^>]+>/g,''))}</div>`:''}
@@ -3268,7 +3308,7 @@ function renderMine(){
     <div class="mc-head"><h2>${legacy?'Legacy Journal':'Nii Okai’s Journal'}</h2>
       <div class="mine-seg jmtoggle">
         <button class="${!legacy?'on':''}" onclick="setJournalMode('modern')">Journal</button>
-        <button class="${legacy?'on':''}" onclick="setJournalMode('original')">📜 Legacy Journal</button>
+        ${isOwner()?`<button class="${legacy?'on':''}" onclick="setJournalMode('original')">📜 Legacy Journal</button>`:''}
       </div>
       <span class="mc-count">${sub} · ${total} entr${total!==1?'ies':'y'} · tap one to expand</span>
       <div class="jsortrow"><label for="jsortSel">Sort</label>
@@ -4943,6 +4983,7 @@ function _seedArrived(){
     if(!localStorage.getItem(LS_KEY)&&!Object.keys(DATA).length){ DATA=deepCopy(window.COMMENTARY_SEED||{}); ch=true; }
     else ch=_seedMerge();
     try{ if(_dropWithdrawn()) ch=true; }catch(e){}
+    try{ _privApply(); }catch(e){}
     if(first||ch){ if(typeof render==='function'&&state&&state.view) render(); }
     if(!first&&ch) toast('Journal updated');
     if(fbUser()&&typeof nsSync==='function') nsSync();

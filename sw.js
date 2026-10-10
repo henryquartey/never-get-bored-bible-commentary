@@ -1,6 +1,6 @@
 /* Never Get Bored — service worker.
    Bump CACHE whenever the app shell changes so installed copies refresh. */
-const CACHE = 'ngb-v97';
+const CACHE = 'ngb-v98';
 const PRECACHE = [
   './', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png',
   './data/books.js', './data/versions.js', './data/KJV.js', './data/chronological.js', './data/headings.js', './data/audio_kjv.js',
@@ -8,7 +8,7 @@ const PRECACHE = [
 ];
 /* Files that change often — always try the network first, fall back to cache offline. */
 /* icons too: they used to be answered from the cache ignoring ?v=, so a new logo never showed (10 Oct 2026) */
-const FRESH = /\/(index\.html|manifest\.webmanifest|icon-[a-z0-9-]+\.png|apple-touch-icon\.png|favicon-32\.png|logo\.svg|data\/(withdrawn|pending|refined_c|apikeys|refined|chronological|dict|books|versions|audio_kjv|audio_kokoro)\.js|data\/commentary\.json)$/;
+const FRESH = /\/(index\.html|manifest\.webmanifest|icon-[a-z0-9-]+\.png|apple-touch-icon\.png|favicon-32\.png|logo\.svg|data\/(withdrawn|pending|private|refined_c|apikeys|refined|chronological|dict|books|versions|audio_kjv|audio_kokoro)\.js|data\/commentary\.json)$/;
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
