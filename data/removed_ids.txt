@@ -97,3 +97,7 @@ ad60141fad   # Exodus 3:1  — held 3:1 plus the 3:8 note about the priesthood
 # Exodus 1 chapter note, 27 Sep 2026. Its whole text was a notice to readers from when Henry was
 # writing Exodus daily — "THIS CHAPTER IS STILL WORK IN PROGRESS…". Henry asked for it to go.
 b10a626683   # the "work in progress" notice at the top of Exodus 1
+
+# 10 Oct 2026 — Henry: "withdraw the copy" / "11:33 withdraw if it's the exact same".
+kx08yzputw   # Numbers 8:15 — the 8:12 note saved twice in the same second
+ec7d7a5511   # Numbers 11:33 — April 2024 re-import copy of the 11:34 note, word for word

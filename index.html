@@ -181,6 +181,15 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 
 .reader{overflow-y:auto;flex:1;min-height:0;padding:30px 16px 40px}
 .page{max-width:1080px;margin:0 auto}
+.chtitle{margin:4px 0 16px;font-size:inherit;font-weight:inherit}
+.chtbtn{display:inline-flex;align-items:center;gap:10px;border:none;background:transparent;color:var(--ink);padding:2px 4px 2px 0;
+  cursor:pointer;font-family:var(--serif);font-weight:600;font-size:34px;line-height:1.15;font-variant-numeric:lining-nums;text-align:left}
+.chtbtn .chtarrow{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;
+  border:1.5px solid var(--line);color:var(--ink);flex:0 0 auto;transition:background .15s,border-color .15s;transform:translateY(2px)}
+.chtbtn .chtarrow svg{width:18px;height:18px}
+.chtbtn:hover .chtarrow,.chtbtn:focus-visible .chtarrow{background:var(--line);border-color:var(--ink)}
+.crumb.quiet{font-size:15px;font-weight:500;color:var(--soft)}
+@media (max-width:700px){ .chtbtn{font-size:28px} .chtbtn .chtarrow{width:28px;height:28px} .chtbtn .chtarrow svg{width:16px;height:16px} .chtitle{margin:2px 0 12px} }
 .chap-title{font-family:var(--serif);font-size:30px;text-align:center;margin:0 0 4px;font-weight:600}
 .chap-sub{text-align:center;color:var(--soft);font-size:13px;margin-bottom:28px}
 
@@ -1096,7 +1105,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.0.5', date:'3 Oct 2026'};
+const BUILD={v:'1.0.6', date:'8 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2670,6 +2679,7 @@ function renderRead(){
   const book=window.BOOKS[state.book], name=book.name, ch=state.chapter;
   const nch=book.chapters.length;
   document.getElementById('crumb').innerHTML=`${name} ${ch} <span class="caret">▾</span>`;
+  document.getElementById('crumb').classList.add('quiet');
   { const pb=document.getElementById('planBackBtn'); if(pb) pb.style.display=state.plan?'':'none'; }
   document.getElementById('chapselWrap').style.display='';
   const csel=document.getElementById('chapSelect');
@@ -2688,7 +2698,11 @@ function renderRead(){
   if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]);
     planBar=`<div class="planctx">📖 <b>Day ${state.plan.day+1}</b> of the plan · passage ${state.plan.ci+1} of ${chaps.length}
       <button class="btn" onclick="exitPlanRead()">✕ Back to plan</button></div>`; }
-  let html=`<div class="page">${planBar}
+  /* The chapter name sits at the top of the reading, the way a printed Bible heads each chapter,
+     with an arrow that opens the book and chapter picker. The bar keeps a small grey copy. (8 Oct 2026) */
+  const chTitle=`<h1 class="chtitle"><button type="button" class="chtbtn" onclick="openBookPicker()" title="Choose another book or chapter" aria-label="${escHTML(name)} ${ch} — choose another book or chapter">
+      <span class="chtname">${escHTML(name)} ${ch}</span><span class="chtarrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></button></h1>`;
+  let html=`<div class="page">${planBar}${chTitle}
     ${state.compare?`<div class="chap-sub">${state.version} &nbsp;⇄&nbsp; ${state.compare}</div>`:''}
     ${refCommPanel(name,ch)}`;
   if(state.compare){
@@ -3186,6 +3200,7 @@ function jumpTo(name,ch,v,opts){
 
 /* ---------- Views & nav ---------- */
 function setView(v){
+  try{ if(v!=='read') document.getElementById('crumb').classList.remove('quiet'); }catch(e){}
   /* Tapping Plans while you are already inside a plan passage means “show me the plan”, not
      “keep me here”. From anywhere else it still takes you straight back to your reading. */
   if(v==='plan' && state.view==='read' && state.plan){ state.plan=null; state.view='plan'; setViewTabs(); render(); toggleSidebar(false); return; }
