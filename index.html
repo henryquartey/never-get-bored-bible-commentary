@@ -1125,7 +1125,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.1', date:'10 Oct 2026'};
+const BUILD={v:'1.2.2', date:'10 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2761,7 +2761,8 @@ function renderRead(){
     html+=`</div>`;
   } else {
     if(olFallback) html+=`<div class="soft" style="margin:-6px 0 14px">${ICONS.globe} ${escHTML(olFallback)}</div>`;
-    const noted=Object.keys(chData).filter(k=>k!=='0'&&chData[k].length).map(Number).sort((a,b)=>a-b);
+    let noted=Object.keys(chData).filter(k=>k!=='0'&&chData[k].length&&(state.journal!=='modern'||refinedFor(name,ch,k)||chData[k].some(nt=>!nt||!(window.RECAST_IDS||[]).includes(nt.id)))).map(Number).sort((a,b)=>a-b);
+    if(state.journal==='modern'){ Object.keys((((window.REFINED||{})[name])||{})[String(ch)]||{}).forEach(k=>{ if(k!=='0'&&!noted.includes(+k)) noted.push(+k); }); noted.sort((a,b)=>a-b); }
     window._chapHasNotes=noted.length>0;
     if(!noted.length&&!(chData['0']||[]).length){ const nn=_nearestNoted(name,ch);
       if(nn) html+=`<div class="chapindex nearby" onclick="openChapter('${esc(nn.b)}',${nn.ch})"><div class="lbl-row" style="margin:0"><div class="lbl">${ICONS.chat} No notes in this chapter yet</div>
@@ -2795,7 +2796,9 @@ function renderRead(){
       const hs=(((window.HEADINGS||{})[name]||{})[String(ch)]||{})[String(v)];
       if(hs) hs.forEach(h=>{ html+=`<div class="sheading s${h[0]}">${escHTML(h[1])}</div>`; });
       const txt=verses[String(v)]||'';
-      const notes=chData[String(v)]||[];
+      /* a note whose thoughts were placed on other verses (RECAST_IDS) is not shown as-is in Journal
+         mode, even where no refined card is left on its verse. Legacy unchanged. (10 Oct 2026) */
+      const notes=(chData[String(v)]||[]).filter(nt=>state.journal!=='modern'||!nt||!(window.RECAST_IDS||[]).includes(nt.id));
       const hasRef = state.journal==='modern' && refinedFor(name,ch,v);
       /* The number on the chip must be the number of notes the reader will actually SEE.
          In the refined edition repeated drafts of one thought are merged, so a verse with 2 raw
