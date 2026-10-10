@@ -1,6 +1,6 @@
 /* Never Get Bored — service worker.
    Bump CACHE whenever the app shell changes so installed copies refresh. */
-const CACHE = 'ngb-v85';
+const CACHE = 'ngb-v86';
 const PRECACHE = [
   './', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png',
   './data/books.js', './data/versions.js', './data/KJV.js', './data/chronological.js', './data/headings.js', './data/audio_kjv.js',
@@ -24,6 +24,9 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
+  /* the chapter pages for Google are plain pages, not the app: leave them to the browser,
+     and never store one in place of the app's own page (10 Oct 2026) */
+  if (/\/read\//.test(url.pathname) || /\/sitemap\.xml$/.test(url.pathname)) return;
 
   /* The journal (2 MB): answer from cache at once, fetch the latest behind the scenes, and if it
      changed, tell the open pages so they fold the new notes in without a reload. */
