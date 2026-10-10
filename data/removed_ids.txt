@@ -101,3 +101,6 @@ b10a626683   # the "work in progress" notice at the top of Exodus 1
 # 10 Oct 2026 — Henry: "withdraw the copy" / "11:33 withdraw if it's the exact same".
 kx08yzputw   # Numbers 8:15 — the 8:12 note saved twice in the same second
 ec7d7a5511   # Numbers 11:33 — April 2024 re-import copy of the 11:34 note, word for word
+277921a4c7   # Numbers 21:2 — April 2024 re-import copy of the 21:3 note, one verse up (Henry, 2026-10-10)
+1d528bef74   # Numbers 22:11 — April 2024 re-import copy of the 22:9 note, without its last lines (Henry, 2026-10-10)
+0bebaf59f3   # Numbers 24:25 — only the word 'commentary', a label left by the import (Henry, 2026-10-10)

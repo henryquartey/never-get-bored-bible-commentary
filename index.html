@@ -414,6 +414,7 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
   width:30px;height:30px;margin-top:-6px;margin-bottom:-6px;margin-right:-6px;border:none;border-radius:8px;
   background:transparent;color:var(--ink);opacity:.5;cursor:pointer;transition:opacity .15s,background .15s}
 .note .ncol svg{width:18px;height:18px}
+.note mark.pq{background:rgba(255,145,0,.30);color:inherit;border-radius:3px;padding:0 2px;box-shadow:inset 0 -2px 0 rgba(230,120,0,.9);cursor:help}
 .note .meta.nfold:hover .ncol,.note.ncollapsed .ncol{opacity:.95}
 .note .ncol:hover{background:var(--line)}
 .note .nteaser{display:none;font-size:13px;color:var(--soft);font-style:italic;cursor:pointer}
@@ -1095,6 +1096,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <script src="data/versions.js"></script>
 <script src="data/apikeys.js" onerror="window.API_KEYS=window.API_KEYS||{}"></script>
 <script src="data/withdrawn.js" defer></script>
+<script src="data/pending.js" defer></script>
 <script src="data/commentary.js" defer onload="_seedArrived()"></script>
 <script src="data/refined.js" defer onload="_refinedArrived()"></script>
 <script src="data/chronological.js"></script>
@@ -1106,7 +1108,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.0.7', date:'10 Oct 2026'};
+const BUILD={v:'1.0.8', date:'10 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3023,6 +3025,18 @@ function _teaser(t){ const x=String(t||'').replace(/\s+/g,' ').trim();
   return x.length>90?x.slice(0,90).replace(/\s+\S*$/,'')+'\u2026':x; }
 function _openTrk(btn){ try{ const n=btn.closest('.note'); const d=n&&n.querySelector('details.trk');
   if(d){ d.open=true; d.scrollIntoView({behavior:'smooth',block:'nearest'}); } }catch(e){} }
+/* Words waiting for Henry's answer (data/pending.js, built by tools/review/pending.py).
+   Owner only: the word shows in orange, and a tap shows the question. Readers never see it,
+   and Legacy is untouched. (10 Oct 2026) */
+function _pqMark(html,name,ch,v){
+  try{ if(!isOwner()||!window.PENDING_Q||!window.PENDING_Q.length) return html;
+    window.PENDING_Q.forEach(function(q){ if(q.b!==name||String(q.c)!==String(ch)||String(q.v)!==String(v)) return;
+      let w=escHTML(sacredCase(q.w)), i=html.indexOf(w);
+      if(i<0){ w=escHTML(q.w); i=html.indexOf(w); } if(i<0) return;
+      if(q.x){ const pre=escHTML(sacredCase(q.p||'')).length; i+=pre; w=html.substr(i,escHTML(q.x).length); }
+      const t='Question '+q.n+': \u201c'+q.w+'\u201d \u2192 \u201c'+q.s+'\u201d?';
+      html=html.slice(0,i)+'<mark class="pq" title="'+escHTML(t).replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();toast(this.title)">'+w+'</mark>'+html.slice(i+w.length); });
+  }catch(e){} return html; }
 function modernNoteHTML(name,ch,v,r,i){
   const ref=`${name} ${ch}:${v}`;
   /* Hand-edited entries keep their drafts in `d`; patched ones look the original up by id. */
@@ -3048,7 +3062,7 @@ function modernNoteHTML(name,ch,v,r,i){
   return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
     <div class="meta nfold" onclick="_noteCollapse(this)" title="Tap to fold this note away"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}<button class="ncol" aria-expanded="true" aria-label="Fold this note away" onclick="event.stopPropagation();_noteCollapse(this)">${_ncolHTML(false)}</button></div>
     <div class="nteaser" onclick="_noteExpand(this)">${escHTML(_teaser(_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v)))}</div>
-    <div class="body">${escNote(_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v))}</div>
+    <div class="body">${_pqMark(escNote(_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v)),name,ch,v)}</div>
     ${sittings}
     ${_mine?`<div class="chg2" style="color:var(--accent)">✎ You edited this on ${escHTML(new Date(_mine.t).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</div>`:''}
     ${r.e?`<div class="chg2" style="color:var(--accent)">📈 ${escHTML(String(r.e).replace(/<[^>]+>/g,''))}</div>`:''}
