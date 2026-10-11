@@ -415,6 +415,7 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
   background:transparent;color:var(--ink);opacity:.5;cursor:pointer;transition:opacity .15s,background .15s}
 .note .ncol svg{width:18px;height:18px}
 .note .privp{background:rgba(120,120,140,.14);border-bottom:1px dashed rgba(120,120,140,.7);border-radius:3px;padding:0 2px}
+.note .privcut{display:inline-block;font-size:.8em;opacity:.55;margin:0 3px;cursor:help;vertical-align:1px}
 .note .privb{font:600 11px var(--sans);letter-spacing:.3px;color:var(--soft,#777);border:1px dashed currentColor;border-radius:999px;padding:1px 8px;margin-left:6px}
 .note mark.pq{background:rgba(255,145,0,.30);color:inherit;border-radius:3px;padding:0 2px;box-shadow:inset 0 -2px 0 rgba(230,120,0,.9);cursor:pointer}
 #pqbar{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:9999;display:none;width:max-content;max-width:min(560px,calc(100vw - 32px));
@@ -1145,7 +1146,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.10', date:'11 Oct 2026'};
+const BUILD={v:'1.2.11', date:'11 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3155,6 +3156,8 @@ function _loadRefC(){ if(window.REFINED_C||window._refCLoading||!isOwner()) retu
    in-memory journal. The owner sees everything, with the private part marked 🔒. */
 function _privH(t){ let h=5381; for(let k=0;k<t.length;k++){ h=(Math.imul(h,33)^t.charCodeAt(k))>>>0; } return h>>>0; }
 function _privSpan(e,q){ const m=(e&&typeof e.m==='string')?e.m:''; const t=m.substr(q.o,q.l); return (t.length===q.l&&_privH(t)===q.h)?t:null; }
+const PRIV_MARK='\u27EA\uD83D\uDD12\u27EB';   /* ⟪🔒⟫ — a token the renderer turns into the reader's hint */
+function _privHint(h){ return h.split(escNote(PRIV_MARK)).join('<span class="privcut" title="A private reflection was kept out of the public edition">\uD83D\uDD12</span>'); }
 function _privApply(){
   if(isOwner()||!window.PRIVATE||!window.PRIVATE.length) return;
   try{
@@ -3164,7 +3167,8 @@ function _privApply(){
       const arr=(((window.REFINED||{})[q0.b]||{})[q0.c]||{})[q0.v]; const e=arr&&arr[q0.i];
       if(e&&!e._px){
         if(qs.some(function(q){ return q.w||_privSpan(e,q)==null; })) e._x=1;     /* whole note, or text moved: hide it all */
-        else { let m=e.m; qs.slice().sort(function(a,b){ return b.o-a.o; }).forEach(function(q){ m=m.slice(0,q.o)+m.slice(q.o+q.l); });
+        else { let m=e.m; qs.slice().sort(function(a,b){ return b.o-a.o; }).forEach(function(q){ m=m.slice(0,q.o)+PRIV_MARK+m.slice(q.o+q.l); });
+          /* readers see a small 🔒 where a private line was kept out (Henry, 11 Oct 2026) */
           e.m=m.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim(); }
         e._px=1; } });
     window.PRIVATE.forEach(function(q){ if(!q.ids||!q.ids.length) return;
@@ -3208,8 +3212,8 @@ function modernNoteHTML(name,ch,v,r,i){
   const origSide=drafts.map(dr=>escHTML(dr[0]+'\n'+dr[1])).join('\n\n──────\n');
   return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
     <div class="meta nfold" onclick="_noteCollapse(this)" title="Tap to fold this note away"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${_privWhole?'<span class="privb" title="This whole note is hidden from readers">\uD83D\uDD12 Private</span>':''}${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}<button class="ncol" aria-expanded="true" aria-label="Fold this note away" onclick="event.stopPropagation();_noteCollapse(this)">${_ncolHTML(false)}</button></div>
-    <div class="nteaser" onclick="_noteExpand(this)">${escHTML(_teaser(_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v)))}</div>
-    <div class="body">${(function(){ const _t=_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v); const _pm=_privMarkHTML(_t,name,ch,v,i,r); return _pm!=null?_pm:_pqMark(escNote(_t),name,ch,v); })()}</div>
+    <div class="nteaser" onclick="_noteExpand(this)">${escHTML(_teaser(_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v)).split(PRIV_MARK).join('\uD83D\uDD12'))}</div>
+    <div class="body">${(function(){ const _t=_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v); const _pm=_privMarkHTML(_t,name,ch,v,i,r); return _pm!=null?_pm:_privHint(_pqMark(escNote(_t),name,ch,v)); })()}</div>
     ${sittings}
     ${_mine?`<div class="chg2" style="color:var(--accent)">✎ You edited this on ${escHTML(new Date(_mine.t).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</div>`:''}
     ${r.e?`<div class="chg2" style="color:var(--accent)">📈 ${escHTML(String(r.e).replace(/<[^>]+>/g,''))}</div>`:''}
