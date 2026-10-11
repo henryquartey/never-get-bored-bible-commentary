@@ -17,7 +17,7 @@
 <meta name="twitter:title" content="Never Get Bored — Nii Okai's Journal Through Scripture">
 <meta name="twitter:description" content="A verse-by-verse journal through Scripture by Nii Okai. Over 4,000 personal notes across all 66 books.">
 <meta name="twitter:image" content="https://bible.getwordwisdom.com/icon-1024.png?v=7">
-<meta name="theme-color" content="#FAFAF8">
+<meta name="theme-color" content="#e10600">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=7">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=7">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=7">
@@ -979,6 +979,23 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 </style>
 </head>
 <body>
+<!-- Opening screen: the logo on true red while the app gets ready (11 Oct 2026) -->
+<div id="boot" aria-hidden="true" style="position:fixed;inset:0;z-index:99999;background:#e10600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;transition:opacity .35s ease">
+  <img src="icon-512.png?v=7" alt="" width="220" height="220" style="width:min(46vw,240px);height:auto;border-radius:22%;box-shadow:0 18px 50px rgba(60,0,0,.45)">
+  <div style="font-family:Georgia,'Times New Roman',serif;color:#fff;text-align:center;line-height:1.35">
+    <div style="font-size:clamp(20px,5vw,28px);letter-spacing:.3px">Nii Okai&#8217;s Bible Journal</div>
+    <div style="font-size:clamp(12px,3.2vw,14px);opacity:.85;letter-spacing:2px;text-transform:uppercase;margin-top:6px">Never Get Bored</div>
+  </div>
+</div>
+<script>
+  /* show for a short moment, then fade; never stay longer than 4 s even if something fails */
+  window._bootT0=Date.now();
+  window._bootDone=function(){ var b=document.getElementById('boot'); if(!b||b._going) return; b._going=1;
+    var wait=Math.max(0,900-(Date.now()-window._bootT0));
+    setTimeout(function(){ b.style.opacity='0'; b.style.pointerEvents='none';
+      setTimeout(function(){ if(b.parentNode) b.parentNode.removeChild(b); try{ _syncThemeColor(); }catch(e){} },380); },wait); };
+  setTimeout(window._bootDone,4000);
+</script>
 <div class="app">
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
@@ -1128,7 +1145,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.8', date:'11 Oct 2026'};
+const BUILD={v:'1.2.9', date:'11 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -4578,7 +4595,7 @@ function mergeCommentary(obj){
 /* ---------- Misc ---------- */
 function markDirty(){ state.dirty=true; }
 function _syncThemeColor(){ try{ const m=document.querySelector('meta[name="theme-color"]');
-  if(m) m.content = document.documentElement.dataset.theme==='dark' ? '#141414' : '#FAFAF8'; }catch(e){} }
+  if(m) m.content = document.getElementById('boot') ? '#e10600' : (document.documentElement.dataset.theme==='dark' ? '#141414' : '#FAFAF8'); }catch(e){} }
 /* Appearance: automatic by default — follows the device, live, with no reload.
    Tapping the icon cycles automatic → always light → always dark → automatic. */
 var _mqDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
@@ -5233,7 +5250,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeEditor();
   if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&editing)saveEditor(); });
 window.addEventListener('beforeunload',e=>{ if(state.dirty){ e.preventDefault(); e.returnValue=''; } });
 
-init();
+try{ init(); } finally { window._bootDone&&window._bootDone(); }
 /* Heavy data (Bible text, spell dictionary) loads in the background after first paint */
 _syncThemeColor();
 window.addEventListener('load',()=>{ setTimeout(()=>{
