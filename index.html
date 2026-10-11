@@ -1146,7 +1146,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.11', date:'11 Oct 2026'};
+const BUILD={v:'1.2.12', date:'11 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3167,8 +3167,8 @@ function _privApply(){
       const arr=(((window.REFINED||{})[q0.b]||{})[q0.c]||{})[q0.v]; const e=arr&&arr[q0.i];
       if(e&&!e._px){
         if(qs.some(function(q){ return q.w||_privSpan(e,q)==null; })) e._x=1;     /* whole note, or text moved: hide it all */
-        else { let m=e.m; qs.slice().sort(function(a,b){ return b.o-a.o; }).forEach(function(q){ m=m.slice(0,q.o)+PRIV_MARK+m.slice(q.o+q.l); });
-          /* readers see a small 🔒 where a private line was kept out (Henry, 11 Oct 2026) */
+        else { let m=e.m; qs.slice().sort(function(a,b){ return b.o-a.o; }).forEach(function(q){ m=m.slice(0,q.o)+m.slice(q.o+q.l); });
+          /* cut silently: readers get no hint that a line was kept out (Henry, 11 Oct 2026) */
           e.m=m.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim(); }
         e._px=1; } });
     window.PRIVATE.forEach(function(q){ if(!q.ids||!q.ids.length) return;
