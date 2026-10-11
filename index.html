@@ -1128,7 +1128,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.6', date:'11 Oct 2026'};
+const BUILD={v:'1.2.7', date:'11 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2844,7 +2844,10 @@ function renderRead(){
       <button class="rn-listen rn-stop" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">${ICONS.stop}</button>
       <button onclick="nextChapter()" ${state.book===window.BOOKS.length-1&&ch===nch?'disabled':''}>Next →</button></div>`;
   }
-  const r=document.getElementById('reader'); r.innerHTML=html; r.scrollTop=0;
+  const r=document.getElementById('reader');
+  /* same chapter drawn again (a note saved, a sync, a mark kept) — keep the reader exactly where they were (11 Oct 2026) */
+  const _rk=name+'|'+ch, _anc=(window._rrKey===_rk)?_rrAnchor(r):null; window._rrKey=_rk;
+  r.innerHTML=html; r.scrollTop=0; if(_anc){ _rrRestore(r,_anc); requestAnimationFrame(function(){ _rrRestore(r,_anc); }); }
   { const o=ONLINE_VERSIONS[state.version]; if(o&&!olFallback){ const r0=document.getElementById('reader'); const pg=r0.querySelector('.page'); if(pg) pg.insertAdjacentHTML('beforeend',`<div class="copyline">${escHTML(o.c)}</div>`); } }
   const foot=document.getElementById('readfoot'); foot.innerHTML=`<div class="audnote" id="audnote" style="display:none"></div><div class="audbar" id="audbar" style="display:none"></div>`+nav; foot.style.display='';
   fillVoiceSel(); _rdSyncBtn();
@@ -2863,6 +2866,21 @@ function renderRead(){
         _progSync(); _fabSync(); },ms); }); } },80); }
   buildBookList();
 }
+/* Keep the place across a redraw: remember the first verse or note showing at the top of the reader
+   and how far down it sat, then put it back at that same spot after the chapter is drawn again. */
+function _rrAnchor(r){ try{ const top=r.getBoundingClientRect().top;
+  const els=r.querySelectorAll('[id^="v"],[id^="nw"]');
+  for(const el of els){ if(!/^(v|nw)\d+$/.test(el.id)) continue;
+    const b=el.getBoundingClientRect(); if(b.bottom>top+1) return {id:el.id, off:b.top-top}; } }catch(e){} return null; }
+function _rrRestore(r,a){ try{ const el=document.getElementById(a.id); if(!el||!r.contains(el)) return;
+  const d=el.getBoundingClientRect().top-r.getBoundingClientRect().top-a.off; if(Math.abs(d)>1) r.scrollTop+=d; }catch(e){} }
+/* After saving a note: show its verse with a soft flash, without moving the page (scroll only if it is out of sight) */
+function _flashVerse(v){ const el=document.getElementById('v'+v); if(!el) return;
+  el.classList.remove('collapsed'); el.classList.add('revealed');
+  try{ const rb=document.getElementById('reader').getBoundingClientRect(), nw=document.getElementById('nw'+v)||el;
+    if(nw.getBoundingClientRect().bottom<rb.top||el.getBoundingClientRect().top>rb.bottom) el.scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){}
+  const o=el.style.background; el.style.transition='background .3s'; el.style.background='var(--note-line)';
+  setTimeout(()=>el.style.background=o,1000); }
 function _ciToggle(btn){ const box=btn.closest('.chapindex'); const on=!box.classList.contains('open');
   box.classList.toggle('open',on); btn.setAttribute('aria-expanded',on); try{ localStorage.setItem('nok_ci_open',on?'1':'0'); }catch(e){} }
 function jumpVerse(v){ const el=document.getElementById('v'+v); if(!el)return;
@@ -3007,7 +3025,7 @@ function _saveRefEdit(text){
   try{ localStorage.setItem(LS_REFEDIT,JSON.stringify(all)); }catch(e){}
   try{ if(fbUser()) fbPush(); }catch(e){}
   _refGen++; closeEditor(true);
-  if(state.view==='mine') renderMine(); else { renderRead(); setTimeout(()=>jumpVerse(parseInt(v,10)||1),60); }
+  if(state.view==='mine') renderMine(); else { renderRead(); setTimeout(()=>_flashVerse(parseInt(v,10)||1),60); }
   toast(text&&text!==base?'Saved — your readers see this version':'Back to the edition as published'); }
 const _MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
 /* Notes copied out of the YouVersion app arrive with a tail the app adds: the reference of
@@ -3512,7 +3530,7 @@ function saveEditor(){
   const jv=(v==='0')?1:parseInt(v,10);
   persist(); closeEditor(true); markDirty();
   if(state.view==='mine') renderMine();
-  else { renderRead(); setTimeout(()=>jumpVerse(jv),60); } // land back on the verse you just noted
+  else { renderRead(); setTimeout(()=>_flashVerse(jv),60); } // stay exactly where you were reading
   toast('Saved');
 }
 function deleteCurrent(){
@@ -3588,7 +3606,7 @@ function saveInline(btn,name,ch,v,id){ const ta=btn.closest('.body').querySelect
   const arr=DATA[name][String(ch)][String(v)]; const nt=arr.find(n=>n.id===id);
   if(nt){ nt.text=text; nt.date=nt.date||new Date().toISOString(); nt.edited=new Date().toISOString(); }
   persist(); markDirty(); const jv=(v==='0')?1:parseInt(v,10);
-  if(state.view==='mine') renderMine(); else { renderRead(); setTimeout(()=>jumpVerse(jv),50); }
+  if(state.view==='mine') renderMine(); else { renderRead(); setTimeout(()=>_flashVerse(jv),50); }
   toast('Saved');
 }
 
