@@ -12,15 +12,15 @@
 <meta property="og:title" content="Never Get Bored — Nii Okai's Journal Through Scripture">
 <meta property="og:description" content="A verse-by-verse journal through Scripture by Nii Okai. Over 4,000 personal notes across all 66 books, with the King James text, reading plans and audio.">
 <meta property="og:url" content="https://bible.getwordwisdom.com/">
-<meta property="og:image" content="https://bible.getwordwisdom.com/icon-1024.png?v=20">
+<meta property="og:image" content="https://bible.getwordwisdom.com/icon-1024.png?v=21">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Never Get Bored — Nii Okai's Journal Through Scripture">
 <meta name="twitter:description" content="A verse-by-verse journal through Scripture by Nii Okai. Over 4,000 personal notes across all 66 books.">
-<meta name="twitter:image" content="https://bible.getwordwisdom.com/icon-1024.png?v=20">
+<meta name="twitter:image" content="https://bible.getwordwisdom.com/icon-1024.png?v=21">
 <meta name="theme-color" content="#000000">
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=20">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=20">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=21">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=21">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=21">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Bible Journal N.O">
@@ -341,7 +341,7 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
 .copypop-right{left:auto;right:0}
 .inline-ed{width:100%;min-height:70px;font-family:var(--sans);font-size:15px;line-height:1.55;color:var(--ink);
   background:var(--panel);border:2px solid var(--accent);border-radius:10px;padding:10px 12px;resize:vertical;outline:none}
-.inline-bar{display:flex;align-items:center;gap:8px;margin-top:8px}
+.inline-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
 .inline-bar .btn{padding:5px 14px;font-size:13px}
 .inline-hint{font-family:var(--sans);font-size:11px;color:var(--soft)}
 /* reference commentary (Matthew Henry) — visually distinct from Nii's journal */
@@ -982,7 +982,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <body>
 <!-- Opening screen: the red logo on black while the app gets ready (11 Oct 2026) -->
 <div id="boot" aria-hidden="true" style="position:fixed;inset:0;z-index:99999;background:#000000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;transition:opacity .35s ease">
-  <img src="icon-512.png?v=20" alt="" width="220" height="220" style="width:min(46vw,240px);height:auto;border-radius:22%;box-shadow:0 0 70px rgba(225,6,0,.38)">
+  <img src="icon-512.png?v=21" alt="" width="220" height="220" style="width:min(46vw,240px);height:auto;border-radius:22%;box-shadow:0 0 70px rgba(225,6,0,.38)">
   <div style="font-family:Georgia,'Times New Roman',serif;color:#fff;text-align:center;line-height:1.35">
     <div style="font-size:clamp(20px,5vw,28px);letter-spacing:.3px">Nii Okai&#8217;s Bible Journal</div>
     <div style="font-size:clamp(12px,3.2vw,14px);opacity:.85;letter-spacing:2px;text-transform:uppercase;margin-top:6px">Never Get Bored</div>
@@ -1105,7 +1105,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
       <div class="vtext" id="edVerse"></div>
     </div>
     <div class="mb">
-      <textarea id="edText" placeholder="Share your thoughts on this verse…" spellcheck="true" autocapitalize="sentences" autocorrect="on" oninput="noteAutocorrect(event)"></textarea>
+      <textarea id="edText" placeholder="Share your thoughts on this verse…" spellcheck="true" autocapitalize="sentences" autocorrect="on" oninput="_edInput(event)"></textarea>
       <div class="ed-colours" id="edColours" title="Colour this note — it also highlights the verse. Stays on this device only.">
         <span class="lbl">Colour</span>
         <button class="sw sw-none" data-c="" onclick="edSetColour('')" title="No colour">✕</button>
@@ -1119,8 +1119,9 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
       <div class="ed-spell" id="edSpell" style="display:none"></div>
     </div>
     <div class="mf">
-      <button class="btn danger" id="edDelete" onclick="deleteCurrent()" style="margin-right:auto;display:none">Delete</button>
-      <button class="btn" onclick="closeEditor()">Cancel</button>
+      <button class="btn danger" id="edDelete" onclick="deleteCurrent()" style="display:none">Delete</button>
+      <span id="edStatus" class="ed-hint" style="margin-right:auto;padding-left:6px;white-space:nowrap">Saves as you type</span>
+      <button class="btn" onclick="cancelEditor()">Cancel</button>
       <button class="btn primary" onclick="saveEditor()">Save</button>
     </div>
   </div>
@@ -1146,7 +1147,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.24', date:'12 Oct 2026'};
+const BUILD={v:'1.2.25', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2865,7 +2866,9 @@ function renderRead(){
   const r=document.getElementById('reader');
   /* same chapter drawn again (a note saved, a sync, a mark kept) — keep the reader exactly where they were (11 Oct 2026) */
   const _rk=name+'|'+ch, _anc=(window._rrKey===_rk)?_rrAnchor(r):null; window._rrKey=_rk;
+  const _il=_ilCapture();
   r.innerHTML=html; r.scrollTop=0; if(_anc){ _rrRestore(r,_anc); requestAnimationFrame(function(){ _rrRestore(r,_anc); }); }
+  _ilRestore(_il);
   { const o=ONLINE_VERSIONS[state.version]; if(o&&!olFallback){ const r0=document.getElementById('reader'); const pg=r0.querySelector('.page'); if(pg) pg.insertAdjacentHTML('beforeend',`<div class="copyline">${escHTML(o.c)}</div>`); } }
   const foot=document.getElementById('readfoot'); foot.innerHTML=`<div class="audnote" id="audnote" style="display:none"></div><div class="audbar" id="audbar" style="display:none"></div>`+nav; foot.style.display='';
   fillVoiceSel(); _rdSyncBtn();
@@ -3236,7 +3239,7 @@ function noteHTML(nt,name,ch,v,label){
   let nhl=''; try{ if(own&&v!=='0'){ const c=hlGet(name,ch,v); if(c) nhl=' nhl-'+c; } }catch(e){}
   /* the fold arrow, in the Journal edition only — Legacy keeps its cards exactly as they were (3 Oct 2026) */
   const fold=(typeof state!=='undefined'&&state.journal==='modern');
-  return `<div class="note${nhl}" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
+  return `<div class="note${nhl}" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}" data-id="${nt.id}">
     <div class="meta${fold?' nfold':''}"${fold?' onclick="_noteCollapse(this)" title="Tap to fold this note away"':''}><span class="who ${own?'mine':''}">${own?'MY NOTE':'NII OKAI'}</span><span class="vref">${ref}</span>
       ${label?`<span class="badge">${label}</span>`:''}
       ${nt.src==='import'?'<span class="badge">imported</span>':''}
@@ -3357,7 +3360,7 @@ function renderMine(){
         <span class="jsorthint">${JHINTS[sort]}</span></div></div>
     ${total?books:'<div class="empty"><div class="big">✍</div>No commentary yet. Open any verse and add your thoughts.</div>'}
   </div>`;
-  document.getElementById('reader').innerHTML=html;
+  const _il=_ilCapture(); document.getElementById('reader').innerHTML=html; _ilRestore(_il);
   document.getElementById('reader').scrollTop=0;
   buildBookList();
 }
@@ -3485,7 +3488,8 @@ function nextChapter(){ const nch=window.BOOKS[state.book].chapters.length;
 /* ---------- Editor ---------- */
 function openEditor(name,ch,v){
   closeSelMenu&&closeSelMenu(); closeVerseMenu&&closeVerseMenu();
-  editing={book:name,ch:ch,v:String(v),id:null};
+  editing={book:name,ch:ch,v:String(v),id:null,orig:''};
+  _edStatus('Saves as you type');
   document.getElementById('edTitle').textContent=(v===0?'Add chapter note':'Add commentary');
   showVerseInEditor(name,ch,v);
   document.getElementById('edText').value='';
@@ -3497,7 +3501,8 @@ function openEditor(name,ch,v){
 }
 function editNote(name,ch,v,id,liveText){
   const arr=DATA[name][String(ch)][String(v)]; const nt=arr.find(n=>n.id===id);
-  editing={book:name,ch:ch,v:String(v),id:id};
+  editing={book:name,ch:ch,v:String(v),id:id,orig:nt.text};
+  _edStatus('Saves as you type');
   document.getElementById('edTitle').textContent='Edit commentary';
   showVerseInEditor(name,ch,v==='0'?0:+v);
   document.getElementById('edText').value=(liveText!=null?liveText:nt.text);
@@ -3568,7 +3573,23 @@ function deleteCurrent(){
   toast('Deleted');
 }
 function closeEditor(saved){ if(!saved&&typeof _edRevertPreview==='function') _edRevertPreview();
+  clearTimeout(_edTimer); _edTimer=null;
   document.getElementById('overlay').classList.remove('show'); editing=null; }
+/* Cancel in the dialog: a brand-new note that saved itself is removed; an edited note gets its old words back.
+   It asks first when something would be lost. */
+function cancelEditor(){
+  if(editing&&!editing.ref){ _edFlush();
+    const {book,ch,v,id,orig,auto}=editing; let arr=null, nt=null;
+    try{ arr=DATA[book][String(ch)][String(v)]; nt=arr.find(x=>x.id===id); }catch(e){}
+    const changed=nt&&(auto||nt.text!==orig);
+    if(changed){ if(!confirm(auto?'Throw this note away?':'Put the note back the way it was? Your changes will be lost.')) return;
+      if(auto){ const i=arr.indexOf(nt); if(i>=0) arr.splice(i,1); try{ _nsTombAdd(id,book); }catch(e){}
+        if(!arr.length){ delete DATA[book][String(ch)][String(v)]; if(!Object.keys(DATA[book][String(ch)]).length) delete DATA[book][String(ch)]; } }
+      else{ nt.text=orig; nt.edited=new Date().toISOString(); }
+      persist(); markDirty(); closeEditor(false);
+      if(state.view==='mine') renderMine(); else if(state.view==='read') renderRead();
+      return; } }
+  closeEditor(false); }
 
 /* ---------- Inline note editing: single click edits in place, double click opens full editor ---------- */
 let _noteClickTimer=null;
@@ -3588,9 +3609,9 @@ function inlineEditNote(el,name,ch,v,id){
   if(el.querySelector('textarea')) return;
   const arr=(DATA[name]&&DATA[name][String(ch)]&&DATA[name][String(ch)][String(v)])||[];
   const nt=arr.find(n=>n.id===id); const cur=nt?nt.text:el.textContent;
-  el.innerHTML=`<textarea class="inline-ed" spellcheck="true" autocapitalize="sentences" oninput="noteAutocorrect(event)"></textarea>
-    <div class="inline-bar"><button class="btn primary" onclick="event.stopPropagation();saveInline(this,'${esc(name)}',${ch},'${v}','${id}')">Save</button>
-      <button class="btn" onclick="event.stopPropagation();cancelInline()">Cancel</button>
+  el.innerHTML=`<textarea class="inline-ed" spellcheck="true" autocapitalize="sentences" oninput="noteAutocorrect(event);_ilAuto(event)" onblur="_ilFlush(this)"></textarea>
+    <div class="inline-bar"><button class="btn primary" onclick="event.stopPropagation();saveInline(this,'${esc(name)}',${ch},'${v}','${id}')">Done</button>
+      <button class="btn" onclick="event.stopPropagation();cancelInline(this)">Cancel</button>
       ${v!=='0'?`<span class="ed-colours inline-colours" onclick="event.stopPropagation()">
         <span class="lbl">Colour</span>
         <button class="sw sw-none" data-c="" onclick="ilColour(event,'${esc(name)}',${ch},'${v}','')">✕</button>
@@ -3599,10 +3620,11 @@ function inlineEditNote(el,name,ch,v,id){
         <button class="sw sw-b" data-c="b" onclick="ilColour(event,'${esc(name)}',${ch},'${v}','b')"></button>
         <button class="sw sw-p" data-c="p" onclick="ilColour(event,'${esc(name)}',${ch},'${v}','p')"></button>
       </span>`:''}
-      <span class="inline-hint">Enter saves · Esc cancels</span></div>`;
+      <span class="inline-hint">Saves as you type · Enter closes</span></div>`;
   const t=el.querySelector('textarea'); t.value=cur; t.onclick=e=>e.stopPropagation();
+  t.dataset.nid=id; t.dataset.book=name; t.dataset.ch=String(ch); t.dataset.v=String(v); t.dataset.orig=cur;
   t.onkeydown=e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); t.nextElementSibling.querySelector('.primary').click(); }
-    else if(e.key==='Escape'){ e.preventDefault(); cancelInline(); } };
+    else if(e.key==='Escape'){ e.preventDefault(); t.nextElementSibling.querySelector('.primary').click(); } };
   try{ const cc=(v!=='0')?hlGet(name,ch,v):''; el.querySelectorAll('.inline-colours .sw').forEach(b=>
     b.classList.toggle('on',(b.dataset.c||'')===(cc||''))); }catch(e){}
   t.focus(); t.style.height='auto'; t.style.height=Math.max(70,t.scrollHeight)+'px';
@@ -3621,15 +3643,69 @@ function ilColour(ev,name,ch,v,c){ ev.stopPropagation();
   ev.currentTarget.parentElement.querySelectorAll('.sw').forEach(b=>
     b.classList.toggle('on',(b.dataset.c||'')===(c||'')));
 }
-function cancelInline(){ if(state.view==='mine') renderMine(); else renderRead(); }
-function saveInline(btn,name,ch,v,id){ const ta=btn.closest('.body').querySelector('textarea'); const text=sacredCase(ta.value.trim());
-  if(!text){ toast('Nothing to save'); return; }
-  const arr=DATA[name][String(ch)][String(v)]; const nt=arr.find(n=>n.id===id);
-  if(nt){ nt.text=text; nt.date=nt.date||new Date().toISOString(); nt.edited=new Date().toISOString(); }
-  persist(); markDirty(); const jv=(v==='0')?1:parseInt(v,10);
+/* Cancel puts the words back the way they were when you opened the note (asks first if you changed anything) */
+function cancelInline(btn){
+  try{ const ta=btn&&btn.closest('.body').querySelector('textarea');
+    if(ta&&ta.value.trim()!==String(ta.dataset.orig||'').trim()){
+      if(!confirm('Put the note back the way it was? Your changes here will be lost.')) return;
+      ta.value=ta.dataset.orig||''; _ilFlush(ta,true); } else if(ta) _ilFlush(ta);
+    if(ta) ta.classList.remove('inline-ed'); }catch(e){}                      // closing on purpose — do not re-open it after the redraw
+  if(state.view==='mine') renderMine(); else renderRead(); }
+function saveInline(btn,name,ch,v,id){ const ta=btn.closest('.body').querySelector('textarea');
+  if(!ta.value.trim()){ toast('Nothing to save — the note keeps its old words'); }
+  else _ilFlush(ta);
+  ta.classList.remove('inline-ed');                                            // closing on purpose — do not re-open it after the redraw
+  const jv=(v==='0')?1:parseInt(v,10);
   if(state.view==='mine') renderMine(); else { renderRead(); setTimeout(()=>_flashVerse(jv),50); }
   toast('Saved');
 }
+
+/* ---------- Autosave (12 Oct 2026): notes save themselves as you type, so nothing is lost if the page redraws ---------- */
+let _ilTimer=null;
+function _ilAuto(e){ const ta=e.target; _ilHint(ta,'Saving…'); clearTimeout(_ilTimer); _ilTimer=setTimeout(()=>_ilFlush(ta),700); }
+function _ilHint(ta,msg){ try{ const h=ta.parentElement.querySelector('.inline-hint'); if(h) h.textContent=msg+' · Enter closes'; }catch(e){} }
+/* write the in-place editor's words into the note now (quietly — no redraw, no toast) */
+function _ilFlush(ta,force){ try{ if(!ta||!ta.isConnected||!ta.classList.contains('inline-ed')) return false;
+  clearTimeout(_ilTimer); _ilTimer=null;
+  const d=ta.dataset; const text=sacredCase(ta.value.trim()); if(!text) return false;
+  const arr=(((DATA[d.book]||{})[String(d.ch)]||{})[String(d.v)])||[]; const nt=arr.find(x=>x.id===d.nid); if(!nt) return false;
+  if(nt.text===text&&!force) return true;
+  nt.text=text; nt.date=nt.date||new Date().toISOString(); nt.edited=new Date().toISOString();
+  persist(); markDirty(); _ilHint(ta,'Saved ✓'); return true; }catch(e){ return false; } }
+/* before a redraw: save and remember an open in-place editor; after it: open it again where it was, words and cursor intact */
+function _ilCapture(){ try{ const ta=document.querySelector('#reader textarea.inline-ed'); if(!ta) return null; _ilFlush(ta);
+  return {nid:ta.dataset.nid,book:ta.dataset.book,ch:ta.dataset.ch,v:ta.dataset.v,text:ta.value,orig:ta.dataset.orig,
+    s:ta.selectionStart,e:ta.selectionEnd,top:ta.scrollTop,focus:document.activeElement===ta}; }catch(e){ return null; } }
+function _ilRestore(c){ if(!c) return; try{
+  const note=document.querySelector('#reader .note[data-id="'+c.nid+'"]'); if(!note) return;
+  if(note.classList.contains('ncollapsed')){ const b=note.querySelector('.ncol'); if(b) _noteCollapse(b); }
+  const body=note.querySelector('.body'); if(!body) return;
+  inlineEditNote(body,c.book,parseInt(c.ch,10),c.v,c.nid);
+  const ta=body.querySelector('textarea'); if(!ta) return;
+  ta.value=c.text; ta.dataset.orig=c.orig||''; ta.style.height='auto'; ta.style.height=Math.max(70,ta.scrollHeight)+'px';
+  try{ ta.setSelectionRange(c.s,c.e); }catch(e){} ta.scrollTop=c.top||0;
+  if(c.focus) ta.focus({preventScroll:true}); else ta.blur(); }catch(e){} }
+/* full editor (the dialog): saves as you type too — a new note is created on the first words, then updated */
+let _edTimer=null;
+function _edInput(e){ noteAutocorrect(e); if(!editing||editing.ref) return; _edStatus('Saving…'); clearTimeout(_edTimer); _edTimer=setTimeout(_edFlush,900); }
+function _edStatus(m){ try{ document.getElementById('edStatus').textContent=m||''; }catch(e){} }
+function _edFlush(){ try{ clearTimeout(_edTimer); _edTimer=null; if(!editing||editing.ref) return false;
+  const text=sacredCase(document.getElementById('edText').value.trim()); if(!text) return false;
+  const {book,ch,v}=editing;
+  DATA[book]=DATA[book]||{}; DATA[book][String(ch)]=DATA[book][String(ch)]||{};
+  DATA[book][String(ch)][String(v)]=DATA[book][String(ch)][String(v)]||[];
+  const arr=DATA[book][String(ch)][String(v)];
+  let nt=editing.id?arr.find(x=>x.id===editing.id):null;
+  if(nt){ if(nt.text===text) return true; nt.text=text; nt.date=nt.date||new Date().toISOString(); nt.edited=new Date().toISOString(); }
+  else{ nt={id:Math.random().toString(36).slice(2,12),text:text,date:new Date().toISOString(),src:'user'}; arr.push(nt);
+    editing.id=nt.id; editing.auto=true; try{ document.getElementById('edDelete').style.display=''; }catch(e){} }
+  editing.changed=true; persist(); markDirty();
+  _edStatus('Saved ✓'); return true; }catch(e){ return false; } }
+/* if the page is being hidden or closed, save whatever is still being typed */
+function _autoFlushAll(){ try{ const ta=document.querySelector('textarea.inline-ed'); if(ta) _ilFlush(ta); }catch(e){}
+  try{ if(editing&&!editing.ref) _edFlush(); }catch(e){} }
+window.addEventListener('pagehide',_autoFlushAll);
+document.addEventListener('visibilitychange',function(){ if(document.hidden) _autoFlushAll(); });
 
 /* ---------- Conservative autocorrect (never touches British spelling / proper nouns) ---------- */
 const AUTOCORRECT={teh:'the',hte:'the',adn:'and',nad:'and',thier:'their',recieve:'receive',
