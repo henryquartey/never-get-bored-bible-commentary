@@ -797,6 +797,28 @@ body:not(.legacy) .main{padding-bottom:54px}
 .mitem .chev{margin-left:auto;color:var(--soft)}
 .mitem .soon{margin-left:auto;font-size:10.5px;font-weight:700;background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:2px 8px;white-space:nowrap}
 .about-skiptop{font-size:12.5px}
+/* Welcome hero — the same dark card as the Home page (13 Oct 2026) */
+.about-herocard{text-align:center;padding:28px 20px 18px;margin:0 0 28px}
+.about-herocard .hk{font-size:12px;letter-spacing:2.5px;margin-bottom:4px}
+.about-herocard .about-title{color:var(--on-accent);font-size:30px;margin:8px 0 12px}
+.about-herocard .about-slogan{color:var(--on-accent);opacity:.9;font-size:17px;max-width:520px}
+.about-herocard .about-listen{justify-content:center;margin:18px 0 0}
+.about-herocard .about-skiptop{font-size:13px}
+.about-herocard .about-firsttime{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.2);color:var(--on-accent);
+  font-weight:500;font-size:13.5px;line-height:1.5;margin:20px 0 0;text-align:left}
+.about-herocard .about-firsttime b{font-weight:700;color:var(--on-accent)}
+/* the reader's gift at the end — a quiet card, no emoji */
+.about-reward{border:1px solid var(--line)!important;border-left:3px solid var(--ink)!important;background:var(--panel)!important;border-radius:12px;padding:16px 18px!important}
+.about-reward .ar-k{font-family:var(--sans);font-size:11.5px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:var(--soft);margin:0 0 8px}
+.about-reward .ar-p{margin:0;font-size:15px;line-height:1.6;color:var(--ink)}
+.about-reward .ar-p b{color:var(--ink)}
+.about-reward .ar-more{margin:8px 0 0;font-size:13px;color:var(--soft);font-style:italic}
+.about-reward .ar-ico{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--line);border-radius:7px;vertical-align:-7px;margin:0 2px;background:var(--bg)}
+.about-reward .ar-ico svg{width:16px;height:16px}
+#dateBtn .db-ico{display:inline-flex}
+#dateBtn .db-emo{display:none}
+body.legacy #dateBtn .db-ico{display:none}
+body.legacy #dateBtn .db-emo{display:inline}
 .kpara{transition:opacity .35s ease,background-color .35s ease;border-radius:6px}
 .kpara.done{opacity:.5}
 .kpara.cur{background-color:rgba(234,179,8,.16);opacity:1}
@@ -1067,7 +1089,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
       <button class="icon-btn rc" id="refBtn" onclick="toggleRefComm()" title="Show / hide Matthew Henry's classic commentary (public domain)">📚</button>
       <button class="icon-btn" id="youBtn" onclick="setView('you')" title="You — your notes, highlights and progress"><span id="youBtnIco"></span></button>
       <button class="icon-btn" id="menuTopBtn" onclick="setView('menu')" title="Menu"></button>
-      <button class="icon-btn rc" id="dateBtn" onclick="toggleDates()" title="Show / hide the dates notes were written" style="display:none">📅</button>
+      <button class="icon-btn rc" id="dateBtn" onclick="toggleDates()" title="Show / hide the dates notes were written" style="display:none"><span class="db-emo">📅</span><span class="db-ico" data-ico="cal"></span></button>
       <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">☾</button>
       <button class="icon-btn rc" id="tbMore" data-ico="dots" onclick="tbMoreMenu(event)" title="More"></button>
     </div>
@@ -1147,7 +1169,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.27', date:'12 Oct 2026'};
+const BUILD={v:'1.2.28', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2621,21 +2643,25 @@ function renderAbout(){
     "Welcome to the journey. I’m glad you’re here."
   ];
   const html=`<div class="page about">
-    <div style="text-align:right;margin-bottom:4px"><button class="btn about-skiptop" onclick="skipWelcome()">Skip for now →</button></div>
-    <div class="about-firsttime" style="margin-top:0">New here? Please take two minutes to read this first — it changes how you’ll read everything that follows. 🎁 <b>And there’s a reader’s gift waiting at the end</b> for those who do.</div>
-    <div class="about-hero">
-      <div class="about-kicker">Never Get Bored</div>
+    <div class="hcard hero about-herocard">
+      <div class="hk">Never Get Bored</div>
       <h1 class="about-title">Nii Okai’s Journal Through Scripture</h1>
       <div class="about-slogan">“Take a walk with me as we journey through Scripture — and understand every passage in a way you never imagined or thought possible. You will never get bored.”</div>
-      <div class="about-listen">
+      <div class="hrow about-listen">
         <button class="btn" id="welcomeAudioBtn" onclick="playWelcomeAudio()">▶︎ Listen in Nii Okai’s voice</button>
+        <button class="btn about-skiptop" onclick="skipWelcome()">Skip for now →</button>
         <audio id="welcomeAudio" preload="metadata"><source src="audio/welcome.mp3" type="audio/mpeg"><source src="audio/welcome.m4a" type="audio/mp4"></audio>
       </div>
+      <div class="about-firsttime">New here? Take two minutes to read this first — it changes how you’ll read everything that follows. <b>A reader’s gift waits at the end.</b></div>
     </div>
     <div class="about-lead">If you have ever found the Bible boring, this journal is for you.</div>
     ${paras.map(p=>`<p class="about-p">${p}</p>`).join('')}
     <div class="about-sign">— Nii Okai</div>
-    <div class="about-reward">🔓 <b>A small gift for reading to the end:</b> you’ve unlocked the <b>dates</b> each note was written — tap the 📅 in the top bar to see them as you read. (More to come for those who journey with me.)</div>
+    <div class="about-reward">
+      <div class="ar-k">A reader’s gift</div>
+      <p class="ar-p">You’ve unlocked the <b>dates</b> each note was written. While reading, tap the <span class="ar-ico" aria-label="calendar">${ICONS.cal}</span> calendar button in the top bar to show them.</p>
+      <p class="ar-more">More to come for those who journey with me.</p>
+    </div>
     <div class="about-cta">
       <button class="btn primary" onclick="enterFromWelcome()">I’ve read it — unlock & begin →</button>
     </div>
