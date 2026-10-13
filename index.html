@@ -1169,7 +1169,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.28', date:'12 Oct 2026'};
+const BUILD={v:'1.2.29', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1291,7 +1291,7 @@ function skipWelcome(force){
     localStorage.setItem('nok_skip_nudge','1');
     const ov=document.createElement('div'); ov.className='skipov'; ov.id='skipov';
     ov.innerHTML=`<div class="skipcard">
-      <div style="font-size:34px">🎁</div>
+      <div style="font-family:var(--sans);font-size:11.5px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:var(--soft);margin-bottom:6px">A reader’s gift</div>
       <h3>Before you go…</h3>
       <p>Nii Okai wrote this welcome just for you — it changes how you’ll read everything that follows. And there’s a small gift at the end for those who finish it.</p>
       <button class="btn primary" onclick="document.getElementById('skipov').remove();karListen()">▶︎ Listen instead (3 min)</button>
