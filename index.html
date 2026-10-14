@@ -232,7 +232,27 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .audbar .ab-btn{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:5px 10px 5px 7px;font-size:12.5px;font-weight:700;cursor:pointer;flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;max-width:42%}
 .audbar .ab-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .audbar .ab-btn .nico{display:inline-flex;width:16px;height:16px}.audbar .ab-btn .nico svg{width:16px;height:16px}
-.audbar .ab-av{font-size:15px;line-height:1}
+.audbar .ab-av{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;
+  font-family:var(--serif);font-size:11.5px;font-weight:700;line-height:1;color:#fff}
+/* voice picker (14 Oct 2026) — avatar + name + one quiet line, no emojis */
+.vmenu.vpick{min-width:300px!important;padding:6px}
+.vmenu.vpick .vm-sec{padding:8px 10px 6px;font-size:10.5px;letter-spacing:.12em;font-weight:600}
+.vmenu .vp-row{display:flex!important;align-items:center;gap:12px;padding:9px 10px!important;border-radius:10px;white-space:normal}
+.vmenu .vp-row:hover{background:var(--accent-soft);color:var(--ink)}
+.vmenu .vp-row.on{background:var(--accent-soft)}
+.vmenu .vp-row.dim .vp-nm{color:var(--soft)}
+.vp-av{flex:0 0 34px;width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:16px;font-weight:700;color:#fff}
+.vp-av.vp-ic{background:var(--bg);border:1px solid var(--line);color:var(--ink)}
+.vp-av.vp-ic svg{width:17px;height:17px}
+.vp-f{background:linear-gradient(135deg,#b35a4a,#7d2f25)}
+.vp-m{background:linear-gradient(135deg,#4a5d78,#26354b)}
+.vmenu .vp-row.dim .vp-av{opacity:.55}
+.vp-tx{display:flex;flex-direction:column;min-width:0;flex:1}
+.vp-nm{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink);line-height:1.25}
+.vp-sub{font-family:var(--sans);font-size:11.5px;color:var(--soft);line-height:1.35;margin-top:2px}
+.vp-ok{flex:0 0 auto;display:inline-flex;color:var(--ink)}
+.vp-ok svg{width:16px;height:16px}
 .audbar .ab-btn:hover{border-color:var(--accent);color:var(--accent)}
 .audbar .ab-mid{display:flex;align-items:center;gap:2px;margin:0 auto}
 .audbar .ab-ic{background:transparent;border:none;color:var(--ink);width:38px;height:38px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto}
@@ -1169,7 +1189,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.29', date:'12 Oct 2026'};
+const BUILD={v:'1.2.30', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1758,8 +1778,8 @@ function applyVoice(u){ const v=pickVoice(); if(v){ u.voice=v; try{ u.lang=v.lan
 function fillVoiceSel(){ const s=document.getElementById('voiceSel'); if(!s) return;
   const V=_voices(), p=voicePref();
   let h='<option value="auto">Device voice (best available)</option>';
-  if(V.some(v=>_vgender(v)==='f')) h+='<option value="f">👩 Female voice</option>';
-  if(V.some(v=>_vgender(v)==='m')) h+='<option value="m">👨 Male voice</option>';
+  if(V.some(v=>_vgender(v)==='f')) h+='<option value="f">Female voice</option>';
+  if(V.some(v=>_vgender(v)==='m')) h+='<option value="m">Male voice</option>';
   if(V.length) h+='<optgroup label="Every voice on this device">'+V.map(v=>
     `<option value="${escHTML(v.voiceURI||v.name)}">${escHTML(v.name)}</option>`).join('')+'</optgroup>';
   s.innerHTML=h; s.value=p; if(s.selectedIndex<0) s.value='auto'; }
@@ -1797,18 +1817,19 @@ function listenMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
   const live=!!AUD.key||!!_rdState;                                          // something is playing → switch, don't restart
   const GO=live?'audSwitchTo':'listenStart';
   const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu'; m.style.minWidth='250px'; m.dataset.vfor='listen';
-  let h='<div class="vm-sec">🎧 '+(live?'Switch the voice — carries on at this verse':'Read this chapter with')+'</div>';
-  if(window.AUDIO_KJV) h+=`<button onclick="${GO}(event,'human')">🎧 Human narration — LibriVox${np==='human'?' ✓':''} <span style="color:var(--soft);font-size:11px">(every book)</span></button>`;
+  m.classList.add('vpick');
+  let h='<div class="vm-sec">'+(live?'Switch voice · continues from this verse':'Read this chapter with')+'</div>';
+  if(window.AUDIO_KJV) h+=_vpRow(GO,'human','<span class="vp-av vp-ic">'+ICONS.headphones+'</span>','Human narrator','LibriVox recording · every book',np==='human',false);
   const KNOWN=[{key:'emma',name:'Emma',gender:'female'},{key:'george',name:'George',gender:'male'}];   // female voice listed first (Henry's request)
   const seen={}; const list=[];
   KNOWN.forEach(k=>{ const V=window.AUDIO_KOKORO&&window.AUDIO_KOKORO.voices&&window.AUDIO_KOKORO.voices[k.key];
     list.push(V?{key:k.key,name:V.name,gender:V.gender,have:true}:{key:k.key,name:k.name,gender:k.gender,have:false}); seen[k.key]=1; });
   studioVoices().forEach(vc=>{ if(!seen[vc]){ const V=window.AUDIO_KOKORO.voices[vc]; list.push({key:vc,name:V.name,gender:V.gender,have:true}); } });
   list.forEach(V=>{
-    const tag = !V.have ? ' <span style="color:var(--soft);font-size:11px">(coming soon)</span>'
-              : (studioHas(nm,ch,V.key)?'':' <span style="color:var(--soft);font-size:11px">(not this chapter yet)</span>');
-    h+=`<button onclick="${GO}(event,'studio:${V.key}')">${V.gender==='female'?'👩':'👨'} Studio voice — ${escHTML(V.name)}${np==='studio'&&sv===V.key?' ✓':''}${tag}</button>`; });
-  h+=`<button onclick="${GO}(event,'device')">📱 Your device’s voice${np==='device'?' ✓':''}</button>`;
+    const ready = V.have && studioHas(nm,ch,V.key);
+    const sub = !V.have ? 'Coming soon' : ready ? `Studio voice · ${V.gender==='female'?'female':'male'} · follows each verse` : 'Studio voice · not recorded for this chapter yet';
+    h+=_vpRow(GO,'studio:'+V.key,`<span class="vp-av vp-${V.gender==='female'?'f':'m'}">${escHTML(String(V.name||'?').charAt(0))}</span>`,escHTML(V.name),sub,np==='studio'&&sv===V.key,!ready); });
+  h+=_vpRow(GO,'device','<span class="vp-av vp-ic">'+ICONS.device+'</span>','This device’s voice','Built into your phone or computer · works offline',np==='device',false);
   m.innerHTML=h; document.body.appendChild(m);
   const b=(ev&&(ev.currentTarget||ev.target))||document.getElementById('readAloudBtn');
   const r=b?b.getBoundingClientRect():{top:window.innerHeight-80,bottom:window.innerHeight-40,left:window.innerWidth/2,width:0};
@@ -1816,6 +1837,9 @@ function listenMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
   let top=r.top-mh-8; if(top<8) top=r.bottom+8;
   let left=r.left+(r.width||0)/2-mw/2; left=Math.max(8,Math.min(left,window.innerWidth-mw-8));
   m.style.top=top+'px'; m.style.left=left+'px'; }
+/* one row of the voice picker: round avatar, name, one quiet line under it, a tick when chosen */
+function _vpRow(GO,val,av,name,sub,on,dim){
+  return `<button class="vp-row${on?' on':''}${dim?' dim':''}" onclick="${GO}(event,'${val}')">${av}<span class="vp-tx"><span class="vp-nm">${name}</span><span class="vp-sub">${sub}</span></span>${on?`<span class="vp-ok">${ICONS.check}</span>`:''}</button>`; }
 function listenStart(ev,p){ if(ev&&ev.stopPropagation) ev.stopPropagation(); closeVerseMenu();
   let voice=null; if(p.indexOf('studio:')===0){ voice=p.slice(7); p='studio'; }
   try{ localStorage.setItem('nok_narr',p); if(voice) localStorage.setItem('nok_studio_voice',voice); }catch(e){}
@@ -2139,7 +2163,7 @@ function _audRenderTime(t){ const el=document.getElementById('abTime'), r=docume
   if(r&&document.activeElement!==r) r.value=t; }
 /* The player strip + fallback note live in #audbar / #audnote inside the reading footer */
 function _audRender(){ const bar=document.getElementById('audbar'), nt=document.getElementById('audnote');
-  if(nt){ nt.innerHTML = AUD.note ? `<div><span>🎧 ${AUD.note}</span><button onclick="AUD.note=null;_audRender()" title="Dismiss">✕</button></div>` : ''; nt.style.display=AUD.note?'':'none'; }
+  if(nt){ nt.innerHTML = AUD.note ? `<div><span>${AUD.note}</span><button onclick="AUD.note=null;_audRender()" title="Dismiss">✕</button></div>` : ''; nt.style.display=AUD.note?'':'none'; }
   if(!bar) return;
   if(!AUD.key||!AUD.info){ bar.innerHTML=''; bar.style.display='none'; return; }
   const a=AUD.el, info=AUD.info, dur=(a&&a.duration)||info.dur, t=a?a.currentTime:info.start;
@@ -2153,7 +2177,7 @@ function _audRender(){ const bar=document.getElementById('audbar'), nt=document.
   const paused=!!(a&&a.paused&&!AUD.loading);
   const V=!human&&window.AUDIO_KOKORO&&window.AUDIO_KOKORO.voices&&window.AUDIO_KOKORO.voices[AUD.voice];
   const vlbl=human?'LibriVox':escHTML(studioVoiceName(AUD.voice));
-  const vico=human?ICONS.headphones:'<span class="ab-av">'+((V&&V.gender==='female')?'👩':'👨')+'</span>';
+  const vico=human?ICONS.headphones:'<span class="ab-av vp-'+((V&&V.gender==='female')?'f':'m')+'">'+escHTML(String(studioVoiceName(AUD.voice)||'?').charAt(0))+'</span>';
   const status=AUD.loading?'Loading…':AUD.buffering?'Buffering…':(_fmtT(t)+' / '+_fmtT(dur));
   bar.innerHTML=`<input type="range" class="ab-seek" id="abSeek" min="0" max="${Math.floor(dur)}" step="1" value="${Math.floor(t)}" style="--ab-track:${track}"
       oninput="_audRenderTime(this.value)" onchange="audSeek(this.value)" title="${human?`This recording covers ${escHTML(info.file.book)} ${info.file.from}${info.file.to>info.file.from?'–'+info.file.to:''} — the shaded part is ${escHTML(AUD.book)} ${AUD.ch}`:`${escHTML(AUD.book)} ${AUD.ch}`}">
@@ -2263,6 +2287,7 @@ const ICONS={
   stop:_I('<rect x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor"/>'),
   back15:_I('<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 3.5v3.7h3.7"/><text x="12.3" y="15" font-size="7.2" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif">15</text>'),
   fwd30:_I('<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 3.5v3.7h-3.7"/><text x="11.7" y="15" font-size="7.2" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif">30</text>'),
+  device:_I('<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>'),
   headphones:_I('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="13.5" width="4.5" height="6.5" rx="1.5"/><rect x="16" y="13.5" width="4.5" height="6.5" rx="1.5"/>'),
   pin:_I('<path d="M12 21s6-5.6 6-11a6 6 0 0 0-12 0c0 5.4 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/>'),
   gear:_I('<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/>')
@@ -3476,12 +3501,12 @@ function tbMoreMenu(ev){ ev.stopPropagation(); closeVerseMenu();
   const dark=document.documentElement.dataset.theme==='dark';
   const rd=state.view==='read';
   const np=narrPref();
-  m.innerHTML=`${rd?`${(window.AUDIO_KJV||window.AUDIO_KOKORO)?`<div class="vm-sec">🎧 Listen with</div>
+  m.innerHTML=`${rd?`${(window.AUDIO_KJV||window.AUDIO_KOKORO)?`<div class="vm-sec">Listen with</div>
     <select class="btn vsel vm-voice" id="narrSel" onchange="setNarrPref(this.value)">
       ${window.AUDIO_KJV?`<option value="human" ${np==='human'?'selected':''}>Human narration — LibriVox (every book)</option>`:''}
       ${studioVoices().map(v=>{ const V=window.AUDIO_KOKORO.voices[v]; return `<option value="studio:${v}" ${np==='studio'&&studioVoicePref()===v?'selected':''}>Studio voice — ${escHTML(V.name)} (${V.gender==='female'?'female':'male'}, verse-exact)</option>`; }).join('')}
       <option value="device" ${np==='device'?'selected':''}>Device voice (works offline)</option></select>`:''}
-    <div class="vm-sec">🎙 Device voice</div>
+    <div class="vm-sec">Device voice</div>
     <select class="btn vsel vm-voice" id="voiceSel" onchange="setVoicePref(this.value)"></select>
     <div class="vm-sec">Text size</div>
     <div class="vm-row"><button onclick="setFont(-0.08)">A−</button><button onclick="setFont(0.08)">A+</button></div>
