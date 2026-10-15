@@ -1294,7 +1294,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.35', date:'12 Oct 2026'};
+const BUILD={v:'1.2.36', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -4080,7 +4080,7 @@ function spellChip(ev,word){ ev.stopPropagation(); closeSpellPop();
     +'<div class="cp-sep"></div>'
     +`<button onclick="spellIgnore('${esc(word)}')">🚫 Ignore this time</button>`
     +`<button onclick="spellAdd('${esc(word)}')">➕ Add to my dictionary</button>`
-    +`<button onclick="closeSpellPop();window.open('https://www.google.com/search?q='+encodeURIComponent('define ${esc(word)}'),'_blank','noopener')">📖 What does “${escHTML(word)}” mean?</button>`;
+    +`<button onclick="closeSpellPop();gSearch('define ${esc(word)}')">📖 What does “${escHTML(word)}” mean?</button>`;
   document.body.appendChild(pop);
   const r=ev.currentTarget.getBoundingClientRect(); const mh=pop.offsetHeight, mw=pop.offsetWidth;
   let top=r.top-mh-6; if(top<8) top=r.bottom+6; let left=r.left; if(left+mw>window.innerWidth-8) left=window.innerWidth-mw-8;
@@ -4301,8 +4301,11 @@ function _openNotesText(vs){ let out=[]; try{ (Array.isArray(vs)?vs:[vs]).forEac
   nw.querySelectorAll('.note').forEach(function(n){ if(n.classList.contains('ncollapsed')||n.offsetParent===null) return;
     const b=n.querySelector('.body'); if(!b) return; const t=(b.innerText||'').replace(/\s+/g,' ').trim(); if(t) out.push(t); }); }); }catch(e){}
   let s=out.join(' '); if(s.length>700) s=s.slice(0,700).replace(/\s+\S*$/,''); return s; }
+/* Every Google search the app opens goes through here, with SafeSearch switched on so explicit
+   pictures, videos and sites are filtered out of the results. (15 Oct 2026) */
+function gSearch(q){ window.open('https://www.google.com/search?safe=active&q='+encodeURIComponent(q),'_blank','noopener'); }
 function _googleVerse(ref,vs){ const notes=_openNotesText(vs); const q=notes?(ref+' '+notes):(ref+' meaning');
-  window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank','noopener'); }
+  gSearch(q); }
 function vmDo(ev,action,name,ch,v){ ev.stopPropagation(); closeVerseMenu();
   const t=verseText(name,ch,v); const ref=`${name} ${ch}:${v}`;
   if(action==='copy'){ copyVerse(name,ch,v); }
@@ -4394,7 +4397,7 @@ function selAct(ev,action,book,ch,v){ ev.stopPropagation();
   const withRef=(ref?`${text}\n— ${ref}`:text)+'\nbible.getwordwisdom.com';
   if(action==='copy'){ _clip(withRef,'Copied'); }
   else if(action==='share'){ if(navigator.share) navigator.share({title:ref||'Note',text:withRef}).catch(()=>{}); else _clip(withRef,'Copied — paste to share'); }
-  else if(action==='google'){ window.open('https://www.google.com/search?q='+encodeURIComponent(text),'_blank','noopener'); }
+  else if(action==='google'){ gSearch(text); }
   else if(action==='note'){ closeSelMenu(); openEditor(book,ch,v); return; }
   closeSelMenu();
 }
@@ -4791,7 +4794,8 @@ function doSearch(q){
   /* 2. words: correct spelling against the Bible's own vocabulary */
   const vocab=_srVocabFor(ver)||_srVocabFor('KJV');
   const rawWords=ref?[]:nq.split(' ').filter(w=>w&&!SR_STOP.has(w));
-  const words=rawWords.map(w=>_srCorrect(w,vocab));
+  const _isPrefix=w=>{ try{ if(w.length<5||!vocab) return false; const V=(vocab instanceof Map||vocab instanceof Set)?[...vocab.keys()]:(Array.isArray(vocab)?vocab:Object.keys(vocab)); return V.some(x=>x!==w&&x.startsWith(w)); }catch(e){ return false; } };
+  const words=rawWords.map(w=>_isPrefix(w)?w:_srCorrect(w,vocab));
   const corrected=words.join(' ')!==rawWords.join(' ');
   if(corrected&&!ref) html+=`<div class="soft" style="margin:-4px 0 12px">Searching for <b>${escHTML(words.join(' '))}</b> <span style="opacity:.7">(you typed “${escHTML(q)}”)</span></div>`;
   /* 3. topics */
@@ -4805,7 +4809,7 @@ function doSearch(q){
   const joinedA=rawWords.join(''), joinedB=words.join('');
   const scoreN=n=>{ if(!words.length) return 0; if(phrase&&n.indexOf(' '+phrase+' ')>=0) return 100+words.length+40/(1+n.length/120);
     if(words.length>1&&joinedA.length>5&&(n.indexOf(joinedA)>=0||n.indexOf(joinedB)>=0)) return 95+words.length+40/(1+n.length/120);
-    let sc=0,last=-1,inorder=true; alts.forEach(g=>{ let i=-1,part=false; for(const w of g){ i=n.indexOf(' '+w+' '); if(i>=0) break; if(w.length>3&&(i=n.indexOf(w))>=0){ part=true; break; } }
+    let sc=0,last=-1,inorder=true; alts.forEach(g=>{ let i=-1,part=false; for(const w of g){ i=n.indexOf(' '+w+' '); if(i>=0) break; if(w.length>4&&(i=n.indexOf(' '+w))>=0) break; if(w.length>3&&(i=n.indexOf(w))>=0){ part=true; break; } }
       if(i>=0){ sc+=part?1:2; if(i<last) inorder=false; last=i; } });
     if(sc<Math.max(1,Math.ceil(words.length*0.6)*2)) return 0;
     if(inorder&&words.length>1) sc+=2; return sc+words.length*2/(1+n.length/120); };
@@ -4839,9 +4843,10 @@ function doSearch(q){
   if(comm.length>5){ html+='<div class="book-group" style="padding-left:0">More from Nii Okai’s notes</div>'; comm.slice(5,45).forEach(r=>{ html+=noteRow(r); }); }
   /* 5. when the app can't answer, hand the question to the web the way people actually ask it */
   const weak=!ref&&total===0;
-  html+=`<div class="hcard" style="margin-top:${weak?'6px':'18px'};${weak?'':'opacity:.9'}"><div class="hk">${ICONS.search} ${weak?'Nothing close enough here':'Not what you meant?'}</div>
-    <p class="soft" style="margin:6px 0 10px">${weak?'Try a reference like <b>jn 3 16</b>, a phrase you remember, or a topic like <b>verses about fear</b> — or ask the web.':'Ask the web with your words — it comes back with the reference, and you can look it up here.'}</p>
-    <div class="hrow"><button class="btn primary" onclick="window.open('https://www.google.com/search?q='+encodeURIComponent(${JSON.stringify(q)}+' bible verse'),'_blank','noopener')">Search Google</button></div></div>`;
+  html+=`<div class="hcard" style="margin-top:${weak?'6px':'18px'};${weak?'':'opacity:.9'}"><div class="hk">${ICONS.search} ${weak?'Not in the app — Google will find it':'Not what you meant?'}</div>
+    <p class="soft" style="margin:6px 0 10px">${weak?'Nothing in the Bible text or Nii Okai’s notes matches yet. Google searches the whole web for you (with SafeSearch on). You can also try a reference like <b>jn 3 16</b> or a topic like <b>verses about fear</b>.':'Ask the web with your words — it comes back with the reference, and you can look it up here.'}</p>
+    <div class="hrow"><button class="btn primary" onclick="gSearch(window._srLastQ+' bible')">Search Google for “${escHTML(q)}” →</button></div></div>`;
+  window._srLastQ=q;
   html+='</div>';
   document.getElementById('reader').innerHTML=html;
   document.getElementById('reader').scrollTop=0;
