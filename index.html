@@ -274,6 +274,9 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
   background:var(--panel);color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:10px 15px;
   box-shadow:0 6px 20px rgba(0,0,0,.2);cursor:pointer}
 .fabnotes.show{opacity:1;pointer-events:auto;transform:none}
+body:not(.legacy) .fabnotes{background:var(--ink);color:var(--panel);border-color:var(--ink);box-shadow:0 6px 18px rgba(0,0,0,.18)}
+body:not(.legacy) .fabnotes.off{background:var(--panel);color:var(--ink);border-color:var(--line)}
+body:not([data-view="read"]) .fabnotes{display:none}
 .readprog{height:3px;background:var(--line);display:none;flex:0 0 auto}
 .readprog .fill{height:100%;width:0;background:var(--accent);transition:width .15s linear}
 .readnav .rn-armed{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
@@ -930,7 +933,14 @@ body:not(.legacy)[data-view="read"] .reader{padding-top:12px}
 body:not(.legacy) .chtitle{margin:0 0 6px}
 body:not(.legacy) .chapindex.nearby{padding:8px 12px;margin-bottom:10px}
 /* commentary menu */
-.vmenu.cmenu{min-width:290px;padding:6px}
+.vmenu.cmenu{min-width:290px;max-width:340px;padding:8px}
+.cm-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:6px 10px 2px}
+.cm-title{font-family:var(--serif);font-size:18px;font-weight:700;color:var(--ink)}
+.cm-count{font-family:var(--sans);font-size:11.5px;color:var(--soft)}
+.cm-lbl{font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);padding:10px 10px 6px}
+.cm-sep{height:1px;background:var(--line);margin:8px 10px 4px}
+.cm-go{flex:0 0 auto;font-size:22px;line-height:1;color:var(--soft)}
+.cmenu .cm-chip.cm-near{font-weight:600!important}
 .cmenu .vm-sec{padding:8px 10px 6px;font-size:10.5px;letter-spacing:.12em;font-weight:600}
 .cmenu .cm-row{display:flex!important;align-items:center;gap:12px;padding:9px 10px!important;border-radius:10px;white-space:normal}
 .cmenu .cm-row:hover{background:var(--line);color:var(--ink)}
@@ -942,9 +952,11 @@ body:not(.legacy) .chapindex.nearby{padding:8px 12px;margin-bottom:10px}
 .cm-sw.on{background:var(--ink)} .cm-sw.on i{left:19px}
 .cm-av{flex:0 0 34px;width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--line);color:var(--ink)}
 .cm-av svg{width:17px;height:17px}
-.cm-chips{display:flex;flex-wrap:wrap;gap:6px;padding:2px 10px 8px}
-.cmenu .cm-chip{display:inline-block!important;width:auto!important;padding:5px 11px!important;border:1px solid var(--line)!important;border-radius:14px;font-size:12.5px!important;font-weight:600}
-.cm-none{font-family:var(--sans);font-size:12.5px;color:var(--soft);padding:2px 10px 8px}
+.cm-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 10px 6px}
+.cmenu .cm-chip{display:inline-flex!important;align-items:center;justify-content:center;width:auto!important;min-width:38px;height:32px;padding:0 10px!important;
+  border:none!important;background:var(--line)!important;border-radius:16px;font-size:13.5px!important;font-weight:600;color:var(--ink)}
+.cmenu .cm-chip:hover{background:var(--ink)!important;color:var(--panel)!important}
+.cm-none{font-family:var(--sans);font-size:13px;color:var(--soft);padding:6px 10px 8px}
 /* Matthew Henry sheet */
 #mhOv{z-index:85}
 .mh-sheet{max-height:82vh}
@@ -1252,7 +1264,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.31', date:'12 Oct 2026'};
+const BUILD={v:'1.2.32', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3007,7 +3019,7 @@ function renderRead(){
   /* same chapter drawn again (a note saved, a sync, a mark kept) — keep the reader exactly where they were (11 Oct 2026) */
   const _rk=name+'|'+ch, _anc=(window._rrKey===_rk)?_rrAnchor(r):null; window._rrKey=_rk;
   const _il=_ilCapture();
-  r.innerHTML=html; r.scrollTop=0; setTimeout(_chtSync,0); if(_anc){ _rrRestore(r,_anc); requestAnimationFrame(function(){ _rrRestore(r,_anc); }); }
+  r.innerHTML=html; r.scrollTop=0; setTimeout(_chtSync,0); setTimeout(()=>{ try{ _fabSync(); }catch(e){} },0); if(_anc){ _rrRestore(r,_anc); requestAnimationFrame(function(){ _rrRestore(r,_anc); }); }
   _ilRestore(_il);
   { const o=ONLINE_VERSIONS[state.version]; if(o&&!olFallback){ const r0=document.getElementById('reader'); const pg=r0.querySelector('.page'); if(pg) pg.insertAdjacentHTML('beforeend',`<div class="copyline">${escHTML(o.c)}</div>`); } }
   const foot=document.getElementById('readfoot'); foot.innerHTML=`<div class="audnote" id="audnote" style="display:none"></div><div class="audbar" id="audbar" style="display:none"></div>`+nav; foot.style.display='';
@@ -4421,8 +4433,10 @@ document.addEventListener('mousedown',e=>{ window._vPoint={x:e.clientX,y:e.clien
 function _fabSync(){ const f=document.getElementById('fabNotes'); if(!f) return;
   const rd=document.getElementById('reader');
   const hidden=document.documentElement.classList.contains('hide-notes');
-  const show=state.view==='read'&&window._chapHasNotes&&rd&&rd.scrollTop>420;
-  f.textContent=hidden?'Show all commentary':'Hide all commentary';
+  const leg=document.body.classList.contains('legacy');
+  const show=state.view==='read'&&window._chapHasNotes&&rd&&(leg?rd.scrollTop>420:true);
+  f.textContent=leg?(hidden?'Show all commentary':'Hide all commentary'):(hidden?'Show commentary':'Hide commentary');
+  f.classList.toggle('off',hidden);
   f.classList.toggle('show',!!show); }
 (function(){ const rd=document.getElementById('reader'); if(rd) rd.addEventListener('scroll',_fabSync,{passive:true}); })();
 /* Chapter reading progress bar */
@@ -4694,7 +4708,9 @@ function doSearch(q){
   /* 4. ranked phrase search: your notes, then Scripture in the version you read and in the KJV wording */
   const phrase=words.join(' ');
   const alts=words.map((w,i)=>rawWords[i]&&rawWords[i]!==w?[w,rawWords[i]]:[w]);
+  const joinedA=rawWords.join(''), joinedB=words.join('');
   const scoreN=n=>{ if(!words.length) return 0; if(phrase&&n.indexOf(' '+phrase+' ')>=0) return 100+words.length+40/(1+n.length/120);
+    if(words.length>1&&joinedA.length>5&&(n.indexOf(joinedA)>=0||n.indexOf(joinedB)>=0)) return 95+words.length+40/(1+n.length/120);
     let sc=0,last=-1,inorder=true; alts.forEach(g=>{ let i=-1,part=false; for(const w of g){ i=n.indexOf(' '+w+' '); if(i>=0) break; if(w.length>3&&(i=n.indexOf(w))>=0){ part=true; break; } }
       if(i>=0){ sc+=part?1:2; if(i<last) inorder=false; last=i; } });
     if(sc<Math.max(1,Math.ceil(words.length*0.6)*2)) return 0;
@@ -4892,12 +4908,11 @@ function commentaryMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
   const on=!document.documentElement.classList.contains('hide-notes');
   const noted=(window._chapNoted||[]);
   const m=document.createElement('div'); m.className='vmenu cmenu'; m.id='vmenu'; m.dataset.vfor='cm';
-  m.innerHTML=`<div class="vm-sec">Nii Okai’s commentary</div>
-    <button class="cm-row" onclick="closeVerseMenu();toggleNotes()"><span class="cm-tx"><span class="cm-nm">Show commentary</span><span class="cm-sub">${on?'Showing under each verse':'Scripture only for now'}</span></span><span class="cm-sw${on?' on':''}" aria-hidden="true"><i></i></span></button>
-    ${noted.length?`<div class="vm-sec">Notes in ${escHTML(name)} ${ch}</div><div class="cm-chips">${noted.map(v=>`<button class="cm-chip" onclick="closeVerseMenu();_cmGo(${v})">v${v}</button>`).join('')}</div>`
+  m.innerHTML=`<div class="cm-head"><span class="cm-title">${escHTML(name)} ${ch}</span><span class="cm-count">${noted.length?noted.length+' verse'+(noted.length===1?'':'s')+' with notes':''}</span></div>
+    ${noted.length?`<div class="cm-lbl">Jump to a note</div><div class="cm-chips">${noted.map(v=>`<button class="cm-chip" onclick="closeVerseMenu();_cmGo(${v})">${v}</button>`).join('')}</div>`
       :`<div class="cm-none">No notes in ${escHTML(name)} ${ch} yet</div>${window._chapNearest?`<div class="cm-chips"><button class="cm-chip cm-near" onclick="closeVerseMenu();openChapter('${esc(window._chapNearest.b)}',${window._chapNearest.ch})">Nearest notes: ${escHTML(window._chapNearest.b)} ${window._chapNearest.ch} · ${window._chapNearest.n} →</button></div>`:''}`}
-    <div class="vm-div"></div>
-    <button class="cm-row" onclick="closeVerseMenu();openMHSheet()"><span class="cm-av">${ICONS.library}</span><span class="cm-tx"><span class="cm-nm">Matthew Henry on ${escHTML(name)} ${ch}</span><span class="cm-sub">The classic commentary · opens in its own page</span></span></button>`;
+    <div class="cm-sep"></div>
+    <button class="cm-row cm-mh" onclick="closeVerseMenu();openMHSheet()"><span class="cm-av">${ICONS.library}</span><span class="cm-tx"><span class="cm-nm">Matthew Henry’s commentary</span><span class="cm-sub">The classic 1706 commentary on this chapter</span></span><span class="cm-go" aria-hidden="true">›</span></button>`;
   document.body.appendChild(m);
   const b=(ev&&ev.currentTarget)||document.getElementById('notesBtn'); const r=b.getBoundingClientRect(); const mw=m.offsetWidth;
   m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(8,Math.min(r.right-mw,window.innerWidth-mw-8))+'px'; }
@@ -4916,6 +4931,14 @@ function openMHSheet(){ const name=window.BOOKS[state.book].name, ch=state.chapt
       body.scrollTop=0; }); }); }
 function closeMHSheet(){ document.getElementById('mhOv').classList.remove('show'); }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const o=document.getElementById('mhOv'); if(o&&o.classList.contains('show')) closeMHSheet(); } });
+/* Commentary is the point of the app: it is on whenever the app opens, and again when you come back
+   to it after ten minutes or more away (new UI; hiding it is for this sitting only). (15 Oct 2026) */
+let _awaySince=0;
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){ _awaySince=Date.now(); return; }
+  if(_awaySince&&Date.now()-_awaySince>600000&&!document.body.classList.contains('legacy')&&document.documentElement.classList.contains('hide-notes')){
+    try{ toggleNotes(); }catch(e){} }
+  _awaySince=0; });
 /* one chapter name on screen: the small one in the top bar shows only after the big title has scrolled away */
 function _chtSync(){ try{ const rd=document.getElementById('reader'), t=rd&&rd.querySelector('.chtitle');
   const out=!!(t && state.view==='read' && t.getBoundingClientRect().bottom < rd.getBoundingClientRect().top+4);
