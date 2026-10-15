@@ -919,11 +919,28 @@ body.legacy #dateBtn .db-emo{display:inline}
 /* ===== Reading screen tidy-up (15 Oct 2026) — new UI only ===== */
 /* top bar: translation pill on the left, plain round icons on the right */
 body:not(.legacy)[data-view="read"] #planBackBtn{order:-3}
-body:not(.legacy)[data-view="read"] #crumb{order:-2;display:none}
+body:not(.legacy)[data-view="read"] #crumb{order:-2}
 body:not(.legacy)[data-view="read"] #verSelect{order:-1;border-radius:20px;background-color:var(--line);border-color:transparent;font-weight:700;padding-left:14px}
-body:not(.legacy)[data-view="read"].cht-out #crumb{display:inline-flex;align-items:center;gap:4px;font-family:var(--sans);font-size:14.5px;font-weight:700;
-  color:var(--ink);background:var(--line);border-radius:20px;padding:7px 14px}
-body:not(.legacy)[data-view="read"].cht-out #crumb .caret{display:none}
+/* 15 Oct 2026: chapter name and translation on one line, joined like one pill; the big title above the verses is gone */
+body:not(.legacy)[data-view="read"] #crumb{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:15px;font-weight:700;
+  color:var(--ink);background:var(--line);border-radius:20px 5px 5px 20px;padding:0 12px 0 15px;height:38px;margin-right:-6px;
+  max-width:52vw;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer}
+body:not(.legacy)[data-view="read"] #crumb .caret{font-size:10px;color:var(--soft)}
+body:not(.legacy)[data-view="read"] #verSelect{border-radius:5px 20px 20px 5px!important;height:38px}
+body:not(.legacy) .chtitle{display:none}
+@media(max-width:860px){ body:not(.legacy)[data-view="read"] #crumb{height:34px;font-size:14.5px} body:not(.legacy)[data-view="read"] #verSelect{height:34px} }
+/* commentary button on the Listen line */
+.readnav .rn-comm{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:11px 14px;border-radius:999px;background:var(--line);border-color:var(--line)}
+.readnav .rn-comm .nico,.readnav .rn-comm svg{width:16px;height:16px}
+.readnav .rn-comm.off{background:var(--panel);border-color:var(--line);color:var(--soft)}
+@media(max-width:420px){ .readnav{gap:7px;padding:10px 12px} .readnav button{padding:11px 10px} .readnav .rn-listen{padding:11px 16px} .readnav .rn-comm{padding:11px 12px}
+  .readnav.planmode .rn-comm span:not(.nico){display:none} .readnav.planmode .rn-mid{font-size:11.5px} }
+/* keep the top bar on ONE line while reading: a long book name shortens with "…" instead of pushing icons down */
+body:not(.legacy)[data-view="read"] .topbar:not(.searching){flex-wrap:nowrap;gap:6px}
+body:not(.legacy)[data-view="read"] .topbar:not(.searching) .spacer{min-width:0}
+body:not(.legacy)[data-view="read"] #crumb{flex:0 1 auto;min-width:0;display:block!important;line-height:38px}
+body:not(.legacy)[data-view="read"] #verSelect{flex:0 0 auto;width:auto;max-width:96px}
+@media(max-width:860px){ body:not(.legacy)[data-view="read"] #crumb{line-height:34px} body:not(.legacy)[data-view="read"] #verSelect{max-width:78px} }
 body:not(.legacy)[data-view="read"] .topbar .icon-btn{border-color:transparent;border-radius:50%}
 body:not(.legacy)[data-view="read"] .topbar .icon-btn:hover{background:var(--line)}
 body:not(.legacy)[data-view="read"] .topbar #notesBtn.active{background:var(--line);border-color:transparent}
@@ -1264,7 +1281,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.33', date:'12 Oct 2026'};
+const BUILD={v:'1.2.34', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2676,7 +2693,9 @@ let _bpOpen=-1,_bpAlpha=false,_bpCh=0;
    chapter and you are there. "Pick a verse too" shows the verses of that chapter first, so you
    can land on the exact verse. The choice is remembered on this device. (21 Sep 2026) */
 const LS_VPICK='nok_vpick';
-function _vpick(){ try{ return localStorage.getItem(LS_VPICK)==='verse'?'verse':'chapter'; }catch(e){ return 'chapter'; } }
+function _vpick(){ try{
+    if(!localStorage.getItem('nok_vpick_v2')){ localStorage.setItem('nok_vpick_v2','1'); localStorage.setItem(LS_VPICK,'verse'); }   /* 15 Oct 2026: start on "Pick a verse too" */
+    return localStorage.getItem(LS_VPICK)==='verse'?'verse':'chapter'; }catch(e){ return 'verse'; } }
 function bpPick(m){ try{ localStorage.setItem(LS_VPICK, m==='verse'?'verse':'chapter'); }catch(e){}
   if(m!=='verse') _bpCh=0; _bpSyncPick(); _renderBP(); }
 function _bpSyncPick(){ const v=_vpick()==='verse';
@@ -2998,18 +3017,21 @@ function renderRead(){
   html+=`</div>`;
   // sticky navigation — always visible
   let nav;
+  const _nl=!document.body.classList.contains('legacy');
+  const _cOff=document.documentElement.classList.contains('hide-notes');
+  const _rnComm=(_nl&&window._chapHasNotes)?`<button class="rn-comm${_cOff?' off':''}" id="rnComm" onclick="toggleNotes()" title="${_cOff?'Show Nii Okai’s commentary':'Hide Nii Okai’s commentary'}">${ICONS.chat}<span>${_cOff?'Show':'Hide'}</span></button>`:'';
   if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]); const last=state.plan.ci>=chaps.length-1;
     nav=`<div class="readnav planmode">
       <button id="rnPrev" onclick="planNav(-1)" ${state.plan.day===0&&state.plan.ci===0?'disabled':''}>← Prev</button>
       <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud(event)">${ICONS.play} Listen</button>
       <button class="rn-listen rn-stop" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">${ICONS.stop}</button>
-      <span class="rn-mid">Day ${state.plan.day+1} · ${state.plan.ci+1}/${chaps.length}</span>
+      <span class="rn-mid">Day ${state.plan.day+1} · ${state.plan.ci+1}/${chaps.length}</span>${_rnComm}
       <button class="rn-next" id="rnNext" onclick="planNav(1)">${last?'Finish day ✓':'Next →'}</button></div>`;
   } else {
     nav=`<div class="readnav">
-      <button onclick="prevChapter()" ${state.book===0&&ch===1?'disabled':''}>← Previous</button>
+      <button onclick="prevChapter()" ${state.book===0&&ch===1?'disabled':''}>${_rnComm?'← Prev':'← Previous'}</button>
       <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud(event)">${ICONS.play} Listen</button>
-      <button class="rn-listen rn-stop" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">${ICONS.stop}</button>
+      <button class="rn-listen rn-stop" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">${ICONS.stop}</button>${_rnComm}
       <button onclick="nextChapter()" ${state.book===window.BOOKS.length-1&&ch===nch?'disabled':''}>Next →</button></div>`;
   }
   const r=document.getElementById('reader');
@@ -4431,7 +4453,7 @@ function _fabSync(){ const f=document.getElementById('fabNotes'); if(!f) return;
   const rd=document.getElementById('reader');
   const hidden=document.documentElement.classList.contains('hide-notes');
   const leg=document.body.classList.contains('legacy');
-  const show=state.view==='read'&&window._chapHasNotes&&rd&&(leg?rd.scrollTop>420:true);
+  const show=leg&&state.view==='read'&&window._chapHasNotes&&rd&&rd.scrollTop>420;
   f.textContent=leg?(hidden?'Show all commentary':'Hide all commentary'):(hidden?'Show commentary':'Hide commentary');
   f.classList.toggle('off',hidden);
   f.classList.toggle('show',!!show); }
