@@ -1250,7 +1250,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <div class="bp-ov" id="mhOv" onclick="if(event.target===this)closeMHSheet()">
   <div class="bp-sheet mh-sheet">
     <div class="bp-head"><button class="bp-x" onclick="closeMHSheet()" aria-label="Close">✕</button><span id="mhTitle">Matthew Henry</span><span style="width:32px"></span></div>
-    <div class="mh-sub">Matthew Henry’s Commentary · public domain · not part of Nii Okai’s Bible Journal</div>
+    <div class="mh-sub">Matthew Henry’s Commentary (1706) · public domain</div>
     <div class="bp-list mh-body" id="mhBody"></div>
   </div>
 </div>
@@ -1325,7 +1325,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.43', date:'12 Oct 2026'};
+const BUILD={v:'1.2.44', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -4014,7 +4014,8 @@ const AUTOCORRECT={teh:'the',hte:'the',adn:'and',nad:'and',thier:'their',recieve
  dont:"don't",doesnt:"doesn't",didnt:"didn't",cant:"can't",wont:"won't",wouldnt:"wouldn't",
  couldnt:"couldn't",shouldnt:"shouldn't",isnt:"isn't",arent:"aren't",wasnt:"wasn't",
  werent:"weren't",havent:"haven't",hasnt:"hasn't",hadnt:"hadn't",im:"I'm",ive:"I've",
- youre:"you're",theyre:"they're",thats:"that's",whats:"what's"};
+ youre:"you're",theyre:"they're",thats:"that's",whats:"what's",
+ "i'm":"I'm","i've":"I've","i'll":"I'll","i'd":"I'd"};
 /* Offline spelling model: dictionary + frequency rank + your personal dictionary + learned fixes */
 let _DICT=null, _RANK=null;
 let _USERDICT=new Set(), _LEARN={}, _rejected=new Set(), _lastAuto=null;
@@ -4029,7 +4030,22 @@ function _buildDict(){ _DICT=new Set(); _RANK=new Map(); _loadUserSpell();
     (nt.text.toLowerCase().match(/[a-z']{2,}/g)||[]).forEach(t=>{ if(!_DICT.has(t)){_DICT.add(t); _RANK.set(t,900000);} }); }); }catch(e){}
   _USERDICT.forEach(t=>{ if(!_DICT.has(t)){_DICT.add(t); _RANK.set(t,850000);} });
   (window.BIBLE_NAMES||[]).forEach(n=>{ const t=n.toLowerCase(); if(!_DICT.has(t)){ _DICT.add(t); _RANK.set(t,800000); } });
+  _buildProper();
 }
+/* names that always take a capital: the KJV's own proper nouns, plus words YOU always capitalise mid-sentence */
+let _PROPER=null;
+function _buildProper(){ _PROPER=new Set(window.BIBLE_PROPER||[]);
+  try{ const cap=new Map(), low=new Set();
+    for(const bk in DATA)for(const c in DATA[bk])for(const v in DATA[bk][c])DATA[bk][c][v].forEach(nt=>{
+      const t=String(nt.text||''); const re=/[A-Za-z][a-z]+/g; let m;
+      while((m=re.exec(t))){ const w=m[0], lw=w.toLowerCase();
+        if(w===lw){ low.add(lw); continue; }
+        const pre=t.slice(Math.max(0,m.index-3),m.index);
+        if(m.index===0||/[.!?:"“\n(]\s*$/.test(pre)) continue;           // sentence start proves nothing
+        cap.set(lw,(cap.get(lw)||0)+1); } });
+    const R=_RANK||new Map();
+    cap.forEach((n,w)=>{ if(n>=2&&!low.has(w)&&w.length>2&&!(R.get(w)<20000)) _PROPER.add(w); });
+  }catch(e){} }
 /* every word in a note you keep becomes a known word at once — names, Twi, Pidgin, your own coinages */
 function _learnText(text){ try{ const ws=(String(text||'').match(/[A-Za-z][A-Za-z']+/g)||[]);
   if(_DICT) ws.forEach(w=>{ const t=w.toLowerCase(); if(!_DICT.has(t)){ _DICT.add(t); _RANK.set(t,900000); } });
@@ -4104,6 +4120,7 @@ function noteAutocorrect(e){
   else if(_LEARN[lower]!==undefined){ fixed=_applyCase(word,_LEARN[lower]); }
   else if(AUTOCORRECT[lower]!==undefined){ fixed=_applyCase(word,AUTOCORRECT[lower]); }
   else if(lower==='i'){ fixed='I'; }
+  else if(/^[a-z]+$/.test(word) && (_PROPER||(_buildProper(),_PROPER)).has(word)){ fixed=word.charAt(0).toUpperCase()+word.slice(1); }
   else if(/^[a-z][a-z']*$/.test(word) && !/'/.test(word)){
     const c=_correct(word); if(c) fixed=_applyCase(word,c);       // capitalised words skipped → names protected
   }
@@ -4164,7 +4181,21 @@ function _predPick(btn){ const bar=btn.parentElement, ta=bar&&bar._ta; if(!ta) r
   ta.dispatchEvent(new Event('input',{bubbles:true})); _predUpdate(ta); }
 document.addEventListener('selectionchange',()=>{ const a=document.activeElement; if(a&&(a.id==='edText'||(a.classList&&a.classList.contains('inline-ed')))) _predUpdate(a); });
 /* ---- light punctuation (only while Auto-correct is ticked) ---- */
-function _punctLive(ta,e){ const it=e.inputType, d=e.data; const v=ta.value, c=ta.selectionStart;
+/* does this sentence clearly ask something? ("What had he…", "Why did…", "Did he…", "Was it…") */
+const _QWH=new Set('what why how who whom whose where when which'.split(' '));
+const _QAUX=new Set('is was are were had has have did do does will would could should can shall may might must am'.split(' '));
+const _QSUB=new Set('i you he she it we they this that there these those god jesus the a an his her their our my your any anyone anybody everyone someone'.split(' '));
+function _isQuestion(sent){ const w=String(sent||'').toLowerCase().replace(/[“”"'‘’(]/g,'').trim().split(/\s+/);
+  if(w.length<3) return false;
+  if(_QWH.has(w[0])&&_QAUX.has(w[1])) return true;                         // What had… / Why did… / How was…
+  if(_QAUX.has(w[0])&&_QSUB.has(w[1])&&!/,/.test(sent)) return true;      // Did he… / Was it… (not "Had he known, …")
+  return false; }
+function _lastSentence(v,end){ let i=end; while(i>0&&!/[.!?\n]/.test(v[i-1])) i--; return v.slice(i,end); }
+function _punctLive(ta,e){ const it=e.inputType, d=e.data; let v=ta.value, c=ta.selectionStart;
+  { const after=(it==='insertText'&&d===' ')||it==='insertLineBreak'||it==='insertParagraph';
+    const k=c-2;   /* the character before the space / new line just typed */
+    if(after&&k>=1&&v[k]==='.'&&v[k-1]!=='.'&&/[A-Za-z)]/.test(v[k-1])&&_isQuestion(_lastSentence(v,k))){
+      ta.value=v.slice(0,k)+'?'+v.slice(k+1); ta.setSelectionRange(c,c); v=ta.value; } }
   /* "told ," → "told," */
   if(it==='insertText'&&/^[,.;:!?]$/.test(d||'')&&c>=2&&v[c-2]===' '&&/[A-Za-z0-9’'")\]]/.test(v[c-3]||'')){
     ta.value=v.slice(0,c-2)+d+v.slice(c); ta.setSelectionRange(c-1,c-1); return; }
@@ -4174,10 +4205,11 @@ function _punctLive(ta,e){ const it=e.inputType, d=e.data; const v=ta.value, c=t
   /* new line after a sentence with no stop → add the full stop */
   if(it==='insertLineBreak'||it==='insertParagraph'){ const lineEnd=c-1; let ls=lineEnd; while(ls>0&&v[ls-1]!=='\n') ls--;
     const line=v.slice(ls,lineEnd); if(/[A-Za-z0-9)]$/.test(line)&&line.trim().split(/\s+/).length>=4){
-      ta.value=v.slice(0,lineEnd)+'.'+v.slice(lineEnd); ta.setSelectionRange(c+1,c+1); } } }
+      const mk=_isQuestion(_lastSentence(v,lineEnd))?'?':'.';
+      ta.value=v.slice(0,lineEnd)+mk+v.slice(lineEnd); ta.setSelectionRange(c+1,c+1); } } }
 function _punctFinal(text){ try{ const a=document.getElementById('edAuto'); if(!a||!a.checked) return text;
   const t=String(text).replace(/[ \t]+$/,''); const last=t.split('\n').pop();
-  if(/[A-Za-z0-9)]$/.test(last)&&last.trim().split(/\s+/).length>=4) return t+'.'; return t; }catch(e){ return text; } }
+  if(/[A-Za-z0-9)]$/.test(last)&&last.trim().split(/\s+/).length>=4) return t+(_isQuestion(_lastSentence(t,t.length))?'?':'.'); return t; }catch(e){ return text; } }
 /* ---- live "spelling issues" strip under the note box ---- */
 let _spellTimer=null;
 function scheduleSpellStrip(ta){ clearTimeout(_spellTimer); _spellTimer=setTimeout(()=>updateSpellStrip(ta),300); }
@@ -5786,6 +5818,8 @@ window.addEventListener('load',()=>{ setTimeout(()=>{
   d.onload=()=>{ _DICT=null; }; document.head.appendChild(d);
   const nm=document.createElement('script'); nm.src='data/names.js';       /* Bible names from 11 translations (15 Oct 2026) */
   nm.onload=()=>{ _DICT=null; _PM=null; }; document.head.appendChild(nm);
+  const pr=document.createElement('script'); pr.src='data/proper.js';     /* names the KJV always capitalises (15 Oct 2026) */
+  pr.onload=()=>{ _PROPER=null; }; document.head.appendChild(pr);
 },60); });
 </script>
 <script>
