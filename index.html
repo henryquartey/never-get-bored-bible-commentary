@@ -271,7 +271,7 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .audnote > div{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:8px 12px;display:flex;gap:10px;align-items:flex-start}
 .audnote button{margin-left:auto;background:none;border:0;color:var(--soft);font-size:15px;cursor:pointer;line-height:1;padding:0 2px}
 @media (max-width:520px){ .audbar{padding:0 10px} .audbar .ab-time{min-width:64px} .audnote{padding:8px 12px 0} .audbar .ab-btn{max-width:38%;font-size:12px} }
-.fabnotes{position:fixed;right:14px;bottom:118px;z-index:55;opacity:0;pointer-events:none;transform:translateY(8px);
+.fabnotes{position:fixed;right:14px;bottom:calc(128px + env(safe-area-inset-bottom));z-index:55;opacity:0;pointer-events:none;transform:translateY(8px);
   transition:opacity .25s ease,transform .25s ease;font-family:var(--sans);font-size:12.5px;font-weight:600;max-width:70vw;white-space:nowrap;
   background:var(--panel);color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:10px 15px;
   box-shadow:0 6px 20px rgba(0,0,0,.2);cursor:pointer}
@@ -802,7 +802,21 @@ body:not(.legacy) .bottomnav.bn-dragging button.bn-hot{color:var(--ink)}
 /* slightly larger icons on the bottom bar */
 body:not(.legacy) .bottomnav .nico svg{width:25px;height:25px}
 body:not(.legacy) .bottomnav .navav{width:25px;height:25px;font-size:12px}
-body:not(.legacy) .main{padding-bottom:54px}
+body:not(.legacy) .main{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+/* floating capsule bar with frosted glass (15 Oct 2026) */
+body:not(.legacy) .bottomnav{left:12px;right:12px;bottom:calc(8px + env(safe-area-inset-bottom));border-radius:32px;padding:5px 4px;
+  border:1px solid var(--line);background:rgba(255,255,255,.78);-webkit-backdrop-filter:blur(20px) saturate(1.7);backdrop-filter:blur(20px) saturate(1.7);
+  box-shadow:0 10px 30px rgba(0,0,0,.16),0 1px 0 rgba(255,255,255,.6) inset;transition:transform .25s cubic-bezier(.3,1.3,.5,1),box-shadow .25s}
+html[data-theme="dark"] body:not(.legacy) .bottomnav{background:rgba(30,30,28,.72);border-color:rgba(255,255,255,.08);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+body:not(.legacy) .bottomnav .bn-pill{top:5px;bottom:5px;border-radius:26px}
+/* press and hold: the pill swells into a glass lens and the bar lifts */
+body:not(.legacy) .bottomnav.bn-dragging{transform:translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,.22)}
+body:not(.legacy) .bottomnav.bn-dragging .bn-pill{scale:1.18 1.12;background:rgba(255,255,255,.92);
+  box-shadow:0 8px 22px rgba(0,0,0,.18),inset 0 0 0 1px rgba(0,0,0,.06),inset 0 2px 6px rgba(255,255,255,.9)}
+html[data-theme="dark"] body:not(.legacy) .bottomnav.bn-dragging .bn-pill{background:rgba(255,255,255,.16);box-shadow:0 8px 22px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.18)}
+body:not(.legacy) .bottomnav.bn-dragging button.bn-hot .nico,body:not(.legacy) .bottomnav.bn-dragging button.bn-hot .navav{transform:scale(1.22) translateY(-2px)}
+.bn-pill{transition:translate .42s cubic-bezier(.3,1.35,.5,1),width .42s cubic-bezier(.3,1.35,.5,1),opacity .2s,box-shadow .2s,background .2s,scale .25s cubic-bezier(.3,1.4,.5,1)!important}
+.bottomnav.bn-dragging .bn-pill{transition:translate .2s cubic-bezier(.3,1.25,.5,1),width .2s,opacity .2s,box-shadow .2s,background .2s,scale .25s cubic-bezier(.3,1.4,.5,1)!important}
 .uiswitch{width:100%;font-size:11.5px;padding:6px;border:1px dashed var(--line);background:transparent;color:var(--soft);border-radius:8px;cursor:pointer;font-family:var(--sans)}
 .uiswitch:hover{color:var(--accent);border-color:var(--accent)}
 .homefeed{max-width:720px;margin:0 auto}
@@ -1296,7 +1310,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.37', date:'12 Oct 2026'};
+const BUILD={v:'1.2.38', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2722,7 +2736,7 @@ function openBookPicker(){ _bpOpen=state.book; _bpCh=0; _bpSyncPick(); _renderBP
   setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:document.body.classList.contains('legacy')?'center':'start'}); },30); }
 /* smooth drop-down for a book's chapters (and a chapter's verses): the panel grows open and the numbers
    fade in one after another; closing folds it back up. Skipped when the phone asks for less motion. */
-function _bpCalm(){ try{ return document.body.classList.contains('legacy')||matchMedia('(prefers-reduced-motion: reduce)').matches||!Element.prototype.animate; }catch(e){ return true; } }
+function _bpCalm(){ try{ return document.body.classList.contains('legacy')||!Element.prototype.animate; }catch(e){ return true; } }   /* plays even with Reduce Motion on — Henry wants it (15 Oct 2026) */
 function _bpDrop(el){ if(!el||_bpCalm()) return;
   const h=el.scrollHeight; el.style.overflow='hidden';
   const a=el.animate([{height:'0px',opacity:0},{height:h+'px',opacity:1}],{duration:340,easing:'cubic-bezier(.22,.9,.24,1)'});
@@ -3668,7 +3682,7 @@ function _bnPillTo(b,instant){ const pill=document.getElementById('bnPill'), nav
   const nr=nav.getBoundingClientRect(), r=b.getBoundingClientRect(); if(!r.width) return;
   const w=Math.min(r.width-4,86), x=r.left-nr.left+(r.width-w)/2;
   if(instant) pill.style.transition='none';
-  pill.style.width=w+'px'; pill.style.transform='translateX('+x+'px)'; pill.style.opacity='1';
+  pill.style.width=w+'px'; pill.style.transform='none'; pill.style.translate=x+'px 0'; pill.style.opacity='1';
   if(instant){ void pill.offsetWidth; pill.style.transition=''; } }
 function _bnPlace(instant){ const a=document.querySelector('#bottomnav button.active');
   const pill=document.getElementById('bnPill'); if(!a){ if(pill) pill.style.opacity='0'; return; } _bnPillTo(a,instant); }
@@ -3676,7 +3690,7 @@ function _bnAt(x){ const bs=_bnBtns(); let best=null,d=1e9;
   bs.forEach(b=>{ const r=b.getBoundingClientRect(); const c=r.left+r.width/2, dd=Math.abs(x-c); if(dd<d){ d=dd; best=b; } }); return best; }
 (function(){ const nav=document.getElementById('bottomnav'); if(!nav) return;
   nav.addEventListener('pointerdown',e=>{ if(document.body.classList.contains('legacy')) return; if(e.pointerType==='mouse'&&e.button!==0) return;
-    const b=_bnAt(e.clientX); _bnDrag={x0:e.clientX,moved:false,hot:b,id:e.pointerId,t:setTimeout(()=>{ if(_bnDrag){ nav.classList.add('bn-dragging'); _bnPillTo(_bnDrag.hot); } },160)};
+    const b=_bnAt(e.clientX); _bnDrag={x0:e.clientX,moved:false,hot:b,id:e.pointerId,t:setTimeout(()=>{ if(_bnDrag){ nav.classList.add('bn-dragging'); _bnPillTo(_bnDrag.hot); try{ navigator.vibrate&&navigator.vibrate(8); }catch(_){} } },120)};
     b&&b.classList.add('bn-hot'); },{passive:true});
   nav.addEventListener('pointermove',e=>{ if(!_bnDrag||e.pointerId!==_bnDrag.id) return;
     if(!_bnDrag.moved&&Math.abs(e.clientX-_bnDrag.x0)>8){ _bnDrag.moved=true; nav.classList.add('bn-dragging'); try{ nav.setPointerCapture(e.pointerId); }catch(_){} }
