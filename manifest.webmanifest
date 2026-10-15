@@ -1,7 +1,7 @@
 {
   "name": "Nii Okai's Bible Journal",
   "short_name": "Bible Journal N.O",
-  "description": "Take a walk through Scripture with Nii Okai's journal — Bible, commentary, and a chronological reading plan.",
+  "description": "A verse-by-verse Bible commentary from twenty years of journaling — the Bible, Nii Okai's notes and a chronological reading plan.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Never Get Bored — Nii Okai's Journal Through Scripture</title>
+<title>Nii Okai's Bible Journal — verse-by-verse Bible commentary | Never Get Bored</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://www.google.com">
 <link rel="dns-prefetch" href="https://www.google.com">
-<meta name="description" content="Never Get Bored — a verse-by-verse journal through Scripture by Nii Okai. Over 4,000 personal notes across all 66 books, with the King James text, reading plans and audio.">
+<meta name="description" content="Nii Okai's Bible Journal — a verse-by-verse Bible commentary from twenty years of journaling. Over 4,000 notes across all 66 books, with the King James text, reading plans and audio. Never get bored.">
 <link rel="canonical" href="https://bible.getwordwisdom.com/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Never Get Bored">
-<meta property="og:title" content="Never Get Bored — Nii Okai's Journal Through Scripture">
-<meta property="og:description" content="A verse-by-verse journal through Scripture by Nii Okai. Over 4,000 personal notes across all 66 books, with the King James text, reading plans and audio.">
+<meta property="og:title" content="Nii Okai's Bible Journal — verse-by-verse Bible commentary">
+<meta property="og:description" content="A verse-by-verse Bible commentary from twenty years of journaling. Over 4,000 notes across all 66 books, with the King James text, reading plans and audio.">
 <meta property="og:url" content="https://bible.getwordwisdom.com/">
 <meta property="og:image" content="https://bible.getwordwisdom.com/icon-1024.png?v=23">
 <meta name="twitter:card" content="summary_large_image">
@@ -467,6 +467,7 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
 .note.ncollapsed .notetools,.note.ncollapsed .trk,.note.ncollapsed .tools{display:none!important}
 .note .meta.nfold .date{margin-left:0}
 .note.ncollapsed .nteaser{display:block}
+body.fold-head:not(.legacy) .note.ncollapsed .nteaser{display:none}
 .note.ncollapsed{padding-bottom:9px}
 .note.ncollapsed .meta{margin-bottom:4px}
 .note.nhl-y{border-left-color:#ca8a04}.note.nhl-y .who.mine{color:#ca8a04}
@@ -993,6 +994,11 @@ body:not(.legacy) .chapindex.nearby{padding:8px 12px;margin-bottom:10px}
 .cm-count{font-family:var(--sans);font-size:11.5px;color:var(--soft)}
 .cm-lbl{font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);padding:10px 10px 6px}
 .cm-sep{height:1px;background:var(--line);margin:8px 10px 4px}
+.cm-seg{display:flex;margin:0 10px 6px;border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.cmenu .cm-seg button{flex:1;display:block;text-align:center;padding:7px 6px!important;border:none;background:transparent;font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--soft);border-radius:0}
+.cmenu .cm-seg button.on{background:var(--line);color:var(--ink)}
+.hcard.hero .hsub{font-family:var(--sans);font-size:12.5px;opacity:.75;margin:-4px 0 10px}
+.about-what{font-family:var(--sans);font-size:13.5px;letter-spacing:.2px;opacity:.8;margin:-6px 0 14px}
 .cm-go{flex:0 0 auto;font-size:22px;line-height:1;color:var(--soft)}
 .cmenu .cm-chip.cm-near{font-weight:600!important}
 .cmenu .vm-sec{padding:8px 10px 6px;font-size:10.5px;letter-spacing:.12em;font-weight:600}
@@ -1244,7 +1250,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <div class="bp-ov" id="mhOv" onclick="if(event.target===this)closeMHSheet()">
   <div class="bp-sheet mh-sheet">
     <div class="bp-head"><button class="bp-x" onclick="closeMHSheet()" aria-label="Close">✕</button><span id="mhTitle">Matthew Henry</span><span style="width:32px"></span></div>
-    <div class="mh-sub">Matthew Henry’s Commentary · public domain · not Nii Okai’s journal</div>
+    <div class="mh-sub">Matthew Henry’s Commentary · public domain · not part of Nii Okai’s Bible Journal</div>
     <div class="bp-list mh-body" id="mhBody"></div>
   </div>
 </div>
@@ -1272,7 +1278,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <div class="overlay" id="overlay">
   <div class="modal">
     <div class="mh">
-      <h3 id="edTitle">Add commentary</h3>
+      <h3 id="edTitle">Add a note</h3>
       <div class="vtext" id="edVerse"></div>
     </div>
     <div class="mb">
@@ -1319,7 +1325,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.42', date:'12 Oct 2026'};
+const BUILD={v:'1.2.43', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2286,7 +2292,7 @@ function _audFallback(reason){
 function _fmtT(s){ s=Math.max(0,Math.floor(s||0)); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60;
   return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0'); }
 function _audMedia(){ try{ if(!navigator.mediaSession||!AUD.key) return;
-  navigator.mediaSession.metadata=new MediaMetadata({title:AUD.book+' '+AUD.ch+' (KJV)',artist:AUD.src==='studio'?'Studio voice · '+studioVoiceName(AUD.voice)+' (Kokoro)':'Read by Michael Armenta · LibriVox',album:'Never Get Bored — Nii Okai’s Journal'});
+  navigator.mediaSession.metadata=new MediaMetadata({title:AUD.book+' '+AUD.ch+' (KJV)',artist:AUD.src==='studio'?'Studio voice · '+studioVoiceName(AUD.voice)+' (Kokoro)':'Read by Michael Armenta · LibriVox',album:'Nii Okai’s Bible Journal · Never Get Bored'});
   navigator.mediaSession.setActionHandler('play',()=>audResume()); navigator.mediaSession.setActionHandler('pause',()=>audPause());
   navigator.mediaSession.setActionHandler('seekbackward',()=>audSkip(-15)); navigator.mediaSession.setActionHandler('seekforward',()=>audSkip(30));
   navigator.mediaSession.playbackState='playing'; }catch(e){} }
@@ -2581,7 +2587,8 @@ function renderHome(){
     ${greetingHTML()}
     <div class="hcard hero">
       <div class="hk">NEVER GET BORED</div>
-      <h2>Nii Okai’s Journal Through Scripture</h2>
+      <h2>Nii Okai’s Bible Journal</h2>
+      <p class="hsub">A verse-by-verse Bible commentary from twenty years of journaling</p>
       <p class="hq">“Take a walk with me as we journey through Scripture — you will never get bored.”</p>
       <div class="hrow">
         <button class="btn" onclick="karListen()">▶︎ Listen</button>
@@ -2681,11 +2688,11 @@ function renderMenu(){
   document.getElementById('reader').innerHTML=`<div class="page"><div class="menulist">
     ${head('Read')}
     ${item(ICONS.pen,'Explore the journal','Newest notes, themes, books, and the most written-about chapters',"setView('explore')")}
-    ${item(ICONS.library,'Nii Okai’s Journal, verse by verse','Every note in order, book by book',"setView('mine')")}
+    ${item(ICONS.library,'Nii Okai’s Bible Journal, verse by verse','Every note in order, book by book',"setView('mine')")}
     ${item(ICONS.library,'Matthew Henry’s Commentary','The classic commentary, shown alongside your reading','menuMHC()')}
     ${BLOG_URL?item(ICONS.pen,'Blog','Reflections and essays from Nii Okai',`window.open(BLOG_URL,'_blank','noopener')`):''}
-    ${head('Your journal')}
-    ${item('💾','Back up or restore','Save your journal to a file, or bring one back in','backupMenu()')}
+    ${head('Your notes')}
+    ${item('💾','Back up or restore','Save your notes to a file, or bring them back in','backupMenu()')}
     ${head('The app')}
     ${item('👋','The welcome','Nii Okai’s invitation — read or listen to it again any time','showWelcomeAgain()')}
     ${item('✎','Your name',(()=>{ const nm=readerName();
@@ -2699,8 +2706,8 @@ function renderMenu(){
       :item(ICONS.user,'Sign in with Google','Keep your reading place and highlights on every device you use','fbSignIn()')}
     ${isOwner()?head('Owner tools'):''}
     ${isOwner()?`<div class="mitem" id="goLiveItem" onclick="goLive()"><span class="mi">🚀</span><div><div class="mt">Go live</div><div class="md" id="goLiveDesc">Checking whether anything is waiting…</div></div><span class="chev">›</span></div>`:''}
-    ${isOwner()?item(ICONS.download,'Export My Notes','Save your commentary to a file for publishing','exportCommentary()'):''}
-    ${isOwner()?item(ICONS.upload,'Import Notes','Bring commentary back in from a file',"document.getElementById('importFile').click()"):''}
+    ${isOwner()?item(ICONS.download,'Export My Notes','Save your notes to a file for publishing','exportCommentary()'):''}
+    ${isOwner()?item(ICONS.upload,'Import Notes','Bring notes back in from a file',"document.getElementById('importFile').click()"):''}
     ${isOwner()?item('👁','Preview as a Reader','See the app exactly as your readers see it','togglePreview()'):''}
     ${isOwner()?item('🖥','Switch Interface','Toggle between the new UI and the legacy UI','toggleLegacy()'):''}
     <p style="text-align:center;color:var(--soft);font-size:11.5px;font-family:var(--sans)">Never Get Bored · v${BUILD.v} · built ${BUILD.date}</p>
@@ -2850,7 +2857,8 @@ function renderAbout(){
   const html=`<div class="page about">
     <div class="hcard hero about-herocard">
       <div class="hk">Never Get Bored</div>
-      <h1 class="about-title">Nii Okai’s Journal Through Scripture</h1>
+      <h1 class="about-title">Nii Okai’s Bible Journal</h1>
+      <div class="about-what">A verse-by-verse Bible commentary from twenty years of journaling</div>
       <div class="about-slogan">“Take a walk with me as we journey through Scripture — and understand every passage in a way you never imagined or thought possible. You will never get bored.”</div>
       <div class="hrow about-listen">
         <button class="btn" id="welcomeAudioBtn" onclick="playWelcomeAudio()">▶︎ Listen in Nii Okai’s voice</button>
@@ -2873,11 +2881,12 @@ function renderAbout(){
     <div class="howto">
       <h3>How to find your way around — and get the most from it</h3>
       <ul>
-        <li><b>Read</b> opens the Scripture. Verses I've journalled on are <b>highlighted with a 💬 badge</b> — <b>tap the verse</b> to open or hide my commentary on it.</li>
-        <li>At the top of each chapter, the <b>“💬 Commentary in this chapter”</b> bar lets you jump straight to any commented verse.</li>
-        <li>Use the <b>💬 button</b> (top bar) to switch between <b>scripture-only</b> reading and <b>scripture + commentary</b>.</li>
-        <li>The <b>Journal</b> tab lists everything I've written — <b>tap any entry to expand it</b>, or “Open in Bible →” to read it in context.</li>
-        <li><b>Search</b> looks through both my notes and the Scripture; the <b>version dropdown</b> switches Bible translations; ☾ toggles light/dark.</li>
+        <li><b>Bible</b> (bottom bar) opens the Scripture. My notes sit right under the verses they belong to, each one marked <b>Nii Okai’s note</b>.</li>
+        <li>Tap the <b>chapter name</b> at the top to choose any book, chapter or verse; the translation sits right beside it.</li>
+        <li>The <b>commentary button</b> (the speech bubble, top right) lists the notes in the chapter so you can jump to one, and opens <b>Matthew Henry’s</b> classic commentary.</li>
+        <li><b>Hide commentary</b> (bottom right) gives you scripture only; tap again to bring my notes back. Fold any single note with its arrow.</li>
+        <li>Write your own: tap a <b>verse number</b> and add a note. It shows as <b>My note</b> and only you can see it.</li>
+        <li><b>Listen</b> reads the chapter aloud, and <b>Search</b> looks through the Bible and my notes — with Google one tap away when the answer is elsewhere.</li>
         <li><b>For the most out of this:</b> read the passage first in your own Bible, sit with it, form your own thought — <i>then</i> open mine. Let it provoke you back into the text, not replace it.</li>
       </ul>
     </div>
@@ -3598,7 +3607,7 @@ function renderMine(){
           ${Object.keys(JSORTS).map(k=>`<option value="${k}"${k===sort?' selected':''}>${JSORTS[k]}</option>`).join('')}
         </select>
         <span class="jsorthint">${JHINTS[sort]}</span></div></div>
-    ${total?books:'<div class="empty"><div class="big">✍</div>No commentary yet. Open any verse and add your thoughts.</div>'}
+    ${total?books:'<div class="empty"><div class="big">✍</div>No notes yet. Tap any verse number and add your thoughts.</div>'}
   </div>`;
   const _il=_ilCapture(); document.getElementById('reader').innerHTML=html; _ilRestore(_il);
   document.getElementById('reader').scrollTop=0;
@@ -3764,7 +3773,7 @@ function openEditor(name,ch,v){
   closeSelMenu&&closeSelMenu(); closeVerseMenu&&closeVerseMenu();
   editing={book:name,ch:ch,v:String(v),id:null,orig:''};
   _edStatus('Saves as you type');
-  document.getElementById('edTitle').textContent=(v===0?'Add chapter note':'Add commentary');
+  document.getElementById('edTitle').textContent=(v===0?'Add a chapter note':'Add a note');
   showVerseInEditor(name,ch,v);
   document.getElementById('edText').value='';
   document.getElementById('edDelete').style.display='none';
@@ -3785,7 +3794,7 @@ function editNote(name,ch,v,id,liveText){
   const arr=DATA[name][String(ch)][String(v)]; const nt=arr.find(n=>n.id===id);
   editing={book:name,ch:ch,v:String(v),id:id,orig:nt.text};
   _edStatus('Saves as you type');
-  document.getElementById('edTitle').textContent='Edit commentary';
+  document.getElementById('edTitle').textContent='Edit note';
   showVerseInEditor(name,ch,v==='0'?0:+v);
   document.getElementById('edText').value=(liveText!=null?liveText:nt.text);
   document.getElementById('edDelete').style.display='';
@@ -5126,11 +5135,18 @@ function commentaryMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
     ${noted.length?`<div class="cm-lbl">Jump to a note</div><div class="cm-chips">${noted.map(v=>`<button class="cm-chip" onclick="closeVerseMenu();_cmGo(${v})">${v}</button>`).join('')}</div>`
       :`<div class="cm-none">No notes in ${escHTML(name)} ${ch} yet</div>${window._chapNearest?`<div class="cm-chips"><button class="cm-chip cm-near" onclick="closeVerseMenu();openChapter('${esc(window._chapNearest.b)}',${window._chapNearest.ch})">Nearest notes: ${escHTML(window._chapNearest.b)} ${window._chapNearest.ch} · ${window._chapNearest.n} →</button></div>`:''}`}
     <div class="cm-sep"></div>
+    <div class="cm-lbl">Folded notes show</div>
+    <div class="cm-seg"><button class="${_foldHead()?'':'on'}" onclick="closeVerseMenu();setFoldHead(false)">First line</button><button class="${_foldHead()?'on':''}" onclick="closeVerseMenu();setFoldHead(true)">Heading only</button></div>
     <button class="cm-row" onclick="closeVerseMenu();setNotesKeepOff(${_notesKeepOff()?'false':'true'})"><span class="cm-tx"><span class="cm-nm">Keep commentary hidden</span><span class="cm-sub">${_notesKeepOff()?'On — scripture only, every time you open the app':'Off — your notes show each time you open the app'}</span></span><span class="cm-sw${_notesKeepOff()?' on':''}" aria-hidden="true"><i></i></span></button>
     <button class="cm-row cm-mh" onclick="closeVerseMenu();openMHSheet()"><span class="cm-av">${ICONS.library}</span><span class="cm-tx"><span class="cm-nm">Matthew Henry’s commentary</span><span class="cm-sub">The classic 1706 commentary on this chapter</span></span><span class="cm-go" aria-hidden="true">›</span></button>`;
   document.body.appendChild(m);
   const b=(ev&&ev.currentTarget)||document.getElementById('notesBtn'); const r=b.getBoundingClientRect(); const mw=m.offsetWidth;
   m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(8,Math.min(r.right-mw,window.innerWidth-mw-8))+'px'; }
+/* folded notes show their first line, or only the heading (15 Oct 2026) — a choice per device */
+function _foldHead(){ try{ return localStorage.getItem('nok_fold_head')==='1'; }catch(e){ return false; } }
+function setFoldHead(on){ try{ localStorage.setItem('nok_fold_head',on?'1':''); }catch(e){}
+  document.body.classList.toggle('fold-head',!!on); toast(on?'Folded notes now show the heading only':'Folded notes now show their first line'); }
+try{ if(localStorage.getItem('nok_fold_head')==='1') document.body.classList.add('fold-head'); }catch(e){}
 /* a lasting choice: keep the commentary hidden, even after the app is closed and opened again */
 function _notesKeepOff(){ try{ return localStorage.getItem('nok_notes_keep_off')==='1'; }catch(e){ return false; } }
 function setNotesKeepOff(on){ try{ localStorage.setItem('nok_notes_keep_off',on?'1':''); }catch(e){}
@@ -5234,11 +5250,11 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&document.getElemen
 function backupMenu(){
   closeBackupMenu();
   const ov=document.createElement('div'); ov.className='bkov'; ov.id='bkOv';
-  ov.innerHTML='<div class="bkcard"><h3>Your journal</h3>'
+  ov.innerHTML='<div class="bkcard"><h3>Your notes</h3>'
     +'<button class="btn primary" onclick="closeBackupMenu();backupJournal()">💾 Back up to a file</button>'
     +'<p>Saves your highlights, your notes and your reading place to one file you can keep, or move to another device.</p>'
     +'<button class="btn" onclick="closeBackupMenu();restoreJournal()">📥 Restore from a file</button>'
-    +'<p>Brings a journal file back in. Nothing already on this device is deleted — it only ever adds.</p>'
+    +'<p>Brings a notes file back in. Nothing already on this device is deleted — it only ever adds.</p>'
     +'<button class="btn" onclick="closeBackupMenu()">Cancel</button></div>';
   ov.addEventListener('click',e=>{ if(e.target===ov) closeBackupMenu(); });
   document.body.appendChild(ov);
@@ -5271,9 +5287,9 @@ function restoreJournal(){
 }
 function _bkApply(text){
   let payload;
-  try{ payload=JSON.parse(text); }catch(e){ toast('That file is not a journal backup'); return; }
+  try{ payload=JSON.parse(text); }catch(e){ toast('That file is not a notes backup'); return; }
   if(!payload||payload._format!=='nii-okai-journal-backup'||!payload.data){
-    toast('That file is not a journal backup'); return; }
+    toast('That file is not a notes backup'); return; }
   const incoming=payload.data;
   const when=payload._saved?new Date(payload._saved):null;
   const whenTxt=when?when.toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'}):'an unknown date';
@@ -5656,7 +5672,7 @@ function renderYou(){
   const chip=(id,label)=>`<button class="chip ${_youFilter===id?'on':''}" onclick="_youFilter='${id}';_youShown=30;renderYou()">${label}${counts[id]?' <span style="opacity:.65">'+counts[id]+'</span>':''}</button>`;
   const st=_streakStats(); const C=getPlan(), d=chDone();
   const done=C.length?C.filter(rd=>!rd.catchup&&readingDone(rd,d)).length:0;
-  const who=u?escHTML((u.displayName||(u.email||'').split('@')[0]||'You')):'Your journal';
+  const who=u?escHTML((u.displayName||(u.email||'').split('@')[0]||'You')):'Your notes';
   let html=`<div class="page">
     <div class="you-head"><span class="acav">${u?_acLetter():'✦'}</span>
       <div><div class="yn">${who}</div>
@@ -5735,7 +5751,7 @@ function renderExplore(){
   document.getElementById('readfoot').style.display='none';
   const all=_jrnAll(); const books=new Set(all.map(n=>n.b));
   const chip=(id,label)=>`<button class="chip ${_exTab===id?'on':''}" onclick="_exTab='${id}';_exPick=null;renderExplore()">${label}</button>`;
-  let html=`<div class="page"><div class="you-head"><span class="acav">✦</span><div><div class="yn">Nii Okai’s journal</div><div class="ys">${all.length.toLocaleString()} notes · ${books.size} books · written 2020 to today</div></div></div>
+  let html=`<div class="page"><div class="you-head"><span class="acav">✦</span><div><div class="yn">Nii Okai’s Bible Journal</div><div class="ys">${all.length.toLocaleString()} notes · ${books.size} books · written 2020 to today</div></div></div>
     <div class="chips">${chip('new','Newest')}${chip('themes','Themes')}${chip('books','Books')}${chip('most','Most written about')}</div>`;
   if(_exTab==='new'){ all.slice().sort((a,b)=>b.date<a.date?-1:1).slice(0,25).forEach(n=>{ html+=_exCard(n); }); }
   else if(_exTab==='themes'){ const th=_exThemes();
