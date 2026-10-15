@@ -1310,7 +1310,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.38', date:'12 Oct 2026'};
+const BUILD={v:'1.2.39', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3749,6 +3749,7 @@ function nextChapter(){ const nch=window.BOOKS[state.book].chapters.length;
 
 /* ---------- Editor ---------- */
 function openEditor(name,ch,v){
+  _ilRetire(null);
   closeSelMenu&&closeSelMenu(); closeVerseMenu&&closeVerseMenu();
   editing={book:name,ch:ch,v:String(v),id:null,orig:''};
   _edStatus('Saves as you type');
@@ -3761,7 +3762,15 @@ function openEditor(name,ch,v){
   document.getElementById('overlay').classList.add('show');
   setTimeout(()=>document.getElementById('edText').focus(),50);
 }
+/* Opening the big editor: an in-place editor that is still open is put away first — its words are saved
+   (or carried into the big box when it is the same note) and it is closed, so a later redraw cannot
+   bring it back and write its older text over what you save in the big box. (15 Oct 2026) */
+function _ilRetire(id){ try{ clearTimeout(_ilTimer); _ilTimer=null;
+  document.querySelectorAll('textarea.inline-ed').forEach(ta=>{
+    if(ta.dataset.nid!==id) _ilFlush(ta);           // a different note: keep its words
+    ta.classList.remove('inline-ed'); ta.dataset.retired='1'; }); }catch(e){} }
 function editNote(name,ch,v,id,liveText){
+  _ilRetire(id);
   const arr=DATA[name][String(ch)][String(v)]; const nt=arr.find(n=>n.id===id);
   editing={book:name,ch:ch,v:String(v),id:id,orig:nt.text};
   _edStatus('Saves as you type');
@@ -3836,7 +3845,10 @@ function deleteCurrent(){
 }
 function closeEditor(saved){ if(!saved&&typeof _edRevertPreview==='function') _edRevertPreview();
   clearTimeout(_edTimer); _edTimer=null;
-  document.getElementById('overlay').classList.remove('show'); editing=null; }
+  document.getElementById('overlay').classList.remove('show'); editing=null;
+  /* cancelled or closed: if an in-place box was put away for it, redraw so the note shows its saved words */
+  if(!saved&&document.querySelector('textarea[data-retired="1"]')){
+    if(state.view==='mine') renderMine(); else if(state.view==='read') renderRead(); } }
 /* Cancel in the dialog: a brand-new note that saved itself is removed; an edited note gets its old words back.
    It asks first when something would be lost. */
 function cancelEditor(){
@@ -3860,7 +3872,10 @@ function noteBodyClick(ev,el,name,ch,v,id){ ev.stopPropagation();
   if(_noteClickTimer){ clearTimeout(_noteClickTimer); _noteClickTimer=null; return; }
   _noteClickTimer=setTimeout(()=>{ _noteClickTimer=null; inlineEditNote(el,name,ch,v,id); },240);
 }
-function noteBodyDbl(ev,name,ch,v,id){ ev.stopPropagation();
+function noteBodyDbl(ev,name,ch,v,id){
+  /* already typing in this note → a double-click just selects the word, like any text box (15 Oct 2026) */
+  if(ev.target&&ev.target.closest&&ev.target.closest('textarea')){ ev.stopPropagation(); return; }
+  ev.stopPropagation();
   window._noSelUntil=Date.now()+900;
   if(_noteClickTimer){ clearTimeout(_noteClickTimer); _noteClickTimer=null; }
   // if they were already typing here, carry the unsaved words across rather than reverting
@@ -3927,7 +3942,7 @@ let _ilTimer=null;
 function _ilAuto(e){ const ta=e.target; _ilHint(ta,'Saving…'); clearTimeout(_ilTimer); _ilTimer=setTimeout(()=>_ilFlush(ta),700); }
 function _ilHint(ta,msg){ try{ const h=ta.parentElement.querySelector('.inline-hint'); if(h) h.textContent=msg+' · Enter closes'; }catch(e){} }
 /* write the in-place editor's words into the note now (quietly — no redraw, no toast) */
-function _ilFlush(ta,force){ try{ if(!ta||!ta.isConnected||!ta.classList.contains('inline-ed')) return false;
+function _ilFlush(ta,force){ try{ if(!ta||!ta.isConnected||!ta.classList.contains('inline-ed')||ta.dataset.retired) return false;
   clearTimeout(_ilTimer); _ilTimer=null;
   const d=ta.dataset; const text=sacredCase(ta.value.trim()); if(!text) return false;
   const arr=(((DATA[d.book]||{})[String(d.ch)]||{})[String(d.v)])||[]; const nt=arr.find(x=>x.id===d.nid); if(!nt) return false;
