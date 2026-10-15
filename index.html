@@ -913,6 +913,62 @@ body.legacy #dateBtn .db-emo{display:inline}
 .bp-grid.vg button{padding:9px 0;font-size:14px;position:relative}
 .bp-grid.vg button.hasn::after{content:"";position:absolute;left:50%;bottom:3px;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:.75}
 .bp-hint{font-family:var(--sans);font-size:12px;color:var(--soft);text-align:center;padding:2px 0 6px}
+/* ===== Reading screen tidy-up (15 Oct 2026) — new UI only ===== */
+/* top bar: translation pill on the left, plain round icons on the right */
+body:not(.legacy)[data-view="read"] #planBackBtn{order:-3}
+body:not(.legacy)[data-view="read"] #crumb{order:-2;display:none}
+body:not(.legacy)[data-view="read"] #verSelect{order:-1;border-radius:20px;background-color:var(--line);border-color:transparent;font-weight:700;padding-left:14px}
+body:not(.legacy)[data-view="read"].cht-out #crumb{display:inline-flex;align-items:center;gap:4px;font-family:var(--sans);font-size:14.5px;font-weight:700;
+  color:var(--ink);background:var(--line);border-radius:20px;padding:7px 14px}
+body:not(.legacy)[data-view="read"].cht-out #crumb .caret{display:none}
+body:not(.legacy)[data-view="read"] .topbar .icon-btn{border-color:transparent;border-radius:50%}
+body:not(.legacy)[data-view="read"] .topbar .icon-btn:hover{background:var(--line)}
+body:not(.legacy)[data-view="read"] .topbar #notesBtn.active{background:var(--line);border-color:transparent}
+body:not(.legacy) #refBtn{display:none!important}
+/* less room above the verses */
+body:not(.legacy)[data-view="read"] .reader{padding-top:12px}
+body:not(.legacy) .chtitle{margin:0 0 6px}
+body:not(.legacy) .chapindex.nearby{padding:8px 12px;margin-bottom:10px}
+/* commentary menu */
+.vmenu.cmenu{min-width:290px;padding:6px}
+.cmenu .vm-sec{padding:8px 10px 6px;font-size:10.5px;letter-spacing:.12em;font-weight:600}
+.cmenu .cm-row{display:flex!important;align-items:center;gap:12px;padding:9px 10px!important;border-radius:10px;white-space:normal}
+.cmenu .cm-row:hover{background:var(--line);color:var(--ink)}
+.cm-tx{display:flex;flex-direction:column;flex:1;min-width:0}
+.cm-nm{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink);line-height:1.25}
+.cm-sub{font-family:var(--sans);font-size:11.5px;color:var(--soft);margin-top:2px}
+.cm-sw{flex:0 0 40px;height:24px;border-radius:12px;background:var(--line);position:relative;transition:background .15s}
+.cm-sw i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--panel);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .15s}
+.cm-sw.on{background:var(--ink)} .cm-sw.on i{left:19px}
+.cm-av{flex:0 0 34px;width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--line);color:var(--ink)}
+.cm-av svg{width:17px;height:17px}
+.cm-chips{display:flex;flex-wrap:wrap;gap:6px;padding:2px 10px 8px}
+.cmenu .cm-chip{display:inline-block!important;width:auto!important;padding:5px 11px!important;border:1px solid var(--line)!important;border-radius:14px;font-size:12.5px!important;font-weight:600}
+.cm-none{font-family:var(--sans);font-size:12.5px;color:var(--soft);padding:2px 10px 8px}
+/* Matthew Henry sheet */
+#mhOv{z-index:85}
+.mh-sheet{max-height:82vh}
+.mh-sub{font-family:var(--sans);font-size:11.5px;color:var(--soft);text-align:center;margin:-2px 0 10px}
+.mh-body{padding:4px 6px 10px;font-family:var(--serif);font-size:16.5px;line-height:1.65;color:var(--ink)}
+.mh-body .rc-p{margin:0 0 12px}
+.mh-body .rc-p b{font-family:var(--sans);font-size:12px;color:var(--soft)}
+.mh-wait{font-family:var(--sans);font-size:14px;color:var(--soft);text-align:center;padding:30px 0}
+/* book picker: arrow on each book; chapter → verses */
+body:not(.legacy) .bp-book{display:flex;align-items:center;justify-content:space-between}
+.bp-chev{display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:50%;color:var(--soft);transition:transform .15s}
+.bp-chev svg{width:18px;height:18px}
+.bp-chev.up{transform:rotate(180deg);color:var(--ink);background:var(--line)}
+.bp-whole{display:flex;align-items:center;justify-content:space-between;width:100%;margin:2px 0 8px;padding:12px 14px;border:none;border-radius:12px;
+  background:var(--ink);color:var(--panel);font-family:var(--sans);font-size:14.5px;font-weight:700;cursor:pointer}
+.bp-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);vertical-align:2px}
+.bp-hint2{padding:0 0 12px;border-bottom:1px solid var(--line)}
+/* slim plan line (new UI) */
+.planctx.slim{background:transparent;border:none;border-bottom:1px solid var(--line);border-radius:0;padding:0 0 8px;margin:0 0 10px;
+  font-family:var(--sans);font-size:12.5px;color:var(--soft);flex-wrap:nowrap}
+.planctx.slim b{color:var(--ink)}
+.planctx.slim .pc-back{margin-left:auto;border:none;background:var(--line);color:var(--ink);border-radius:14px;padding:5px 12px;
+  font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+body:not(.legacy) .bp-foot2{display:none}
 #chapselWrap{display:none!important}
 /* reading controls appear only in Bible reading & search */
 body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:none!important}
@@ -1105,7 +1161,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
       <select class="versel rc" id="verSelect" onchange="setVersion(this.value)" title="Translation"></select>
       <select class="versel rc" id="cmpSelect" onchange="setCompare(this.value)" title="Compare with…" style="display:none"></select>
       <button class="icon-btn rc" id="cmpBtn" onclick="toggleCompare()" title="Compare two translations side by side">⇄</button>
-      <button class="icon-btn rc" id="notesBtn" onclick="toggleNotes()" title="Show ALL of Nii Okai’s commentary / hide all (scripture only)">💬</button>
+      <button class="icon-btn rc" id="notesBtn" onclick="notesBtnTap(event)" title="Commentary — show or hide, jump to a note, Matthew Henry">💬</button>
       <button class="icon-btn rc" id="refBtn" onclick="toggleRefComm()" title="Show / hide Matthew Henry's classic commentary (public domain)">📚</button>
       <button class="icon-btn" id="youBtn" onclick="setView('you')" title="You — your notes, highlights and progress"><span id="youBtnIco"></span></button>
       <button class="icon-btn" id="menuTopBtn" onclick="setView('menu')" title="Menu"></button>
@@ -1119,6 +1175,13 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
   </main>
 </div>
 
+<div class="bp-ov" id="mhOv" onclick="if(event.target===this)closeMHSheet()">
+  <div class="bp-sheet mh-sheet">
+    <div class="bp-head"><button class="bp-x" onclick="closeMHSheet()" aria-label="Close">✕</button><span id="mhTitle">Matthew Henry</span><span style="width:32px"></span></div>
+    <div class="mh-sub">Matthew Henry’s Commentary · public domain · not Nii Okai’s journal</div>
+    <div class="bp-list mh-body" id="mhBody"></div>
+  </div>
+</div>
 <div class="bp-ov" id="bpOv" onclick="if(event.target===this)closeBookPicker()">
   <div class="bp-sheet">
     <div class="bp-head"><button class="bp-x" onclick="closeBookPicker()">✕</button><span>Books</span><span style="width:32px"></span></div>
@@ -1189,7 +1252,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.30', date:'12 Oct 2026'};
+const BUILD={v:'1.2.31', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1229,7 +1292,7 @@ function init(){
     if(typeof p.chapter==='number') state.chapter=p.chapter;
     if(p.themeMode==='auto'||p.themeMode==='light'||p.themeMode==='dark') _themeMode=p.themeMode;
     if(p.showDates){ document.documentElement.classList.add('show-dates'); }
-    if(p.hideNotes===true){ document.documentElement.classList.add('hide-notes'); } // default: MY journal is shown
+    if(p.hideNotes===true && localStorage.getItem('nok_legacy')){ document.documentElement.classList.add('hide-notes'); } // new UI: commentary always shows when the app opens (15 Oct 2026)
     if(p.journal==='original'||p.journal==='modern') state.journal=p.journal;
     if(state.journal==='original'&&!isOwner()) state.journal='modern';   /* Legacy is for the owner only (10 Oct 2026) */
     if(['bible','chrono','new','old','most'].includes(p.jsort)) state.jsort=p.jsort;
@@ -2536,7 +2599,8 @@ function renderDiscourse(){
   </div>`;
   document.getElementById('reader').scrollTop=0;
 }
-function menuMHC(){ if(!state.refcomm) toggleRefComm(); setView('read'); }
+function menuMHC(){ if(!document.body.classList.contains('legacy')){ setView('read'); setTimeout(openMHSheet,120); return; }
+  if(!state.refcomm) toggleRefComm(); setView('read'); }
 function renderMenu(){
   document.getElementById('crumb').textContent='Menu';
   document.getElementById('chapselWrap').style.display='none';
@@ -2614,10 +2678,14 @@ function bpOrder(m){ _bpAlpha=(m==='alpha');
   document.getElementById('bpTrad').classList.toggle('on',!_bpAlpha);
   document.getElementById('bpAlpha').classList.toggle('on',_bpAlpha); _renderBP(); }
 function bpToggle(i){ _bpOpen=(_bpOpen===i?-1:i); _bpCh=0; _renderBP();
-  setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:'nearest'}); },20); }
+  /* the book you tapped comes to the top with its chapters showing under it (15 Oct 2026) */
+  setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:'start',behavior:'smooth'}); },20); }
 function bpBack(){ _bpCh=0; _renderBP();
   setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:'nearest'}); },20); }
 function bpGo(i,ch){
+  if(!document.body.classList.contains('legacy')){ _bpOpen=i; _bpCh=(_bpCh===ch?0:ch); _renderBP();
+    setTimeout(()=>{ const el=document.querySelector('.bp-vwrap'); if(el) el.scrollIntoView({block:'nearest',behavior:'smooth'}); },20);
+    return; }
   if(_vpick()==='verse'){ _bpOpen=i; _bpCh=ch; _renderBP();
     setTimeout(()=>{ const el=document.querySelector('.bp-vwrap'); if(el) el.scrollIntoView({block:'nearest'}); },20);
     return; }
@@ -2647,7 +2715,22 @@ function _renderBP(){ const idx=window.BOOKS.map((b,i)=>i);
     } else if(open){
       inner=`<div class="bp-grid">${b.chapters.map((_,c)=>`<button class="${i===state.book&&c+1===state.chapter?'cur':''}" onclick="event.stopPropagation();bpGo(${i},${c+1})">${c+1}</button>`).join('')}</div>`;
     }
-    return `<div class="bp-book ${open?'cur':''}" onclick="bpToggle(${i})">${b.name}</div>${inner}`;
+    /* new UI: chapters and the verses of the chosen chapter show together; tap a chapter again to fold its verses */
+    if(open && !document.body.classList.contains('legacy')){
+      const chg=`<div class="bp-grid">${b.chapters.map((_,c)=>`<button class="${(_bpCh?c+1===_bpCh:(i===state.book&&c+1===state.chapter))?'cur':''}" onclick="event.stopPropagation();bpGo(${i},${c+1})">${c+1}</button>`).join('')}</div>`;
+      let vpart='';
+      if(_bpCh){ const nv=b.chapters[_bpCh-1]||0; const rawCh=((window.DATA||{})[b.name]||{})[String(_bpCh)]||{}; const vs=[];
+        for(let n=1;n<=nv;n++){ let has=(rawCh[String(n)]||[]).length>0;
+          if(!has && state.journal==='modern'){ try{ has=!!refinedFor(b.name,_bpCh,n); }catch(e){} }
+          vs.push(`<button class="${has?'hasn':''}" onclick="event.stopPropagation();bpJump(${i},${_bpCh},${n})">${n}</button>`); }
+        vpart=`<div class="bp-vwrap"><button class="bp-whole" onclick="event.stopPropagation();bpJump(${i},${_bpCh},0)">Read ${escHTML(b.name)} ${_bpCh} from the start<span aria-hidden="true">→</span></button>
+          <div class="bp-hint">or go straight to a verse · <span class="bp-dot"></span> has a note</div>
+          <div class="bp-grid vg">${vs.join('')}</div></div>`; }
+      else vpart=`<div class="bp-hint bp-hint2">Tap a chapter to see its verses</div>`;
+      inner=chg+vpart;
+    }
+    const chev=document.body.classList.contains('legacy')?'':`<span class="bp-chev${open?' up':''}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>`;
+    return `<div class="bp-book ${open?'cur':''}" onclick="bpToggle(${i})"><span>${b.name}</span>${chev}</div>${inner}`;
   }).join(''); }
 function toggleLegacy(){ const on=!document.body.classList.contains('legacy');
   document.body.classList.toggle('legacy',on);
@@ -2799,8 +2882,11 @@ function renderRead(){
   // plan context bar
   let planBar='';
   if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]);
-    planBar=`<div class="planctx">📖 <b>Day ${state.plan.day+1}</b> of the plan · passage ${state.plan.ci+1} of ${chaps.length}
-      <button class="btn" onclick="exitPlanRead()">✕ Back to plan</button></div>`; }
+    planBar=document.body.classList.contains('legacy')
+      ? `<div class="planctx">📖 <b>Day ${state.plan.day+1}</b> of the plan · passage ${state.plan.ci+1} of ${chaps.length}
+      <button class="btn" onclick="exitPlanRead()">✕ Back to plan</button></div>`
+      : `<div class="planctx slim"><span><b>Day ${state.plan.day+1}</b> of the plan · passage ${state.plan.ci+1} of ${chaps.length}</span>
+      <button class="pc-back" onclick="exitPlanRead()">Back to plan</button></div>`; }
   /* The chapter name sits at the top of the reading, the way a printed Bible heads each chapter,
      with an arrow that opens the book and chapter picker. The bar keeps a small grey copy. (8 Oct 2026) */
   const chTitle=`<h1 class="chtitle"><button type="button" class="chtbtn" onclick="openBookPicker()" title="Choose another book or chapter" aria-label="${escHTML(name)} ${ch} — choose another book or chapter">
@@ -2838,9 +2924,10 @@ function renderRead(){
     if(olFallback) html+=`<div class="soft" style="margin:-6px 0 14px">${ICONS.globe} ${escHTML(olFallback)}</div>`;
     let noted=Object.keys(chData).filter(k=>k!=='0'&&chData[k].length&&(state.journal!=='modern'||refinedFor(name,ch,k)||chData[k].some(nt=>!nt||!(window.RECAST_IDS||[]).includes(nt.id)))).map(Number).sort((a,b)=>a-b);
     if(state.journal==='modern'){ Object.keys((((window.REFINED||{})[name])||{})[String(ch)]||{}).forEach(k=>{ if(k!=='0'&&!noted.includes(+k)) noted.push(+k); }); noted.sort((a,b)=>a-b); }
-    window._chapHasNotes=noted.length>0;
-    if(!noted.length&&!(chData['0']||[]).length){ const nn=_nearestNoted(name,ch);
-      if(nn) html+=`<div class="chapindex nearby" onclick="openChapter('${esc(nn.b)}',${nn.ch})"><div class="lbl-row" style="margin:0"><div class="lbl">${ICONS.chat} No notes in this chapter yet</div>
+    window._chapHasNotes=noted.length>0; window._chapNoted=noted.slice();
+    window._chapNearest=null;
+    if(!noted.length&&!(chData['0']||[]).length){ const nn=_nearestNoted(name,ch); window._chapNearest=nn||null;
+      if(nn && document.body.classList.contains('legacy')) html+=`<div class="chapindex nearby" onclick="openChapter('${esc(nn.b)}',${nn.ch})"><div class="lbl-row" style="margin:0"><div class="lbl">${ICONS.chat} No notes in this chapter yet</div>
         <button class="ci-toggle">Nearest: ${escHTML(nn.b)} ${nn.ch} · ${nn.n} note${nn.n===1?'':'s'} →</button></div></div>`; }
     if(noted.length){
       const off=document.documentElement.classList.contains('hide-notes');
@@ -2852,9 +2939,11 @@ function renderRead(){
         </div>
         <div class="chips">${noted.map(v=>`<span class="chip" onclick="jumpVerse(${v})">v${v}</span>`).join('')}</div></div>`;
       } else {
-      /* one quiet line; the verse chips drop down only when asked for (Henry, 10 Oct 2026) */
+      /* one quiet line; the verse chips drop down only when asked for (Henry, 10 Oct 2026)
+         15 Oct 2026: the strip moved into the commentary menu (top bar) to give the verses the room */
+      window._chapNoted=noted.slice();
       let ciOpen=false; try{ ciOpen=localStorage.getItem('nok_ci_open')==='1'; }catch(e){}
-      html+=`<div class="chapindex ci-compact${ciOpen?' open':''}">
+      if(false) html+=`<div class="chapindex ci-compact${ciOpen?' open':''}">
         <div class="lbl-row">
           <button type="button" class="ci-sum" onclick="_ciToggle(this)" aria-expanded="${ciOpen}">${ICONS.chat} Select chapter notes here<svg class="ci-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           <button class="ci-toggle" onclick="toggleNotes()">${off?'Show all commentary':'Hide all commentary'}</button>
@@ -2918,7 +3007,7 @@ function renderRead(){
   /* same chapter drawn again (a note saved, a sync, a mark kept) — keep the reader exactly where they were (11 Oct 2026) */
   const _rk=name+'|'+ch, _anc=(window._rrKey===_rk)?_rrAnchor(r):null; window._rrKey=_rk;
   const _il=_ilCapture();
-  r.innerHTML=html; r.scrollTop=0; if(_anc){ _rrRestore(r,_anc); requestAnimationFrame(function(){ _rrRestore(r,_anc); }); }
+  r.innerHTML=html; r.scrollTop=0; setTimeout(_chtSync,0); if(_anc){ _rrRestore(r,_anc); requestAnimationFrame(function(){ _rrRestore(r,_anc); }); }
   _ilRestore(_il);
   { const o=ONLINE_VERSIONS[state.version]; if(o&&!olFallback){ const r0=document.getElementById('reader'); const pg=r0.querySelector('.page'); if(pg) pg.insertAdjacentHTML('beforeend',`<div class="copyline">${escHTML(o.c)}</div>`); } }
   const foot=document.getElementById('readfoot'); foot.innerHTML=`<div class="audnote" id="audnote" style="display:none"></div><div class="audbar" id="audbar" style="display:none"></div>`+nav; foot.style.display='';
@@ -3511,7 +3600,7 @@ function tbMoreMenu(ev){ ev.stopPropagation(); closeVerseMenu();
     <div class="vm-sec">Text size</div>
     <div class="vm-row"><button onclick="setFont(-0.08)">A−</button><button onclick="setFont(0.08)">A+</button></div>
     <div class="vm-div"></div>`:''}<button onclick="closeVerseMenu();toggleCompare()">⇄ Compare translations</button>
-    <button onclick="closeVerseMenu();toggleRefComm()">📚 Matthew Henry ${state.refcomm?'✓':''}</button>
+    <button onclick="closeVerseMenu();toggleRefComm()">📚 Matthew Henry${document.body.classList.contains('legacy')&&state.refcomm?' ✓':''}</button>
     <button onclick="closeVerseMenu();toggleTheme()">${_themeMode==='auto'?'◐ Appearance: automatic':(_themeMode==='dark'?'☾ Appearance: always dark':'☀ Appearance: always light')}</button>
     ${localStorage.getItem('nok_dates_unlocked')&&isOwner()?`<button onclick="closeVerseMenu();toggleDates()">📅 Note dates</button>`:''}`;
   document.body.appendChild(m);
@@ -4414,8 +4503,8 @@ function _applyLookNow(){ try{
   const p=JSON.parse(localStorage.getItem(LS_PREFS)||'{}');
   if(p.themeMode==='auto'||p.themeMode==='light'||p.themeMode==='dark'){ _themeMode=p.themeMode; applyTheme(); }
   document.documentElement.classList.toggle('show-dates',!!p.showDates);
-  document.documentElement.classList.toggle('hide-notes',p.hideNotes===true);
-  const nb=document.getElementById('notesBtn'); if(nb) nb.classList.toggle('active',p.hideNotes!==true);
+  if(document.body.classList.contains('legacy')){ document.documentElement.classList.toggle('hide-notes',p.hideNotes===true); }
+  const nb=document.getElementById('notesBtn'); if(nb) nb.classList.toggle('active',!document.documentElement.classList.contains('hide-notes'));
   const db=document.getElementById('dateBtn'); if(db) db.classList.toggle('active',!!p.showDates);
 }catch(e){} }
 /* ---------- Install the app (PWA) ---------- */
@@ -4794,6 +4883,44 @@ function toggleNotes(){
   if(state.view==='read'){ renderRead();
     if(anchor){ const el=document.getElementById('v'+anchor); if(el) el.scrollIntoView({block:'start'}); } }
   if(typeof _fabSync==='function') _fabSync(); }
+/* ---------- Commentary menu (15 Oct 2026): one button for everything about commentary ---------- */
+function notesBtnTap(ev){ if(document.body.classList.contains('legacy')||state.view!=='read'){ toggleNotes(); return; } commentaryMenu(ev); }
+function commentaryMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
+  const ex=document.getElementById('vmenu'); if(ex&&ex.dataset.vfor==='cm'){ closeVerseMenu(); return; }
+  closeVerseMenu();
+  const name=window.BOOKS[state.book].name, ch=state.chapter;
+  const on=!document.documentElement.classList.contains('hide-notes');
+  const noted=(window._chapNoted||[]);
+  const m=document.createElement('div'); m.className='vmenu cmenu'; m.id='vmenu'; m.dataset.vfor='cm';
+  m.innerHTML=`<div class="vm-sec">Nii Okai’s commentary</div>
+    <button class="cm-row" onclick="closeVerseMenu();toggleNotes()"><span class="cm-tx"><span class="cm-nm">Show commentary</span><span class="cm-sub">${on?'Showing under each verse':'Scripture only for now'}</span></span><span class="cm-sw${on?' on':''}" aria-hidden="true"><i></i></span></button>
+    ${noted.length?`<div class="vm-sec">Notes in ${escHTML(name)} ${ch}</div><div class="cm-chips">${noted.map(v=>`<button class="cm-chip" onclick="closeVerseMenu();_cmGo(${v})">v${v}</button>`).join('')}</div>`
+      :`<div class="cm-none">No notes in ${escHTML(name)} ${ch} yet</div>${window._chapNearest?`<div class="cm-chips"><button class="cm-chip cm-near" onclick="closeVerseMenu();openChapter('${esc(window._chapNearest.b)}',${window._chapNearest.ch})">Nearest notes: ${escHTML(window._chapNearest.b)} ${window._chapNearest.ch} · ${window._chapNearest.n} →</button></div>`:''}`}
+    <div class="vm-div"></div>
+    <button class="cm-row" onclick="closeVerseMenu();openMHSheet()"><span class="cm-av">${ICONS.library}</span><span class="cm-tx"><span class="cm-nm">Matthew Henry on ${escHTML(name)} ${ch}</span><span class="cm-sub">The classic commentary · opens in its own page</span></span></button>`;
+  document.body.appendChild(m);
+  const b=(ev&&ev.currentTarget)||document.getElementById('notesBtn'); const r=b.getBoundingClientRect(); const mw=m.offsetWidth;
+  m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(8,Math.min(r.right-mw,window.innerWidth-mw-8))+'px'; }
+function _cmGo(v){ if(document.documentElement.classList.contains('hide-notes')) toggleNotes();
+  setTimeout(()=>{ try{ jumpVerse(v); }catch(e){} },60); }
+/* Matthew Henry in its own sheet — closes with ✕, a tap outside, or Esc */
+function openMHSheet(){ const name=window.BOOKS[state.book].name, ch=state.chapter;
+  document.getElementById('mhTitle').textContent=name+' '+ch;
+  const body=document.getElementById('mhBody'); body.innerHTML='<p class="mh-wait">Opening…</p>';
+  document.getElementById('mhOv').classList.add('show');
+  ensureRefIndex(()=>{
+    if(!refInstalled()||window.REFCOMM_BOOKS.MHC.indexOf(name)<0){ body.innerHTML='<p class="mh-wait">Matthew Henry is not available for '+escHTML(name)+'.</p>'; return; }
+    ensureRefBook(name,ok=>{ const chap=ok&&window.REFCOMM&&window.REFCOMM.MHC&&window.REFCOMM.MHC[name]&&window.REFCOMM.MHC[name][String(ch)];
+      if(!chap||!chap.length){ body.innerHTML='<p class="mh-wait">Matthew Henry has no comment on '+escHTML(name)+' '+ch+'.</p>'; return; }
+      body.innerHTML=chap.map(e=>`<p class="rc-p">${e.v?`<b>v${e.v}</b> `:''}${escHTML(e.t)}</p>`).join('');
+      body.scrollTop=0; }); }); }
+function closeMHSheet(){ document.getElementById('mhOv').classList.remove('show'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const o=document.getElementById('mhOv'); if(o&&o.classList.contains('show')) closeMHSheet(); } });
+/* one chapter name on screen: the small one in the top bar shows only after the big title has scrolled away */
+function _chtSync(){ try{ const rd=document.getElementById('reader'), t=rd&&rd.querySelector('.chtitle');
+  const out=!!(t && state.view==='read' && t.getBoundingClientRect().bottom < rd.getBoundingClientRect().top+4);
+  document.body.classList.toggle('cht-out',out); }catch(e){} }
+(function(){ const rd=document.getElementById('reader'); if(rd) rd.addEventListener('scroll',_chtSync,{passive:true}); })();
 /* ---------- Reference commentary layer (Matthew Henry, public domain, lazy-loaded) ---------- */
 function ensureRefIndex(cb){ if(window.REFCOMM_BOOKS) return cb();
   const s=document.createElement('script'); s.src='data/mhc/_index.js'; s.onload=cb; s.onerror=()=>{ window.REFCOMM_BOOKS={MHC:[]}; cb(); }; document.head.appendChild(s); }
@@ -4805,13 +4932,15 @@ function _syncRefUI(){ const on=state.refcomm;
   const rb=document.getElementById('refBtn'); if(rb) rb.classList.toggle('active',on);
   const tb=document.getElementById('refToggleBtn'); if(tb) tb.classList.toggle('on',on);
   const st=document.getElementById('refState'); if(st) st.textContent=on?'On':'Off'; }
-function toggleRefComm(){ state.refcomm=!state.refcomm; savePrefs(); _syncRefUI();
+function toggleRefComm(){ if(!document.body.classList.contains('legacy')){ openMHSheet(); return; }
+  state.refcomm=!state.refcomm; savePrefs(); _syncRefUI();
   if(state.refcomm){ ensureRefIndex(()=>{ if(!refInstalled()) toast('Matthew Henry isn’t installed yet — run “Get Matthew Henry.command” in the tools folder');
     if(state.view==='read') renderRead(); }); }
   else if(state.view==='read') renderRead();
 }
 /* returns the HTML panel for the current chapter (or '' ) and kicks off lazy load if needed */
 function refCommPanel(name,ch){
+  if(!document.body.classList.contains('legacy')) return '';     /* new UI: Matthew Henry opens from the commentary menu (15 Oct 2026) */
   if(!state.refcomm) return '';
   if(!window.REFCOMM||!window.REFCOMM.MHC||!window.REFCOMM.MHC[name]){
     if(refInstalled() && (window.REFCOMM_BOOKS.MHC.indexOf(name)>=0) && !_refTried[name]){
