@@ -980,7 +980,7 @@ body:not(.legacy) .bp-book{display:flex;align-items:center;justify-content:space
 .planctx.slim b{color:var(--ink)}
 .planctx.slim .pc-back{margin-left:auto;border:none;background:var(--line);color:var(--ink);border-radius:14px;padding:5px 12px;
   font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
-body:not(.legacy) .bp-foot2{display:none}
+
 #chapselWrap{display:none!important}
 /* reading controls appear only in Bible reading & search */
 body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:none!important}
@@ -1264,7 +1264,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.32', date:'12 Oct 2026'};
+const BUILD={v:'1.2.33', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1304,7 +1304,7 @@ function init(){
     if(typeof p.chapter==='number') state.chapter=p.chapter;
     if(p.themeMode==='auto'||p.themeMode==='light'||p.themeMode==='dark') _themeMode=p.themeMode;
     if(p.showDates){ document.documentElement.classList.add('show-dates'); }
-    if(p.hideNotes===true && localStorage.getItem('nok_legacy')){ document.documentElement.classList.add('hide-notes'); } // new UI: commentary always shows when the app opens (15 Oct 2026)
+    if((p.hideNotes===true && localStorage.getItem('nok_legacy')) || (!localStorage.getItem('nok_legacy') && localStorage.getItem('nok_notes_keep_off')==='1')){ document.documentElement.classList.add('hide-notes'); } // new UI: commentary always shows when the app opens (15 Oct 2026)
     if(p.journal==='original'||p.journal==='modern') state.journal=p.journal;
     if(state.journal==='original'&&!isOwner()) state.journal='modern';   /* Legacy is for the owner only (10 Oct 2026) */
     if(['bible','chrono','new','old','most'].includes(p.jsort)) state.jsort=p.jsort;
@@ -2695,9 +2695,6 @@ function bpToggle(i){ _bpOpen=(_bpOpen===i?-1:i); _bpCh=0; _renderBP();
 function bpBack(){ _bpCh=0; _renderBP();
   setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:'nearest'}); },20); }
 function bpGo(i,ch){
-  if(!document.body.classList.contains('legacy')){ _bpOpen=i; _bpCh=(_bpCh===ch?0:ch); _renderBP();
-    setTimeout(()=>{ const el=document.querySelector('.bp-vwrap'); if(el) el.scrollIntoView({block:'nearest',behavior:'smooth'}); },20);
-    return; }
   if(_vpick()==='verse'){ _bpOpen=i; _bpCh=ch; _renderBP();
     setTimeout(()=>{ const el=document.querySelector('.bp-vwrap'); if(el) el.scrollIntoView({block:'nearest'}); },20);
     return; }
@@ -2728,7 +2725,7 @@ function _renderBP(){ const idx=window.BOOKS.map((b,i)=>i);
       inner=`<div class="bp-grid">${b.chapters.map((_,c)=>`<button class="${i===state.book&&c+1===state.chapter?'cur':''}" onclick="event.stopPropagation();bpGo(${i},${c+1})">${c+1}</button>`).join('')}</div>`;
     }
     /* new UI: chapters and the verses of the chosen chapter show together; tap a chapter again to fold its verses */
-    if(open && !document.body.classList.contains('legacy')){
+    if(false && open && !document.body.classList.contains('legacy')){   /* 1.2.31 "always show verses" — withdrawn 15 Oct 2026 at Henry's request */
       const chg=`<div class="bp-grid">${b.chapters.map((_,c)=>`<button class="${(_bpCh?c+1===_bpCh:(i===state.book&&c+1===state.chapter))?'cur':''}" onclick="event.stopPropagation();bpGo(${i},${c+1})">${c+1}</button>`).join('')}</div>`;
       let vpart='';
       if(_bpCh){ const nv=b.chapters[_bpCh-1]||0; const rawCh=((window.DATA||{})[b.name]||{})[String(_bpCh)]||{}; const vs=[];
@@ -4912,10 +4909,17 @@ function commentaryMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
     ${noted.length?`<div class="cm-lbl">Jump to a note</div><div class="cm-chips">${noted.map(v=>`<button class="cm-chip" onclick="closeVerseMenu();_cmGo(${v})">${v}</button>`).join('')}</div>`
       :`<div class="cm-none">No notes in ${escHTML(name)} ${ch} yet</div>${window._chapNearest?`<div class="cm-chips"><button class="cm-chip cm-near" onclick="closeVerseMenu();openChapter('${esc(window._chapNearest.b)}',${window._chapNearest.ch})">Nearest notes: ${escHTML(window._chapNearest.b)} ${window._chapNearest.ch} · ${window._chapNearest.n} →</button></div>`:''}`}
     <div class="cm-sep"></div>
+    <button class="cm-row" onclick="closeVerseMenu();setNotesKeepOff(${_notesKeepOff()?'false':'true'})"><span class="cm-tx"><span class="cm-nm">Keep commentary hidden</span><span class="cm-sub">${_notesKeepOff()?'On — scripture only, every time you open the app':'Off — your notes show each time you open the app'}</span></span><span class="cm-sw${_notesKeepOff()?' on':''}" aria-hidden="true"><i></i></span></button>
     <button class="cm-row cm-mh" onclick="closeVerseMenu();openMHSheet()"><span class="cm-av">${ICONS.library}</span><span class="cm-tx"><span class="cm-nm">Matthew Henry’s commentary</span><span class="cm-sub">The classic 1706 commentary on this chapter</span></span><span class="cm-go" aria-hidden="true">›</span></button>`;
   document.body.appendChild(m);
   const b=(ev&&ev.currentTarget)||document.getElementById('notesBtn'); const r=b.getBoundingClientRect(); const mw=m.offsetWidth;
   m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(8,Math.min(r.right-mw,window.innerWidth-mw-8))+'px'; }
+/* a lasting choice: keep the commentary hidden, even after the app is closed and opened again */
+function _notesKeepOff(){ try{ return localStorage.getItem('nok_notes_keep_off')==='1'; }catch(e){ return false; } }
+function setNotesKeepOff(on){ try{ localStorage.setItem('nok_notes_keep_off',on?'1':''); }catch(e){}
+  const hidden=document.documentElement.classList.contains('hide-notes');
+  if(on!==hidden) toggleNotes(); else savePrefs();
+  toast(on?'Commentary stays hidden — even when you reopen the app':'Commentary will show again each time you open the app'); }
 function _cmGo(v){ if(document.documentElement.classList.contains('hide-notes')) toggleNotes();
   setTimeout(()=>{ try{ jumpVerse(v); }catch(e){} },60); }
 /* Matthew Henry in its own sheet — closes with ✕, a tap outside, or Esc */
@@ -4936,7 +4940,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const o=document.
 let _awaySince=0;
 document.addEventListener('visibilitychange',function(){
   if(document.hidden){ _awaySince=Date.now(); return; }
-  if(_awaySince&&Date.now()-_awaySince>600000&&!document.body.classList.contains('legacy')&&document.documentElement.classList.contains('hide-notes')){
+  if(_awaySince&&Date.now()-_awaySince>600000&&!document.body.classList.contains('legacy')&&!_notesKeepOff()&&document.documentElement.classList.contains('hide-notes')){
     try{ toggleNotes(); }catch(e){} }
   _awaySince=0; });
 /* one chapter name on screen: the small one in the top bar shows only after the big title has scrolled away */
