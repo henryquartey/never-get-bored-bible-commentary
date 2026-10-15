@@ -946,6 +946,13 @@ body.legacy #dateBtn .db-emo{display:inline}
 .bp-grid.vg button{padding:9px 0;font-size:14px;position:relative}
 .bp-grid.vg button.hasn::after{content:"";position:absolute;left:50%;bottom:3px;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:.75}
 .bp-hint{font-family:var(--sans);font-size:12px;color:var(--soft);text-align:center;padding:2px 0 6px}
+/* word suggestions (15 Oct 2026) */
+.predbar{display:none;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding:6px 0 2px;-webkit-overflow-scrolling:touch}
+.predbar.on{display:flex}
+.predbar button{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:16px;padding:5px 12px;
+  font-family:var(--sans);font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.predbar button:first-child{background:var(--line);border-color:var(--line)}
+.predbar button:hover{border-color:var(--ink)}
 /* ===== Reading screen tidy-up (15 Oct 2026) — new UI only ===== */
 /* top bar: translation pill on the left, plain round icons on the right */
 body:not(.legacy)[data-view="read"] #planBackBtn{order:-3}
@@ -1270,6 +1277,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
     </div>
     <div class="mb">
       <textarea id="edText" placeholder="Share your thoughts on this verse…" spellcheck="true" autocapitalize="sentences" autocorrect="on" oninput="_edInput(event)"></textarea>
+      <div class="predbar" id="edPred"></div>
       <div class="ed-colours" id="edColours" title="Colour this note — it also highlights the verse. Stays on this device only.">
         <span class="lbl">Colour</span>
         <button class="sw sw-none" data-c="" onclick="edSetColour('')" title="No colour">✕</button>
@@ -1311,7 +1319,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.41', date:'12 Oct 2026'};
+const BUILD={v:'1.2.42', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3815,7 +3823,8 @@ function _edLoadColour(){ try{ const {book,ch,v}=editing;
   _edColour=(v&&v!=='0')?hlGet(book,ch,v):''; }catch(e){ _edColour=''; }
   _edColour0=_edColour; _edSyncColour(); }
 function saveEditor(){
-  const text=sacredCase(document.getElementById('edText').value.trim());
+  { const et=document.getElementById('edText'); et.value=_punctFinal(et.value); }
+  const text=sacredCase(document.getElementById('edText').value.trim()); _learnText(text);
   if(editing&&editing.ref){ _saveRefEdit(text); return; }
   if(!text){ toast('Nothing to save'); return; }
   const {book,ch,v,id}=editing;
@@ -3889,7 +3898,7 @@ function inlineEditNote(el,name,ch,v,id){
   if(el.querySelector('textarea')) return;
   const arr=(DATA[name]&&DATA[name][String(ch)]&&DATA[name][String(ch)][String(v)])||[];
   const nt=arr.find(n=>n.id===id); const cur=nt?nt.text:el.textContent;
-  el.innerHTML=`<textarea class="inline-ed" spellcheck="true" autocapitalize="sentences" oninput="noteAutocorrect(event);_ilAuto(event)" onblur="_ilFlush(this)"></textarea>
+  el.innerHTML=`<textarea class="inline-ed" spellcheck="true" autocapitalize="sentences" oninput="noteAutocorrect(event);_ilAuto(event)" onblur="_ilFlush(this)"></textarea><div class="predbar"></div>
     <div class="inline-bar"><button class="btn primary" onclick="event.stopPropagation();saveInline(this,'${esc(name)}',${ch},'${v}','${id}')">Done</button>
       <button class="btn" onclick="event.stopPropagation();cancelInline(this)">Cancel</button>
       ${v!=='0'?`<span class="ed-colours inline-colours" onclick="event.stopPropagation()">
@@ -3903,8 +3912,8 @@ function inlineEditNote(el,name,ch,v,id){
       <span class="inline-hint">Saves as you type · Enter closes</span></div>`;
   const t=el.querySelector('textarea'); t.value=cur; t.onclick=e=>e.stopPropagation();
   t.dataset.nid=id; t.dataset.book=name; t.dataset.ch=String(ch); t.dataset.v=String(v); t.dataset.orig=cur;
-  t.onkeydown=e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); t.nextElementSibling.querySelector('.primary').click(); }
-    else if(e.key==='Escape'){ e.preventDefault(); t.nextElementSibling.querySelector('.primary').click(); } };
+  t.onkeydown=e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); el.querySelector('.inline-bar .primary').click(); }
+    else if(e.key==='Escape'){ e.preventDefault(); el.querySelector('.inline-bar .primary').click(); } };
   try{ const cc=(v!=='0')?hlGet(name,ch,v):''; el.querySelectorAll('.inline-colours .sw').forEach(b=>
     b.classList.toggle('on',(b.dataset.c||'')===(cc||''))); }catch(e){}
   t.focus(); t.style.height='auto'; t.style.height=Math.max(70,t.scrollHeight)+'px';
@@ -3932,6 +3941,7 @@ function cancelInline(btn){
     if(ta) ta.classList.remove('inline-ed'); }catch(e){}                      // closing on purpose — do not re-open it after the redraw
   if(state.view==='mine') renderMine(); else renderRead(); }
 function saveInline(btn,name,ch,v,id){ const ta=btn.closest('.body').querySelector('textarea');
+  if(ta){ ta.value=_punctFinal(ta.value); _learnText(ta.value); }
   if(!ta.value.trim()){ toast('Nothing to save — the note keeps its old words'); }
   else _ilFlush(ta);
   ta.classList.remove('inline-ed');                                            // closing on purpose — do not re-open it after the redraw
@@ -4009,7 +4019,12 @@ function _buildDict(){ _DICT=new Set(); _RANK=new Map(); _loadUserSpell();
   try{ for(const bk in DATA)for(const c in DATA[bk])for(const v in DATA[bk][c])DATA[bk][c][v].forEach(nt=>{
     (nt.text.toLowerCase().match(/[a-z']{2,}/g)||[]).forEach(t=>{ if(!_DICT.has(t)){_DICT.add(t); _RANK.set(t,900000);} }); }); }catch(e){}
   _USERDICT.forEach(t=>{ if(!_DICT.has(t)){_DICT.add(t); _RANK.set(t,850000);} });
+  (window.BIBLE_NAMES||[]).forEach(n=>{ const t=n.toLowerCase(); if(!_DICT.has(t)){ _DICT.add(t); _RANK.set(t,800000); } });
 }
+/* every word in a note you keep becomes a known word at once — names, Twi, Pidgin, your own coinages */
+function _learnText(text){ try{ const ws=(String(text||'').match(/[A-Za-z][A-Za-z']+/g)||[]);
+  if(_DICT) ws.forEach(w=>{ const t=w.toLowerCase(); if(!_DICT.has(t)){ _DICT.add(t); _RANK.set(t,900000); } });
+  if(_PM) _pmAdd(_PM,String(text||'')); }catch(e){} }
 function _isKnown(w){ if(!_DICT)_buildDict(); return _DICT.has(w)||_USERDICT.has(w)||_rejected.has(w); }
 const _AL="abcdefghijklmnopqrstuvwxyz";
 function _edits1(w){ const res=new Set();
@@ -4056,7 +4071,9 @@ function noteAutocorrect(e){
   const ta=e.target;
   const auto=document.getElementById('edAuto');
   const it=e.inputType; const d=e.data;
+  setTimeout(()=>_predUpdate(ta),0);
   if(!auto||!auto.checked){ scheduleSpellStrip(ta); return; }
+  if(e.isTrusted!==false) _punctLive(ta,e);
   // (A) auto-fix just made, user hit Backspace → undo it and remember not to re-correct (your "retype leaves it")
   if(_lastAuto && it && it.indexOf('delete')===0){
     const {from,to,start}=_lastAuto; const val=ta.value;
@@ -4090,6 +4107,68 @@ function noteAutocorrect(e){
   else _lastAuto=null;
   scheduleSpellStrip(ta);
 }
+/* ---- word suggestions (15 Oct 2026): finish the word, or offer the next one, from your own notes ---- */
+let _PM=null;
+function _pmAdd(M,text){ const re=/[A-Za-z][A-Za-z'’]*/g; let m, prev=null, last=0;
+  while((m=re.exec(text))){ const w=m[0].replace(/’/g,"'"); const t=w.toLowerCase();
+    const startOfSentence=/(^|[.!?]\s+|\n\s*)$/.test(text.slice(Math.max(0,m.index-4),m.index))||m.index===0;
+    M.f.set(t,(M.f.get(t)||0)+1);
+    if(!startOfSentence){ M.n.set(t,(M.n.get(t)||0)+1);
+      if(w.length>1&&w===w.toUpperCase()) M.u.set(t,(M.u.get(t)||0)+1);
+      else if(/^[A-Z]/.test(w)){ M.c.set(t,(M.c.get(t)||0)+1); M.cf.set(t,w); } }
+    if(prev){ let mm=M.b.get(prev); if(!mm){ mm=new Map(); M.b.set(prev,mm); } mm.set(t,(mm.get(t)||0)+1); }
+    prev=t; } }
+function _pmForm(M,t){ if(M.names.has(t)) return M.names.get(t); const n=M.n.get(t)||0; if(!n) return t;
+  const u=M.u.get(t)||0, c=M.c.get(t)||0; if((u+c)/n>0.6) return u>c?t.toUpperCase():(M.cf.get(t)||t); return t; }
+function _pmBuild(){ const M={f:new Map(),n:new Map(),u:new Map(),c:new Map(),cf:new Map(),b:new Map(),names:new Map()};
+  try{ for(const bk in DATA)for(const c in DATA[bk])for(const v in DATA[bk][c])(DATA[bk][c][v]||[]).forEach(nt=>{ if(nt&&nt.text) _pmAdd(M,nt.text); }); }catch(e){}
+  (window.BIBLE_NAMES||[]).forEach(n=>M.names.set(n.toLowerCase(),n));
+  M.list=[...M.f.keys()].sort(); M.nlist=[...M.names.keys()].sort(); return M; }
+function _pmPrefix(arr,pre,out,lim){ let lo=0,hi=arr.length; while(lo<hi){ const m=(lo+hi)>>1; if(arr[m]<pre) lo=m+1; else hi=m; }
+  for(let i=lo;i<arr.length&&out.length<lim;i++){ if(!arr[i].startsWith(pre)) break; out.push(arr[i]); } return out; }
+function _pmSuggest(prefix,prev){ if(!_PM) _PM=_pmBuild(); const M=_PM; const p=prefix.toLowerCase(); const cand=new Map();
+  const bi=prev?M.b.get(prev):null;
+  if(p){ const mine=_pmPrefix(M.list,p,[],400); mine.forEach(t=>{ if(t!==p) cand.set(t,(M.f.get(t)||0)+(bi&&bi.get(t)?bi.get(t)*40:0)); });
+    if(p.length>=2){ _pmPrefix(M.nlist,p,[],60).forEach(t=>{ if(t!==p&&!cand.has(t)) cand.set(t,0.5); }); }
+    if(p.length>=3&&window.DICT_WORDS){ let k=0; for(const w of window.DICT_WORDS){ if(k>=8) break; if(w.length>p.length&&w.startsWith(p)&&!cand.has(w)){ cand.set(w,0.2-k*0.01); k++; } } } }
+  else if(bi){ bi.forEach((n,t)=>{ if(n>=2) cand.set(t,n); }); }
+  return [...cand.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t])=>{ const S={lord:'Lord',god:'GOD',jesus:'Jesus',christ:'Christ',jehovah:'Jehovah',yahweh:'Yahweh',messiah:'Messiah'};
+    if(S[t]) return S[t]; const f=_pmForm(M,t); try{ return sacredCase(f); }catch(e){ return f; } }); }
+function _pmContext(ta){ const v=ta.value, c=ta.selectionStart; if(c!==ta.selectionEnd) return null;
+  let s=c; while(s>0&&/[A-Za-z'’]/.test(v[s-1])) s--; const pre=v.slice(s,c);
+  if(c<v.length&&/[A-Za-z]/.test(v[c])) return null;                   // in the middle of a word — stay quiet
+  const m=v.slice(0,s).match(/([A-Za-z][A-Za-z'’]*)[^A-Za-z.!?\n]*$/); const prev=m?m[1].toLowerCase().replace(/’/g,"'"):null;
+  return {start:s,caret:c,pre,prev}; }
+function _predBarFor(ta){ if(!ta) return null; if(ta.id==='edText') return document.getElementById('edPred');
+  const b=ta.parentElement&&ta.parentElement.querySelector('.predbar'); return b; }
+function _predUpdate(ta){ try{ const bar=_predBarFor(ta); if(!bar) return;
+  const ctx=_pmContext(ta); if(!ctx||(!ctx.pre&&!ctx.prev)){ bar.innerHTML=''; bar.classList.remove('on'); return; }
+  let sug=_pmSuggest(ctx.pre,ctx.prev);
+  if(ctx.pre&&/^[A-Z]/.test(ctx.pre)) sug=sug.map(w=>w.charAt(0).toUpperCase()+w.slice(1));
+  else if(!ctx.pre){ const before=ta.value.slice(0,ctx.start); if(/(^|[.!?]\s+|\n\s*)$/.test(before)) sug=sug.map(w=>w.charAt(0).toUpperCase()+w.slice(1)); }
+  if(!sug.length){ bar.innerHTML=''; bar.classList.remove('on'); return; }
+  bar.innerHTML=sug.map(w=>`<button type="button" onmousedown="event.preventDefault()" onclick="event.stopPropagation();_predPick(this)">${escHTML(w)}</button>`).join('');
+  bar._ta=ta; bar.classList.add('on'); }catch(e){} }
+function _predPick(btn){ const bar=btn.parentElement, ta=bar&&bar._ta; if(!ta) return; const ctx=_pmContext(ta); if(!ctx) return;
+  const w=btn.textContent, v=ta.value; const after=v.slice(ctx.caret); const sp=/^\s/.test(after)?'':' ';
+  ta.value=v.slice(0,ctx.start)+w+sp+after; const pos=ctx.start+w.length+sp.length; ta.focus(); ta.setSelectionRange(pos,pos);
+  ta.dispatchEvent(new Event('input',{bubbles:true})); _predUpdate(ta); }
+document.addEventListener('selectionchange',()=>{ const a=document.activeElement; if(a&&(a.id==='edText'||(a.classList&&a.classList.contains('inline-ed')))) _predUpdate(a); });
+/* ---- light punctuation (only while Auto-correct is ticked) ---- */
+function _punctLive(ta,e){ const it=e.inputType, d=e.data; const v=ta.value, c=ta.selectionStart;
+  /* "told ," → "told," */
+  if(it==='insertText'&&/^[,.;:!?]$/.test(d||'')&&c>=2&&v[c-2]===' '&&/[A-Za-z0-9’'")\]]/.test(v[c-3]||'')){
+    ta.value=v.slice(0,c-2)+d+v.slice(c); ta.setSelectionRange(c-1,c-1); return; }
+  /* "word,word" → "word, word" (not in numbers like 3,000 or 3:16) */
+  if(it==='insertText'&&/^[A-Za-z]$/.test(d||'')&&c>=3&&/[,;]/.test(v[c-2])&&/[A-Za-z]/.test(v[c-3])){
+    ta.value=v.slice(0,c-1)+' '+v.slice(c-1); ta.setSelectionRange(c+1,c+1); return; }
+  /* new line after a sentence with no stop → add the full stop */
+  if(it==='insertLineBreak'||it==='insertParagraph'){ const lineEnd=c-1; let ls=lineEnd; while(ls>0&&v[ls-1]!=='\n') ls--;
+    const line=v.slice(ls,lineEnd); if(/[A-Za-z0-9)]$/.test(line)&&line.trim().split(/\s+/).length>=4){
+      ta.value=v.slice(0,lineEnd)+'.'+v.slice(lineEnd); ta.setSelectionRange(c+1,c+1); } } }
+function _punctFinal(text){ try{ const a=document.getElementById('edAuto'); if(!a||!a.checked) return text;
+  const t=String(text).replace(/[ \t]+$/,''); const last=t.split('\n').pop();
+  if(/[A-Za-z0-9)]$/.test(last)&&last.trim().split(/\s+/).length>=4) return t+'.'; return t; }catch(e){ return text; } }
 /* ---- live "spelling issues" strip under the note box ---- */
 let _spellTimer=null;
 function scheduleSpellStrip(ta){ clearTimeout(_spellTimer); _spellTimer=setTimeout(()=>updateSpellStrip(ta),300); }
@@ -5689,6 +5768,8 @@ window.addEventListener('load',()=>{ setTimeout(()=>{
   ensureVersion(state.version,()=>{ if(state.view==='read'||state.view==='home'||state.view==='explore') render(); });
   const d=document.createElement('script'); d.src='data/dict.js';
   d.onload=()=>{ _DICT=null; }; document.head.appendChild(d);
+  const nm=document.createElement('script'); nm.src='data/names.js';       /* Bible names from 11 translations (15 Oct 2026) */
+  nm.onload=()=>{ _DICT=null; _PM=null; }; document.head.appendChild(nm);
 },60); });
 </script>
 <script>
