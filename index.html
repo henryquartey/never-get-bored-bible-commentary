@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Never Get Bored — Nii Okai's Journal Through Scripture</title>
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://www.google.com">
+<link rel="dns-prefetch" href="https://www.google.com">
 <meta name="description" content="Never Get Bored — a verse-by-verse journal through Scripture by Nii Okai. Over 4,000 personal notes across all 66 books, with the King James text, reading plans and audio.">
 <link rel="canonical" href="https://bible.getwordwisdom.com/">
 <meta property="og:type" content="website">
@@ -1294,7 +1296,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.36', date:'12 Oct 2026'};
+const BUILD={v:'1.2.37', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -4303,7 +4305,9 @@ function _openNotesText(vs){ let out=[]; try{ (Array.isArray(vs)?vs:[vs]).forEac
   let s=out.join(' '); if(s.length>700) s=s.slice(0,700).replace(/\s+\S*$/,''); return s; }
 /* Every Google search the app opens goes through here, with SafeSearch switched on so explicit
    pictures, videos and sites are filtered out of the results. (15 Oct 2026) */
-function gSearch(q){ window.open('https://www.google.com/search?safe=active&q='+encodeURIComponent(q),'_blank','noopener'); }
+/* udm=14 asks Google for its plain "Web" results — no AI Overview, which sat on "Thinking…" for many
+   seconds before anything showed. Images, Videos and AI Mode stay one tap away on Google's own tabs. */
+function gSearch(q){ window.open('https://www.google.com/search?udm=14&safe=active&q='+encodeURIComponent(q),'_blank','noopener'); }
 function _googleVerse(ref,vs){ const notes=_openNotesText(vs); const q=notes?(ref+' '+notes):(ref+' meaning');
   gSearch(q); }
 function vmDo(ev,action,name,ch,v){ ev.stopPropagation(); closeVerseMenu();
