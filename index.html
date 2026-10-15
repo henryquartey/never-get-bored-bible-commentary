@@ -786,7 +786,20 @@ body.legacy .bottomnav{display:none!important}
 /* New UI hides the sidebar on every screen — navigation lives in the bottom bar (mobile-style) */
 body:not(.legacy) .sidebar,body:not(.legacy) .resizer,body:not(.legacy) .backdrop,body:not(.legacy) .menu-btn{display:none!important}
 body:not(.legacy) .bottomnav{display:flex;justify-content:center}
-body:not(.legacy) .bottomnav button{max-width:120px}
+body:not(.legacy) .bottomnav button{max-width:120px;position:relative;z-index:1;-webkit-tap-highlight-color:transparent;transition:color .2s}
+body:not(.legacy) .bottomnav{touch-action:none}
+.bn-pill{position:absolute;left:0;top:4px;bottom:calc(4px + env(safe-area-inset-bottom));width:0;border-radius:18px;background:var(--line);
+  opacity:0;z-index:0;pointer-events:none;transform:translateX(0);
+  transition:transform .42s cubic-bezier(.3,1.35,.5,1),width .42s cubic-bezier(.3,1.35,.5,1),opacity .2s,box-shadow .2s,background .2s}
+body.legacy .bn-pill{display:none}
+.bottomnav.bn-dragging .bn-pill{transition:transform .22s cubic-bezier(.3,1.25,.5,1),width .22s,opacity .2s;background:var(--line);
+  box-shadow:0 6px 18px rgba(0,0,0,.14),inset 0 0 0 1px rgba(255,255,255,.35)}
+body:not(.legacy) .bottomnav button .nico,body:not(.legacy) .bottomnav button .navav{transition:transform .25s cubic-bezier(.3,1.35,.5,1)}
+body:not(.legacy) .bottomnav button.bn-hot .nico,body:not(.legacy) .bottomnav button.bn-hot .navav{transform:scale(1.14) translateY(-1px)}
+body:not(.legacy) .bottomnav.bn-dragging button.bn-hot{color:var(--ink)}
+/* slightly larger icons on the bottom bar */
+body:not(.legacy) .bottomnav .nico svg{width:25px;height:25px}
+body:not(.legacy) .bottomnav .navav{width:25px;height:25px;font-size:12px}
 body:not(.legacy) .main{padding-bottom:54px}
 .uiswitch{width:100%;font-size:11.5px;padding:6px;border:1px dashed var(--line);background:transparent;color:var(--soft);border-radius:8px;cursor:pointer;font-family:var(--sans)}
 .uiswitch:hover{color:var(--accent);border-color:var(--accent)}
@@ -1221,7 +1234,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 </div>
 
 <button class="fabnotes" id="fabNotes" onclick="toggleNotes()">Hide all commentary</button>
-<nav class="bottomnav" id="bottomnav">
+<nav class="bottomnav" id="bottomnav"><span class="bn-pill" id="bnPill" aria-hidden="true"></span>
   <button data-view="home" data-ico="home" onclick="setView('home')">Home</button>
   <button data-view="read" data-ico="book" onclick="setView('read')">Bible</button>
   <button data-view="plan" data-ico="cal" onclick="setView('plan')">Plans</button>
@@ -1281,7 +1294,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.34', date:'12 Oct 2026'};
+const BUILD={v:'1.2.35', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2703,18 +2716,47 @@ function _bpSyncPick(){ const v=_vpick()==='verse';
   if(a) a.classList.toggle('on',!v); if(b) b.classList.toggle('on',v); }
 function openBookPicker(){ _bpOpen=state.book; _bpCh=0; _bpSyncPick(); _renderBP();
   document.getElementById('bpOv').classList.add('show');
-  setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:'center'}); },30); }
+  /* the book you are reading sits at the top of the list (15 Oct 2026) */
+  setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:document.body.classList.contains('legacy')?'center':'start'}); },30); }
+/* smooth drop-down for a book's chapters (and a chapter's verses): the panel grows open and the numbers
+   fade in one after another; closing folds it back up. Skipped when the phone asks for less motion. */
+function _bpCalm(){ try{ return document.body.classList.contains('legacy')||matchMedia('(prefers-reduced-motion: reduce)').matches||!Element.prototype.animate; }catch(e){ return true; } }
+function _bpDrop(el){ if(!el||_bpCalm()) return;
+  const h=el.scrollHeight; el.style.overflow='hidden';
+  const a=el.animate([{height:'0px',opacity:0},{height:h+'px',opacity:1}],{duration:340,easing:'cubic-bezier(.22,.9,.24,1)'});
+  a.onfinish=a.oncancel=()=>{ el.style.overflow=''; };
+  [...el.querySelectorAll('button')].slice(0,80).forEach((b,k)=>b.animate(
+    [{opacity:0,transform:'translateY(-8px) scale(.94)'},{opacity:1,transform:'none'}],
+    {duration:280,delay:60+Math.min(k*14,320),easing:'cubic-bezier(.2,.8,.2,1)',fill:'backwards'}));
+  const ch=el.previousElementSibling&&el.previousElementSibling.querySelector&&el.previousElementSibling.querySelector('.bp-chev');
+  if(ch) ch.animate([{transform:'rotate(0deg)'},{transform:'rotate(180deg)'}],{duration:300,easing:'cubic-bezier(.22,.9,.24,1)'}); }
+function _bpFold(el,done){ if(!el||_bpCalm()){ done(); return; }
+  el.style.overflow='hidden';
+  const a=el.animate([{height:el.offsetHeight+'px',opacity:1},{height:'0px',opacity:0}],{duration:200,easing:'cubic-bezier(.4,0,.2,1)'});
+  a.onfinish=()=>{ el.style.display='none'; done(); }; a.oncancel=done; }
+function _bpOpenPanel(){ const b=document.querySelector('.bp-book.cur'); const n=b&&b.nextElementSibling;
+  return (n&&!n.classList.contains('bp-book'))?n:null; }
 function closeBookPicker(){ document.getElementById('bpOv').classList.remove('show'); }
 function bpOrder(m){ _bpAlpha=(m==='alpha');
   document.getElementById('bpTrad').classList.toggle('on',!_bpAlpha);
   document.getElementById('bpAlpha').classList.toggle('on',_bpAlpha); _renderBP(); }
-function bpToggle(i){ _bpOpen=(_bpOpen===i?-1:i); _bpCh=0; _renderBP();
-  /* the book you tapped comes to the top with its chapters showing under it (15 Oct 2026) */
-  setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:'start',behavior:'smooth'}); },20); }
-function bpBack(){ _bpCh=0; _renderBP();
+function _bpRow(i){ return [...document.querySelectorAll('#bpList .bp-book')].find(el=>el.getAttribute('onclick')==='bpToggle('+i+')'); }
+function bpToggle(i){ const opening=(_bpOpen!==i), list=document.getElementById('bpList');
+  const row0=_bpRow(i), y0=row0?row0.getBoundingClientRect().top:0;
+  const go=()=>{ _bpOpen=opening?i:-1; _bpCh=0; _renderBP();
+    /* keep the tapped book where your finger was while the list changes, so nothing jumps */
+    const row=_bpRow(i); if(row&&list) list.scrollTop+=row.getBoundingClientRect().top-y0;
+    if(opening){ _bpDrop(_bpOpenPanel());
+      /* then the book glides to the top with its chapters dropping open under it (15 Oct 2026) */
+      setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:'start',behavior:'smooth'}); },60); } };
+  const old=_bpOpenPanel();
+  /* fold the open book with a little animation when it is the one tapped or sits below it; a book above
+     closes at once (the anchor above keeps the tapped book still) */
+  if(old&&row0&&(old.previousElementSibling===row0||(row0.compareDocumentPosition(old)&Node.DOCUMENT_POSITION_FOLLOWING))) _bpFold(old,go); else go(); }
+function bpBack(){ _bpCh=0; _renderBP(); _bpDrop(_bpOpenPanel());
   setTimeout(()=>{ const el=document.querySelector('.bp-book.cur'); if(el) el.scrollIntoView({block:'nearest'}); },20); }
 function bpGo(i,ch){
-  if(_vpick()==='verse'){ _bpOpen=i; _bpCh=ch; _renderBP();
+  if(_vpick()==='verse'){ _bpOpen=i; _bpCh=ch; _renderBP(); _bpDrop(_bpOpenPanel());
     setTimeout(()=>{ const el=document.querySelector('.bp-vwrap'); if(el) el.scrollIntoView({block:'nearest'}); },20);
     return; }
   bpJump(i,ch,0); }
@@ -3019,7 +3061,7 @@ function renderRead(){
   let nav;
   const _nl=!document.body.classList.contains('legacy');
   const _cOff=document.documentElement.classList.contains('hide-notes');
-  const _rnComm=(_nl&&window._chapHasNotes)?`<button class="rn-comm${_cOff?' off':''}" id="rnComm" onclick="toggleNotes()" title="${_cOff?'Show Nii Okai’s commentary':'Hide Nii Okai’s commentary'}">${ICONS.chat}<span>${_cOff?'Show':'Hide'}</span></button>`:'';
+  const _rnComm=(false&&_nl&&window._chapHasNotes)?`<button class="rn-comm${_cOff?' off':''}" id="rnComm" onclick="toggleNotes()" title="${_cOff?'Show Nii Okai’s commentary':'Hide Nii Okai’s commentary'}">${ICONS.chat}<span>${_cOff?'Show':'Hide'}</span></button>`:'';
   if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]); const last=state.plan.ci>=chaps.length-1;
     nav=`<div class="readnav planmode">
       <button id="rnPrev" onclick="planNav(-1)" ${state.plan.day===0&&state.plan.ci===0?'disabled':''}>← Prev</button>
@@ -3613,7 +3655,40 @@ function continueToNext(day){ closeDayComplete(); planRead(day,0); }
 function closeDayComplete(){ const ov=document.getElementById('completeOv'); if(ov) ov.classList.remove('show'); }
 function setViewTabs(){ let v=state.view; if(v==='read'&&state.plan) v='plan';
   document.body.dataset.view=state.view;
-  document.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v)); }
+  document.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  try{ _bnPlace(); }catch(e){} }
+/* ---------- Bottom bar (15 Oct 2026): a soft pill sits behind the current tab and glides to the next one.
+   Press, hold and slide along the bar: the pill follows your finger, the tab under it lifts, and letting
+   go opens that tab — the way WhatsApp's bar works. A plain tap still works as before. ---------- */
+let _bnDrag=null,_bnClickBlock=0;
+function _bnBtns(){ return [...document.querySelectorAll('#bottomnav button[data-view]')]; }
+function _bnPillTo(b,instant){ const pill=document.getElementById('bnPill'), nav=document.getElementById('bottomnav'); if(!pill||!nav||!b) return;
+  const nr=nav.getBoundingClientRect(), r=b.getBoundingClientRect(); if(!r.width) return;
+  const w=Math.min(r.width-4,86), x=r.left-nr.left+(r.width-w)/2;
+  if(instant) pill.style.transition='none';
+  pill.style.width=w+'px'; pill.style.transform='translateX('+x+'px)'; pill.style.opacity='1';
+  if(instant){ void pill.offsetWidth; pill.style.transition=''; } }
+function _bnPlace(instant){ const a=document.querySelector('#bottomnav button.active');
+  const pill=document.getElementById('bnPill'); if(!a){ if(pill) pill.style.opacity='0'; return; } _bnPillTo(a,instant); }
+function _bnAt(x){ const bs=_bnBtns(); let best=null,d=1e9;
+  bs.forEach(b=>{ const r=b.getBoundingClientRect(); const c=r.left+r.width/2, dd=Math.abs(x-c); if(dd<d){ d=dd; best=b; } }); return best; }
+(function(){ const nav=document.getElementById('bottomnav'); if(!nav) return;
+  nav.addEventListener('pointerdown',e=>{ if(document.body.classList.contains('legacy')) return; if(e.pointerType==='mouse'&&e.button!==0) return;
+    const b=_bnAt(e.clientX); _bnDrag={x0:e.clientX,moved:false,hot:b,id:e.pointerId,t:setTimeout(()=>{ if(_bnDrag){ nav.classList.add('bn-dragging'); _bnPillTo(_bnDrag.hot); } },160)};
+    b&&b.classList.add('bn-hot'); },{passive:true});
+  nav.addEventListener('pointermove',e=>{ if(!_bnDrag||e.pointerId!==_bnDrag.id) return;
+    if(!_bnDrag.moved&&Math.abs(e.clientX-_bnDrag.x0)>8){ _bnDrag.moved=true; nav.classList.add('bn-dragging'); try{ nav.setPointerCapture(e.pointerId); }catch(_){} }
+    if(!_bnDrag.moved) return;
+    const b=_bnAt(e.clientX); if(b&&b!==_bnDrag.hot){ _bnDrag.hot&&_bnDrag.hot.classList.remove('bn-hot'); b.classList.add('bn-hot'); _bnDrag.hot=b; _bnPillTo(b);
+      try{ navigator.vibrate&&navigator.vibrate(6); }catch(_){} } },{passive:true});
+  const end=(e,cancel)=>{ if(!_bnDrag) return; clearTimeout(_bnDrag.t); const d=_bnDrag; _bnDrag=null;
+    nav.classList.remove('bn-dragging'); _bnBtns().forEach(b=>b.classList.remove('bn-hot'));
+    if(d.moved&&!cancel&&d.hot){ _bnClickBlock=Date.now(); setView(d.hot.dataset.view); } else _bnPlace(); };
+  nav.addEventListener('pointerup',e=>end(e,false)); nav.addEventListener('pointercancel',e=>end(e,true));
+  /* after a slide the browser still sends a click — swallow it so the tab is not opened twice */
+  nav.addEventListener('click',e=>{ if(Date.now()-_bnClickBlock<450){ e.stopPropagation(); e.preventDefault(); } },true);
+  window.addEventListener('resize',()=>_bnPlace(true));
+  setTimeout(()=>_bnPlace(true),60); })();
 function tbSearch(){ const tb=document.querySelector('.topbar'); tb.classList.toggle('searching');
   if(tb.classList.contains('searching')) setTimeout(()=>document.getElementById('search').focus(),60); }
 function tbMoreMenu(ev){ ev.stopPropagation(); closeVerseMenu();
@@ -4453,7 +4528,7 @@ function _fabSync(){ const f=document.getElementById('fabNotes'); if(!f) return;
   const rd=document.getElementById('reader');
   const hidden=document.documentElement.classList.contains('hide-notes');
   const leg=document.body.classList.contains('legacy');
-  const show=leg&&state.view==='read'&&window._chapHasNotes&&rd&&rd.scrollTop>420;
+  const show=state.view==='read'&&window._chapHasNotes&&rd&&(leg?rd.scrollTop>420:true);
   f.textContent=leg?(hidden?'Show all commentary':'Hide all commentary'):(hidden?'Show commentary':'Hide commentary');
   f.classList.toggle('off',hidden);
   f.classList.toggle('show',!!show); }
