@@ -687,6 +687,7 @@ html.show-dates .mc-item .mc-date{display:inline}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
 .btn.danger{color:#c0392b;border-color:transparent}
 
+body:not(.legacy) .toast{bottom:calc(96px + env(safe-area-inset-bottom))!important}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);
   padding:11px 20px;border-radius:30px;font-size:13.5px;opacity:0;transition:.3s;z-index:80;pointer-events:none}
 .toast.show{opacity:1}
@@ -1310,10 +1311,12 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.40', date:'12 Oct 2026'};
+const BUILD={v:'1.2.41', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
+/* the label on Nii Okai's notes (15 Oct 2026: "NII OKAI'S NOTE"; Legacy keeps "NII OKAI") */
+function _whoNii(){ return document.body.classList.contains('legacy')?'NII OKAI':'NII OKAI’S NOTE'; }
 function isOwner(){
   try{ if(localStorage.getItem('nok_owner')==='1') return true; }catch(e){}
   /* Signed in with Nii Okai's own account? Then this is Nii Okai's device. */
@@ -3443,7 +3446,7 @@ function modernNoteHTML(name,ch,v,r,i){
   const stack=drafts.map(dr=>`<div class="draft2"><span class="dl">${escHTML(dr[0])}</span>${escHTML(dr[1])}</div>`).join('');
   const origSide=drafts.map(dr=>escHTML(dr[0]+'\n'+dr[1])).join('\n\n──────\n');
   return `<div class="note" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}">
-    <div class="meta nfold" onclick="_noteCollapse(this)" title="Tap to fold this note away"><span class="who">NII OKAI</span><span class="vref">${ref}</span>${_privWhole?'<span class="privb" title="This whole note is hidden from readers">\uD83D\uDD12 Private</span>':''}${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}<button class="ncol" aria-expanded="true" aria-label="Fold this note away" onclick="event.stopPropagation();_noteCollapse(this)">${_ncolHTML(false)}</button></div>
+    <div class="meta nfold" onclick="_noteCollapse(this)" title="Tap to fold this note away"><span class="who">${_whoNii()}</span><span class="vref">${ref}</span>${_privWhole?'<span class="privb" title="This whole note is hidden from readers">\uD83D\uDD12 Private</span>':''}${r.dt?`<span class="ndate">${escHTML(new Date(r.dt).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))}</span>`:''}${r.e?'<span class="badge">📈 understanding grew</span>':''}<button class="ncol" aria-expanded="true" aria-label="Fold this note away" onclick="event.stopPropagation();_noteCollapse(this)">${_ncolHTML(false)}</button></div>
     <div class="nteaser" onclick="_noteExpand(this)">${escHTML(_teaser(_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v)).split(PRIV_MARK).join('\uD83D\uDD12'))}</div>
     <div class="body">${(function(){ const _t=_stripImport(_mine&&_mine.m?_mine.m:r.m,name,ch,v); const _pm=_privMarkHTML(_t,name,ch,v,i,r); return _pm!=null?_pm:_privHint(_pqMark(escNote(_t),name,ch,v)); })()}</div>
     ${sittings}
@@ -3469,7 +3472,7 @@ function noteHTML(nt,name,ch,v,label){
   /* the fold arrow, in the Journal edition only — Legacy keeps its cards exactly as they were (3 Oct 2026) */
   const fold=(typeof state!=='undefined'&&state.journal==='modern');
   return `<div class="note${nhl}" data-book="${esc(name)}" data-ch="${ch}" data-v="${v}" data-id="${nt.id}">
-    <div class="meta${fold?' nfold':''}"${fold?' onclick="_noteCollapse(this)" title="Tap to fold this note away"':''}><span class="who ${own?'mine':''}">${own?'MY NOTE':'NII OKAI'}</span><span class="vref">${ref}</span>
+    <div class="meta${fold?' nfold':''}"${fold?' onclick="_noteCollapse(this)" title="Tap to fold this note away"':''}><span class="who ${own?'mine':''}">${own&&!(isOwner()&&!document.body.classList.contains('legacy'))?'MY NOTE':_whoNii()}</span><span class="vref">${ref}</span>
       ${label?`<span class="badge">${label}</span>`:''}
       ${nt.src==='import'?'<span class="badge">imported</span>':''}
       ${d?`<span class="date${fold?' jdate':''}">${d}</span>`:''}${fold?`<button class="ncol" aria-expanded="true" aria-label="Fold this note away" onclick="event.stopPropagation();_noteCollapse(this)">${_ncolHTML(false)}</button>`:''}</div>
