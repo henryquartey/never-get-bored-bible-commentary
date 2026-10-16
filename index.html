@@ -1142,7 +1142,15 @@ body:not(.legacy)[data-view="read"] #verSelect{flex:0 0 auto;width:auto;max-widt
 @media(max-width:860px){ body:not(.legacy)[data-view="read"] #crumb{line-height:34px} body:not(.legacy)[data-view="read"] #verSelect{max-width:78px} }
 body:not(.legacy)[data-view="read"] .topbar .icon-btn{border-color:transparent;border-radius:50%}
 body:not(.legacy)[data-view="read"] .topbar .icon-btn:hover{background:var(--line)}
-@media(max-width:860px){ body:not(.legacy)[data-view="read"] .topbar #notesBtn{display:none!important} }
+@media(max-width:860px){ body:not(.legacy)[data-view="read"] .topbar #notesBtn{display:none!important}
+  /* ••• menu and its Commentary page: one width, one place (16 Oct 2026) */
+  body:not(.legacy) .vmenu.tmenu,body:not(.legacy) .vmenu.cmenu.tm-sub{width:min(340px,calc(100vw - 24px));min-width:0;max-width:none;box-sizing:border-box} }
+.vmenu .tm-back{display:flex;align-items:center;gap:4px;width:auto!important;padding:6px 8px 8px!important;margin:0 0 2px;font-family:var(--sans);
+  font-size:14px;font-weight:600;color:var(--soft);background:none;border:none;cursor:pointer}
+@keyframes tmInR{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+@keyframes tmInL{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+.vmenu.tm-in-r{animation:tmInR .18s ease-out}
+.vmenu.tm-in-l{animation:tmInL .18s ease-out}
 body:not(.legacy)[data-view="read"] .topbar #notesBtn.active{background:var(--line);border-color:transparent}
 body:not(.legacy) #refBtn{display:none!important}
 /* less room above the verses */
@@ -1487,7 +1495,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.58', date:'12 Oct 2026'};
+const BUILD={v:'1.2.59', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3973,13 +3981,13 @@ function _tmNarr2(v){ setNarrPref(v); const b=document.getElementById('tmDev'); 
 function shareChapter(){ const name=window.BOOKS[state.book].name, ch=state.chapter;
   const url=location.origin+'/?b='+encodeURIComponent(name)+'&c='+ch, title=name+' '+ch+' — Nii Okai’s Bible Journal';
   if(navigator.share) navigator.share({title:title,url:url}).catch(()=>{}); else _clip(url,'Link copied — paste it to share'); }
-function tbMoreMenuNew(ev){ ev.stopPropagation(); closeVerseMenu();
-  const m=document.createElement('div'); m.className='vmenu tmenu'; m.id='vmenu';
+function tbMoreMenuNew(ev,back){ ev.stopPropagation(); closeVerseMenu();
+  const m=document.createElement('div'); m.className='vmenu tmenu'+(back?' tm-in-l':''); m.id='vmenu';
   const rd=state.view==='read'; const np=narrPref(); const tm=_themeMode;
   const hasAudio=!!(window.AUDIO_KJV||window.AUDIO_KOKORO);
   const _phoneCm=rd&&matchMedia('(max-width:860px)').matches;   /* phones: the commentary menu lives here (16 Oct 2026) */
   const _nNoted=(window._chapNoted||[]).length;
-  m.innerHTML=`${_phoneCm?`<button class="tm-row tm-cm" onclick="event.stopPropagation();commentaryMenu({stopPropagation(){},currentTarget:document.getElementById('tbMore')})">${ICONS.chat}<span>Commentary</span><em>${_nNoted?_nNoted+(_nNoted===1?' note':' notes'):'None here'}</em><span class="tm-chev">›</span></button><div class="vm-div"></div>`:''}${rd?`<div class="vm-sec">Text size</div>
+  m.innerHTML=`${_phoneCm?`<button class="tm-row tm-cm" onclick="event.stopPropagation();commentaryMenu({stopPropagation(){},currentTarget:document.getElementById('tbMore')},true)">${ICONS.chat}<span>Commentary</span><em>${_nNoted?_nNoted+(_nNoted===1?' note':' notes'):'None here'}</em><span class="tm-chev">›</span></button><div class="vm-div"></div>`:''}${rd?`<div class="vm-sec">Text size</div>
     <div class="tm-fs"><button onclick="_tmFont(-0.08)" aria-label="Smaller text">A−</button><span id="tmFs">${_fsPct()}%</span><button onclick="_tmFont(0.08)" aria-label="Larger text"><b>A+</b></button></div>`:''}
     <div class="vm-sec">Appearance</div>
     <div class="tm-fs tm-th"><button data-m="auto" class="${tm==='auto'?'on':''}" onclick="_tmTheme('auto')">Auto</button><button data-m="light" class="${tm==='light'?'on':''}" onclick="_tmTheme('light')">Light</button><button data-m="dark" class="${tm==='dark'?'on':''}" onclick="_tmTheme('dark')">Dark</button></div>
@@ -5451,14 +5459,14 @@ function toggleNotes(){
   if(typeof _fabSync==='function') _fabSync(); }
 /* ---------- Commentary menu (15 Oct 2026): one button for everything about commentary ---------- */
 function notesBtnTap(ev){ if(document.body.classList.contains('legacy')||state.view!=='read'){ toggleNotes(); return; } commentaryMenu(ev); }
-function commentaryMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
-  const ex=document.getElementById('vmenu'); if(ex&&ex.dataset.vfor==='cm'){ closeVerseMenu(); return; }
+function commentaryMenu(ev,fromMore){ if(ev&&ev.stopPropagation) ev.stopPropagation();
+  const ex=document.getElementById('vmenu'); if(ex&&ex.dataset.vfor==='cm'&&!fromMore){ closeVerseMenu(); return; }
   closeVerseMenu();
   const name=window.BOOKS[state.book].name, ch=state.chapter;
   const on=!document.documentElement.classList.contains('hide-notes');
   const noted=(window._chapNoted||[]);
-  const m=document.createElement('div'); m.className='vmenu cmenu'; m.id='vmenu'; m.dataset.vfor='cm';
-  m.innerHTML=`<div class="cm-head"><span class="cm-title">${escHTML(name)} ${ch}</span><span class="cm-count">${noted.length?noted.length+' verse'+(noted.length===1?'':'s')+' with notes':''}</span></div>
+  const m=document.createElement('div'); m.className='vmenu cmenu'+(fromMore?' tm-sub tm-in-r':''); m.id='vmenu'; m.dataset.vfor='cm';
+  m.innerHTML=`${fromMore?`<button class="tm-back" onclick="event.stopPropagation();tbMoreMenuNew({stopPropagation(){},currentTarget:document.getElementById('tbMore')},true)">‹ Menu</button>`:''}<div class="cm-head"><span class="cm-title">${escHTML(name)} ${ch}</span><span class="cm-count">${noted.length?noted.length+' verse'+(noted.length===1?'':'s')+' with notes':''}</span></div>
     ${noted.length?`<div class="cm-lbl">Jump to a note</div><div class="cm-chips">${noted.map(v=>`<button class="cm-chip" onclick="closeVerseMenu();_cmGo(${v})">${v}</button>`).join('')}</div>`
       :`<div class="cm-none">No notes in ${escHTML(name)} ${ch} yet</div>${window._chapNearest?`<div class="cm-chips"><button class="cm-chip cm-near" onclick="closeVerseMenu();openChapter('${esc(window._chapNearest.b)}',${window._chapNearest.ch})">Nearest notes: ${escHTML(window._chapNearest.b)} ${window._chapNearest.ch} · ${window._chapNearest.n} →</button></div>`:''}`}
     <div class="cm-sep"></div>
@@ -5466,6 +5474,7 @@ function commentaryMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
     <div class="cm-seg"><button class="${_foldHead()?'':'on'}" onclick="closeVerseMenu();setFoldHead(false)">First line</button><button class="${_foldHead()?'on':''}" onclick="closeVerseMenu();setFoldHead(true)">Heading only</button></div>
     <button class="cm-row" onclick="closeVerseMenu();setNotesKeepOff(${_notesKeepOff()?'false':'true'})"><span class="cm-tx"><span class="cm-nm">Keep commentary hidden</span><span class="cm-sub">${_notesKeepOff()?'On — scripture only, every time you open the app':'Off — your notes show each time you open the app'}</span></span><span class="cm-sw${_notesKeepOff()?' on':''}" aria-hidden="true"><i></i></span></button>
     <button class="cm-row cm-mh" onclick="closeVerseMenu();openMHSheet()"><span class="cm-av">${ICONS.library}</span><span class="cm-tx"><span class="cm-nm">Matthew Henry’s commentary</span><span class="cm-sub">The classic 1706 commentary on this chapter</span></span><span class="cm-go" aria-hidden="true">›</span></button>`;
+  if(fromMore) m.addEventListener('click',e=>{ if(e.target.closest('.tm-back')) e.stopPropagation(); });
   document.body.appendChild(m);
   const b=(ev&&ev.currentTarget)||document.getElementById('notesBtn'); const r=b.getBoundingClientRect(); const mw=m.offsetWidth;
   m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(8,Math.min(r.right-mw,window.innerWidth-mw-8))+'px'; }
