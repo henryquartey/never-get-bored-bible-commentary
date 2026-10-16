@@ -237,6 +237,12 @@ body.planread:not(.legacy)[data-view="read"] .topbar:not(.searching) #planDay{di
   body.planread:not(.legacy)[data-view="read"] #planDay b{font-size:11.5px} body.planread:not(.legacy)[data-view="read"] #planDay small{font-size:10px}
   body.planread:not(.legacy)[data-view="read"] .topbar:not(.searching) #planDay{min-width:44px} }
 body:not(.legacy) .readnav.planmode .rn-mid{display:none}
+/* plan footer: two-line buttons — what it does, and which passage (16 Oct 2026) */
+body:not(.legacy) .readnav.planmode button:not(.rn-stop){display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;padding-top:7px;padding-bottom:7px}
+body:not(.legacy) .readnav.planmode .rn-l{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+body:not(.legacy) .readnav.planmode .rn-s{font-size:10.5px;font-weight:600;opacity:.62;margin-top:2px;white-space:nowrap;letter-spacing:.1px}
+body:not(.legacy) .readnav.planmode .rn-listen .rn-s{opacity:.78}
+@media(max-width:860px){ body.planread:not(.legacy) .fabnotes{bottom:calc(146px + env(safe-area-inset-bottom))} }   /* clear of the taller footer */
 /* bars slip away while reading down (phones, new UI) */
 @media(max-width:860px){
   body:not(.legacy) .main{transition:padding-bottom .3s cubic-bezier(.4,0,.2,1)}
@@ -1367,7 +1373,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.48', date:'12 Oct 2026'};
+const BUILD={v:'1.2.49', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2118,7 +2124,8 @@ function _rdSyncBtn(){
   const b=document.getElementById('readAloudBtn'), s=document.getElementById('rdStopBtn');
   const tts=!!_rdState, aud=!!AUD.key, on=tts||aud;
   const paused = tts ? _rdState.paused : (aud ? !!(AUD.el&&AUD.el.paused&&!AUD.loading) : false);
-  if(b){ b.innerHTML = !on ? ICONS.play+' Listen' : (paused ? ICONS.play+' Resume' : (aud&&AUD.loading ? '… Loading' : ICONS.pause+' Pause'));
+  if(b){ const _lb = !on ? ICONS.play+' Listen' : (paused ? ICONS.play+' Resume' : (aud&&AUD.loading ? '… Loading' : ICONS.pause+' Pause'));
+    b.innerHTML = b.dataset.sub ? '<span class="rn-l">'+_lb+'</span><small class="rn-s">'+b.dataset.sub+'</small>' : _lb;
     b.classList.toggle('primary',on&&!paused); b.style.display = aud ? 'none' : ''; }
   if(s){ s.innerHTML=ICONS.stop; s.style.display = (on&&!aud) ? '' : 'none'; }
   if(tts&&_rdState.key===_rdKey()){ const el=document.getElementById('v'+_rdState.vs[_rdState.i]);
@@ -3030,7 +3037,11 @@ function renderRead(){
         pd.onclick=()=>exitPlanRead(); sp.after(pd); } }
     if(state.plan&&!document.body.classList.contains('legacy')&&pd){ const _n=readingChapters(getPlan()[state.plan.day]).length;
       pd.innerHTML=`<b>Day ${state.plan.day+1}</b><small>${state.plan.ci+1} of ${_n}</small>`; document.body.classList.add('planread');
-      const vsel=document.getElementById('verSelect'); if(vsel) vsel.style.width=Math.round(String(state.version).length*9.6+34)+'px'; }   /* pill only as wide as "KJV" */
+      const vsel=document.getElementById('verSelect'); if(vsel){ vsel.style.width='';   /* pill only as wide as "KJV" — measured from the real font */
+        try{ const cs=getComputedStyle(vsel), cv=(window._vmCv=window._vmCv||document.createElement('canvas')).getContext('2d');
+          cv.font=cs.fontWeight+' '+cs.fontSize+' '+cs.fontFamily;
+          vsel.style.width=Math.ceil(cv.measureText(String(state.version)).width+parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight)+14)+'px'; }
+        catch(e){ vsel.style.width=Math.round(String(state.version).length*11+40)+'px'; } } }
     else { document.body.classList.remove('planread'); const vsel=document.getElementById('verSelect'); if(vsel) vsel.style.width=''; } }
   document.getElementById('chapselWrap').style.display='';
   const csel=document.getElementById('chapSelect');
@@ -3158,11 +3169,11 @@ function renderRead(){
   const _rnComm=(false&&_nl&&window._chapHasNotes)?`<button class="rn-comm${_cOff?' off':''}" id="rnComm" onclick="toggleNotes()" title="${_cOff?'Show Nii Okai’s commentary':'Hide Nii Okai’s commentary'}">${ICONS.chat}<span>${_cOff?'Show':'Hide'}</span></button>`:'';
   if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]); const last=state.plan.ci>=chaps.length-1;
     nav=`<div class="readnav planmode">
-      <button id="rnPrev" onclick="planNav(-1)" ${state.plan.day===0&&state.plan.ci===0?'disabled':''}>← Prev</button>
-      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud(event)">${ICONS.play} Listen</button>
+      <button id="rnPrev" onclick="planNav(-1)" ${state.plan.day===0&&state.plan.ci===0?'disabled':''}>${_nl?`<span class="rn-l">← Prev</span><small class="rn-s">${state.plan.ci>0?state.plan.ci+' of '+chaps.length:(state.plan.day>0?'Day '+state.plan.day:'&nbsp;')}</small>`:'← Prev'}</button>
+      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud(event)" ${_nl?`data-sub="Now · ${state.plan.ci+1} of ${chaps.length}"`:''}>${_nl?`<span class="rn-l">${ICONS.play} Listen</span><small class="rn-s">Now · ${state.plan.ci+1} of ${chaps.length}</small>`:`${ICONS.play} Listen`}</button>
       <button class="rn-listen rn-stop" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">${ICONS.stop}</button>
       <span class="rn-mid">Day ${state.plan.day+1} · ${state.plan.ci+1}/${chaps.length}</span>${_rnComm}
-      <button class="rn-next" id="rnNext" onclick="planNav(1)">${last?'Finish day ✓':'Next →'}</button></div>`;
+      <button class="rn-next" id="rnNext" onclick="planNav(1)">${_nl?`<span class="rn-l">${last?'Finish ✓':'Next →'}</span><small class="rn-s">${last?'Day '+(state.plan.day+1):(state.plan.ci+2)+' of '+chaps.length}</small>`:(last?'Finish day ✓':'Next →')}</button></div>`;
   } else {
     nav=`<div class="readnav">
       <button onclick="prevChapter()" ${state.book===0&&ch===1?'disabled':''}>${_rnComm?'← Prev':'← Previous'}</button>
