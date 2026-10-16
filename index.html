@@ -1142,6 +1142,7 @@ body:not(.legacy)[data-view="read"] #verSelect{flex:0 0 auto;width:auto;max-widt
 @media(max-width:860px){ body:not(.legacy)[data-view="read"] #crumb{line-height:34px} body:not(.legacy)[data-view="read"] #verSelect{max-width:78px} }
 body:not(.legacy)[data-view="read"] .topbar .icon-btn{border-color:transparent;border-radius:50%}
 body:not(.legacy)[data-view="read"] .topbar .icon-btn:hover{background:var(--line)}
+@media(max-width:860px){ body:not(.legacy)[data-view="read"] .topbar #notesBtn{display:none!important} }
 body:not(.legacy)[data-view="read"] .topbar #notesBtn.active{background:var(--line);border-color:transparent}
 body:not(.legacy) #refBtn{display:none!important}
 /* less room above the verses */
@@ -1486,7 +1487,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.57', date:'12 Oct 2026'};
+const BUILD={v:'1.2.58', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3976,7 +3977,9 @@ function tbMoreMenuNew(ev){ ev.stopPropagation(); closeVerseMenu();
   const m=document.createElement('div'); m.className='vmenu tmenu'; m.id='vmenu';
   const rd=state.view==='read'; const np=narrPref(); const tm=_themeMode;
   const hasAudio=!!(window.AUDIO_KJV||window.AUDIO_KOKORO);
-  m.innerHTML=`${rd?`<div class="vm-sec">Text size</div>
+  const _phoneCm=rd&&matchMedia('(max-width:860px)').matches;   /* phones: the commentary menu lives here (16 Oct 2026) */
+  const _nNoted=(window._chapNoted||[]).length;
+  m.innerHTML=`${_phoneCm?`<button class="tm-row tm-cm" onclick="event.stopPropagation();commentaryMenu({stopPropagation(){},currentTarget:document.getElementById('tbMore')})">${ICONS.chat}<span>Commentary</span><em>${_nNoted?_nNoted+(_nNoted===1?' note':' notes'):'None here'}</em><span class="tm-chev">›</span></button><div class="vm-div"></div>`:''}${rd?`<div class="vm-sec">Text size</div>
     <div class="tm-fs"><button onclick="_tmFont(-0.08)" aria-label="Smaller text">A−</button><span id="tmFs">${_fsPct()}%</span><button onclick="_tmFont(0.08)" aria-label="Larger text"><b>A+</b></button></div>`:''}
     <div class="vm-sec">Appearance</div>
     <div class="tm-fs tm-th"><button data-m="auto" class="${tm==='auto'?'on':''}" onclick="_tmTheme('auto')">Auto</button><button data-m="light" class="${tm==='light'?'on':''}" onclick="_tmTheme('light')">Light</button><button data-m="dark" class="${tm==='dark'?'on':''}" onclick="_tmTheme('dark')">Dark</button></div>
