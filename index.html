@@ -165,6 +165,7 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .vspop .vsi .cd{flex:0 0 auto;min-width:48px;font-size:14px;font-weight:700;letter-spacing:.2px}
 .vspop .vsi .nm{flex:1 1 auto;font-size:12.5px;color:var(--soft);line-height:1.3}
 .vspop .vsi.on{background:var(--note-bg,var(--line))}
+.vspop .vs-div{height:1px;background:var(--line);margin:5px 8px}
 .vspop .vsh{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--soft);padding:9px 10px 4px 32px}
 .versel,.chapsel select{appearance:none;-webkit-appearance:none;padding-right:24px;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M2.5 4.5L6 8l3.5-3.5' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
@@ -221,11 +222,20 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .vmenu .vm-voice{width:calc(100% - 16px);margin:2px 8px 4px;font-size:12.5px}
 .vmenu .vm-div{height:1px;background:var(--line);margin:6px 4px}
 /* plan reading: the day sits under the chapter name in the top bar (16 Oct 2026) */
-body.planread:not(.legacy)[data-view="read"] #crumb.twoline{display:flex!important;flex-direction:column;justify-content:center;align-items:flex-start;line-height:1.12}
-body.planread:not(.legacy)[data-view="read"] #crumb.twoline .cr-n{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-body.planread:not(.legacy)[data-view="read"] #crumb.twoline .cr-d{font-size:10.5px;font-weight:600;color:var(--soft);white-space:nowrap;letter-spacing:.1px}
-@media(max-width:860px){ body.planread:not(.legacy)[data-view="read"] .topbar:not(.searching){gap:4px}
-  body.planread:not(.legacy)[data-view="read"] #crumb.twoline{font-size:14px;padding:0 10px 0 13px} }
+#planDay{display:none}
+body.planread:not(.legacy)[data-view="read"] .topbar:not(.searching) .spacer{display:none}
+body.planread:not(.legacy)[data-view="read"] .topbar:not(.searching) #planDay{display:flex;flex:1 0 auto;min-width:48px;flex-direction:column;align-items:center;
+  justify-content:center;background:none;border:none;padding:0 2px;font-family:var(--sans);line-height:1.12;color:var(--ink);cursor:pointer}
+#planDay b{font-size:12px;font-weight:700;white-space:nowrap}
+#planDay small{font-size:10.5px;font-weight:600;color:var(--soft);white-space:nowrap}
+@media(max-width:860px){ body.planread:not(.legacy)[data-view="read"] .topbar:not(.searching){gap:3px;padding-left:8px;padding-right:8px}
+  body.planread:not(.legacy)[data-view="read"] #planBackBtn{width:26px;min-width:26px;padding:0}
+  body.planread:not(.legacy)[data-view="read"] #crumb{padding:0 9px 0 12px}
+  body.planread:not(.legacy)[data-view="read"] #crumb .caret{display:none}
+  body.planread:not(.legacy)[data-view="read"] #verSelect{padding-left:11px;padding-right:22px;max-width:none}
+  body.planread:not(.legacy)[data-view="read"] .topbar .icon-btn.rc,body.planread:not(.legacy)[data-view="read"] #tbMore{width:32px;min-width:32px}
+  body.planread:not(.legacy)[data-view="read"] #planDay b{font-size:11.5px} body.planread:not(.legacy)[data-view="read"] #planDay small{font-size:10px}
+  body.planread:not(.legacy)[data-view="read"] .topbar:not(.searching) #planDay{min-width:44px} }
 body:not(.legacy) .readnav.planmode .rn-mid{display:none}
 /* bars slip away while reading down (phones, new UI) */
 @media(max-width:860px){
@@ -632,6 +642,8 @@ html.show-dates .mc-item .mc-date{display:inline}
 .cvrow:last-child{border-bottom:none}
 .cvver{font-family:var(--sans);font-size:12px;font-weight:800;color:var(--accent)}
 .cvver span{font-weight:500;color:var(--soft);margin-left:8px}
+.cvhead b{white-space:nowrap}
+.cvtxt sup{font-family:var(--sans);font-size:.62em;font-weight:700;color:var(--soft);margin:0 2px 0 1px}
 .cvtxt{font-family:var(--serif);font-size:16.5px;line-height:1.6;color:var(--scripture);margin-top:4px}
 .cvfoot{display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--line)}
 .passlist{margin:0 0 18px}
@@ -1355,7 +1367,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.46', date:'12 Oct 2026'};
+const BUILD={v:'1.2.48', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1572,6 +1584,7 @@ function buildVersionSelect(){
   const sel=document.getElementById('verSelect');
   _olRegister();
   const ents=Object.entries(window.VERSIONS); const off=ents.filter(([c])=>!ONLINE_VERSIONS[c]), on=ents.filter(([c])=>ONLINE_VERSIONS[c]);
+  if(!document.body.classList.contains('legacy')){ const az=(a,b)=>a[0].localeCompare(b[0]); off.sort(az); on.sort(az); }   /* A–Z (16 Oct 2026) */
   sel.innerHTML=off.map(([c,n])=>`<option value="${c}" title="${n}" ${c===state.version?'selected':''}>${c}</option>`).join('')
     +(on.length?`<option disabled>── Online ──</option>`+on.map(([c,n])=>`<option value="${c}" title="${n}" ${c===state.version?'selected':''}>${c} ☁</option>`).join(''):'');
 }
@@ -1678,13 +1691,17 @@ function setVersion(v){
   state.version=v; savePrefs();
   ensureVersion(v,()=>{ if(state.view==='read') render(); });
 }
+/* every translation code in the order the lists show them: on the phone A–Z, then online A–Z (new UI) */
+function _verOrder(){ const all=Object.keys(window.VERSIONS||{KJV:1}); if(document.body.classList.contains('legacy')) return all;
+  const az=(a,b)=>a.localeCompare(b); const l=all.filter(c=>!ONLINE_VERSIONS[c]).sort(az).concat(all.filter(c=>ONLINE_VERSIONS[c]).sort(az));
+  const i=l.indexOf(state.version); if(i>0){ l.splice(i,1); l.unshift(state.version); } return l; }
 function toggleCompare(){
   const csel=document.getElementById('cmpSelect'), cb=document.getElementById('cmpBtn');
   if(state.compare){ state.compare=null; csel.style.display='none'; cb.classList.remove('active'); if(state.view==='read') renderRead(); return; }
   // pick a default 2nd version different from primary
   const opts=Object.keys(window.VERSIONS).filter(c=>c!==state.version);
   const def=opts[0];
-  csel.innerHTML=Object.entries(window.VERSIONS).map(([c,n])=>`<option value="${c}" title="${n}" ${c===def?'selected':''}>${c}</option>`).join('');
+  csel.innerHTML=_verOrder().map(c=>[c,window.VERSIONS[c]]).map(([c,n])=>`<option value="${c}" title="${n}" ${c===def?'selected':''}>${c}</option>`).join('');
   csel.style.display=''; cb.classList.add('active'); state.compare=def;
   ensureVersion(def,()=>{ if(state.view==='read') renderRead(); });
 }
@@ -1700,7 +1717,10 @@ function _vsOpen(sel){
   _vsClose(); _vsSel=sel;
   const names=window.VERSIONS||{};
   let html='';
-  Array.from(sel.options).forEach(o=>{
+  /* new UI: the translation you are reading first, then the rest A–Z (16 Oct 2026) */
+  const _opts=Array.from(sel.options), _cur=document.body.classList.contains('legacy')?null:_opts.find(o=>!o.disabled&&o.value===sel.value);
+  (_cur?[_cur].concat(_opts.filter(o=>o!==_cur)):_opts).forEach((o,_i)=>{
+    if(_cur&&_i===1) html+='<div class="vs-div" aria-hidden="true"></div>';
     if(o.disabled){ html+=`<div class="vsh">${escHTML(o.textContent.replace(/[─\s]+/g,' ').trim())}</div>`; return; }
     const code=o.value, on=code===sel.value, cloud=/☁/.test(o.textContent);
     const nm=o.title||names[code]||'';
@@ -3004,11 +3024,14 @@ function renderRead(){
   document.getElementById('crumb').innerHTML=`${name} ${ch} <span class="caret">▾</span>`;
   document.getElementById('crumb').classList.add('quiet');
   { const pb=document.getElementById('planBackBtn'); if(pb) pb.style.display=state.plan?'':'none';
-    const cr=document.getElementById('crumb');
-    if(state.plan&&!document.body.classList.contains('legacy')){ const _n=readingChapters(getPlan()[state.plan.day]).length;
-      cr.innerHTML=`<span class="cr-n">${name} ${ch} <span class="caret">▾</span></span><span class="cr-d">Day ${state.plan.day+1} · ${state.plan.ci+1} of ${_n}</span>`;
-      cr.classList.add('twoline'); document.body.classList.add('planread'); }
-    else { cr.classList.remove('twoline'); document.body.classList.remove('planread'); } }
+    let pd=document.getElementById('planDay');
+    if(!pd){ const tb=document.querySelector('.topbar'), sp=tb&&tb.querySelector('.spacer');
+      if(sp){ pd=document.createElement('button'); pd.type='button'; pd.id='planDay'; pd.className='planday'; pd.title='Back to the plan';
+        pd.onclick=()=>exitPlanRead(); sp.after(pd); } }
+    if(state.plan&&!document.body.classList.contains('legacy')&&pd){ const _n=readingChapters(getPlan()[state.plan.day]).length;
+      pd.innerHTML=`<b>Day ${state.plan.day+1}</b><small>${state.plan.ci+1} of ${_n}</small>`; document.body.classList.add('planread');
+      const vsel=document.getElementById('verSelect'); if(vsel) vsel.style.width=Math.round(String(state.version).length*9.6+34)+'px'; }   /* pill only as wide as "KJV" */
+    else { document.body.classList.remove('planread'); const vsel=document.getElementById('verSelect'); if(vsel) vsel.style.width=''; } }
   document.getElementById('chapselWrap').style.display='';
   const csel=document.getElementById('chapSelect');
   csel.innerHTML=book.chapters.map((_,i)=>`<option value="${i+1}" ${i+1===ch?'selected':''}>Ch ${i+1}</option>`).join('');
@@ -3151,6 +3174,7 @@ function renderRead(){
   /* same chapter drawn again (a note saved, a sync, a mark kept) — keep the reader exactly where they were (11 Oct 2026) */
   const _rk=name+'|'+ch, _anc=(window._rrKey===_rk)?_rrAnchor(r):null; window._rrKey=_rk;
   const _il=_ilCapture();
+  if(typeof VSEL!=='undefined'&&VSEL.on&&(VSEL.book!==state.book||VSEL.ch!==ch)) selEnd();   /* old chapter's selection (16 Oct 2026) */
   r.innerHTML=html; r.scrollTop=0; _chromeOff(false); setTimeout(_chtSync,0); setTimeout(()=>{ try{ _fabSync(); }catch(e){} },0); if(_anc){ _rrRestore(r,_anc); requestAnimationFrame(function(){ _rrRestore(r,_anc); }); }
   _ilRestore(_il);
   { const o=ONLINE_VERSIONS[state.version]; if(o&&!olFallback){ const r0=document.getElementById('reader'); const pg=r0.querySelector('.page'); if(pg) pg.insertAdjacentHTML('beforeend',`<div class="copyline">${escHTML(o.c)}</div>`); } }
@@ -4504,7 +4528,7 @@ function selNote(){ if(!VSEL.on) return; const name=window.BOOKS[state.book].nam
 function selRead(){ if(!VSEL.on) return; selList().forEach(v=>{ const el=document.getElementById('v'+v); if(!el||!document.getElementById('nw'+v)) return;
   const hidden=document.documentElement.classList.contains('hide-notes')?!el.classList.contains('revealed'):el.classList.contains('collapsed'); if(hidden) toggleVerse(v); });
   const f=selList()[0]; selEnd(); setTimeout(()=>{ const el=document.getElementById('v'+f); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); },60); }
-function selCompare(){ if(!VSEL.on) return; const name=window.BOOKS[state.book].name, ch=VSEL.ch, v=selList()[0]; selEnd(); compareVerse(name,ch,v); }
+function selCompare(){ if(!VSEL.on) return; const name=window.BOOKS[state.book].name, ch=VSEL.ch, vs=selList(); selEnd(); compareVerse(name,ch,vs.length>1?vs:vs[0]); }
 function selGoogle(){ if(!VSEL.on) return; const ref=selRef(), vs=selList(); selEnd(); _googleVerse(ref,vs); }
 function selAll(){
   if(!VSEL.on) return;
@@ -4540,7 +4564,12 @@ function _openNotesText(vs){ let out=[]; try{ (Array.isArray(vs)?vs:[vs]).forEac
    pictures, videos and sites are filtered out of the results. (15 Oct 2026) */
 /* Google's normal results, with its AI summary at the top (Henry prefers it to the faster plain list,
    15 Oct 2026). SafeSearch stays on. */
-function gSearch(q){ window.open('https://www.google.com/search?safe=active&q='+encodeURIComponent(q),'_blank','noopener'); }
+/* A plain link, tapped for you: iPhone opens it straight in its browser sheet. window.open() from an installed
+   app could leave an empty "Search or enter website name" sheet behind. (16 Oct 2026) */
+function _openOut(url){ try{ const a=document.createElement('a'); a.href=url; a.target='_blank'; a.rel='noopener noreferrer';
+  a.style.display='none'; document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),0); }
+  catch(e){ window.open(url,'_blank','noopener'); } }
+function gSearch(q){ _openOut('https://www.google.com/search?safe=active&q='+encodeURIComponent(q)); }
 function _googleVerse(ref,vs){ const notes=_openNotesText(vs); const q=notes?(ref+' '+notes):(ref+' meaning');
   gSearch(q); }
 function vmDo(ev,action,name,ch,v){ ev.stopPropagation(); closeVerseMenu();
@@ -4554,32 +4583,40 @@ function vmDo(ev,action,name,ch,v){ ev.stopPropagation(); closeVerseMenu();
   else if(action==='select'){ selStart(name,ch,v); }
 }
 /* ---------- Compare one verse across every translation ---------- */
+function _vRuns(a){ const runs=[]; let i=0; while(i<a.length){ let j=i; while(j+1<a.length&&a[j+1]===a[j]+1) j++;
+  runs.push(a[i]===a[j]?String(a[i]):a[i]+'–'+a[j]); i=j+1; } return runs.join(', '); }
 function compareVerse(name,ch,v){
-  const versions=Object.keys(window.VERSIONS||{KJV:'King James Version'});
+  const versions=_verOrder();
   let pending=versions.length;
   const done=()=>{ if(--pending<=0) renderCompareVerse(name,ch,v,versions); };
   versions.forEach(ver=>{ if(ONLINE_VERSIONS[ver]) ensureVersion(ver,done,name,ch); else if(window.BIBLE&&window.BIBLE[ver]) done(); else ensureVersion(ver,done); });
 }
 function renderCompareVerse(name,ch,v,versions){
+  /* several verses at once (16 Oct 2026): each translation shows them all, numbered */
+  const vs=[].concat(v).map(Number), many=vs.length>1, v0=vs[0], ref=`${name} ${ch}:${_vRuns(vs)}`;
+  const vt=(ver,n)=>(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(n)]||'';
+  const plain=ver=>many?vs.map(n=>vt(ver,n)?n+' '+vt(ver,n):'').filter(Boolean).join(' '):vt(ver,v0);
+  const shown=ver=>many?vs.map(n=>vt(ver,n)?`<sup>${n}</sup>${escHTML(vt(ver,n))}`:'').filter(Boolean).join(' '):escHTML(vt(ver,v0));
   /* A translation that did not load is one quiet line at the foot, not an empty row each. */
-  const got=versions.filter(ver=>(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(v)]);
+  const got=versions.filter(ver=>vs.some(n=>vt(ver,n)));
   const missing=versions.filter(ver=>got.indexOf(ver)<0);
-  let rows=got.map(ver=>{ const txt=(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(v)];
+  v=v0;
+  let rows=got.map(ver=>{ const txt=null;
     return `<div class="cvrow" onclick="cvOpen('${esc(ver)}','${esc(name)}',${ch},${v})">
       <div class="cvhd"><div class="cvver">${ver}<span>${escHTML(window.VERSIONS[ver]||'')}</span></div>
       <button class="cvcopy" onclick="event.stopPropagation();cvCopy(this,'${esc(ver)}')">\ud83d\udccb Copy</button></div>
-      <div class="cvtxt">${escHTML(txt)}</div>
+      <div class="cvtxt">${shown(ver)}</div>
       <div class="cvgo">Read the whole chapter in ${ver} \u2192</div></div>`; }).join('');
   if(missing.length) rows+=`<div class="cvmiss">Did not load just now: ${escHTML(missing.join(', '))} \u2014 they need a connection.</div>`;
   let ov=document.getElementById('cvOv'); if(!ov){ ov=document.createElement('div'); ov.id='cvOv'; ov.className='complete-ov'; document.body.appendChild(ov); }
   ov.innerHTML=`<div class="cvcard">
-    <div class="cvhead"><b>${name} ${ch}:${v}</b> — across translations<button class="cvclose" onclick="closeCompareVerse()">✕</button></div>
+    <div class="cvhead"><b>${escHTML(ref)}</b> — across translations<button class="cvclose" onclick="closeCompareVerse()">✕</button></div>
     <div class="cvbody">${rows}</div>
     <div class="cvfoot"><button class="btn" onclick="_clip(document.getElementById('cvOv').dataset.all,'Copied all versions')">📋 Copy all</button>
       <button class="btn primary" onclick="closeCompareVerse()">Close</button></div></div>`;
-  ov.dataset.all=got.map(ver=>`${ver}: ${(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(v)]}`).join('\n\n');
-  ov.dataset.ref=`${name} ${ch}:${v}`;
-  window._cvTexts={}; versions.forEach(ver=>{ window._cvTexts[ver]=(((window.BIBLE[ver]||{})[name]||{})[String(ch)]||{})[String(v)]||''; });
+  ov.dataset.all=ref+'\n\n'+got.map(ver=>`${ver}: ${plain(ver)}`).join('\n\n');
+  ov.dataset.ref=ref;
+  window._cvTexts={}; versions.forEach(ver=>{ window._cvTexts[ver]=plain(ver); });
   ov.classList.add('show');
 }
 /* Tap a translation to read the whole chapter in it; the small button copies that one alone. */
