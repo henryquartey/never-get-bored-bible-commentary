@@ -998,6 +998,10 @@ body.legacy #dateBtn .db-emo{display:inline}
 /* word suggestions (15 Oct 2026) */
 .predbar{display:none;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding:6px 0 2px;-webkit-overflow-scrolling:touch}
 .predbar.on{display:flex}
+/* steady note box (16 Oct 2026): the strip keeps its room; the box hangs from the top, not the middle */
+body:not(.legacy) .predbar{display:flex;visibility:hidden;opacity:0;min-height:36px;box-sizing:border-box;transition:opacity .15s}
+body:not(.legacy) .predbar.on{visibility:visible;opacity:1}
+body:not(.legacy) #overlay{align-items:flex-start;padding-top:max(20px,6vh)}
 .predbar button{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:16px;padding:5px 12px;
   font-family:var(--sans);font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
 .predbar button:first-child{background:var(--line);border-color:var(--line)}
@@ -1373,7 +1377,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.49', date:'12 Oct 2026'};
+const BUILD={v:'1.2.50', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
