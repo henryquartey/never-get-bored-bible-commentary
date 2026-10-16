@@ -450,6 +450,25 @@ body:not(.legacy) .copytrig,body:not(.legacy) .corrlink{position:relative}
 body:not(.legacy) .topbar .icon-btn::after,body:not(.legacy) #planDay::after,body:not(.legacy) .note .ncol::after,body:not(.legacy) .cmark::after,
 body:not(.legacy) .copytrig::after,body:not(.legacy) .corrlink::after{content:"";position:absolute;inset:-8px -5px;border-radius:12px}
 body.il-typing:not(.legacy)[data-view="read"] .fabnotes{opacity:0!important;pointer-events:none!important;transform:translateY(calc(100% + 120px))!important}
+/* 1.2.57 b. a note open for typing keeps the bars away even when the box is not focused */
+body:not(.legacy)[data-view="read"]:has(textarea.inline-ed) .bottomnav,body:not(.legacy)[data-view="read"]:has(textarea.inline-ed) .readfoot,
+body:not(.legacy)[data-view="read"]:has(textarea.inline-ed) .fabnotes{opacity:0!important;pointer-events:none!important;transform:translateY(calc(100% + 120px))!important}
+/* 1.2.57 a. desktop: solid, nothing see-through; phones keep the floating glass */
+@media (min-width:861px){
+  html body:not(.legacy)[data-view="read"] .main{padding-bottom:calc(76px + env(safe-area-inset-bottom))!important;transition:padding-bottom .3s}
+  html body.chrome-off:not(.legacy)[data-view="read"] .main{padding-bottom:0!important}
+  html body:not(.legacy)[data-view="read"] .reader{padding-bottom:40px}
+  html body:not(.legacy)[data-view="read"] .readfoot{position:static;left:auto;right:auto;bottom:auto;max-width:none;margin:0;width:auto;
+    background:var(--bg)!important;border-top:1px solid var(--line)!important;border-radius:0;box-shadow:none!important;
+    max-height:200px;overflow:hidden;opacity:1;transform:none;transition:max-height .3s cubic-bezier(.4,0,.2,1)}
+  html body:not(.legacy)[data-view="read"] .readnav{max-width:720px;margin:0 auto;padding:8px 12px}
+  html body:not(.legacy)[data-view="read"] .readnav button{box-shadow:none}
+  html body.chrome-off:not(.legacy)[data-view="read"] .readfoot{max-height:0;transform:none;opacity:1;border-top-color:transparent!important}
+  html body:not(.legacy) .bottomnav,html body:not(.legacy)[data-view="read"] .bottomnav,html[data-theme="dark"] body:not(.legacy)[data-view="read"] .bottomnav,
+  html[data-theme="dark"] body:not(.legacy) .bottomnav{background:var(--panel)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  html body:not(.legacy)[data-view="read"] .fabnotes,html body.planread:not(.legacy)[data-view="read"] .fabnotes{bottom:calc(150px + env(safe-area-inset-bottom))}
+  html body.chrome-off:not(.legacy)[data-view="read"] .fabnotes{bottom:calc(18px + env(safe-area-inset-bottom))}
+}
 /* reference commentary (Matthew Henry) — visually distinct from Nii's journal */
 .refcomm{margin:14px 0 6px;border:1px solid var(--line);border-left:4px solid #6b7aa8;border-radius:10px;background:rgba(107,122,168,.05)}
 .refcomm summary{cursor:pointer;padding:11px 14px;font-family:var(--sans);font-size:13.5px;font-weight:700;color:#4a5680;list-style:none}
@@ -1467,7 +1486,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.56', date:'12 Oct 2026'};
+const BUILD={v:'1.2.57', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
