@@ -415,6 +415,41 @@ html.hide-notes .cmprow.revealed + .notewrap .note{display:block}
 .inline-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
 .inline-bar .btn{padding:5px 14px;font-size:13px}
 .inline-hint{font-family:var(--sans);font-size:11px;color:var(--soft)}
+/* tidy in-place editor (16 Oct 2026) */
+body:not(.legacy) .il-row2{position:relative;min-height:34px;margin-top:4px}
+body:not(.legacy) .il-row2 .predbar{position:absolute;left:0;right:0;top:0;min-height:34px;padding:2px 0;margin:0}
+body:not(.legacy) .il-row2 .inline-hint{display:block;line-height:34px;padding-left:2px}
+body:not(.legacy) .il-row2 .predbar.on + .inline-hint{visibility:hidden}
+body:not(.legacy) .inline-bar.il-tidy{flex-wrap:nowrap;margin-top:2px;gap:8px}
+body:not(.legacy) .inline-bar.il-tidy .il-sp{flex:1}
+body:not(.legacy) .inline-bar.il-tidy .inline-colours{margin:0;display:flex;align-items:center;gap:8px}
+body:not(.legacy) .inline-bar.il-tidy .inline-colours .sw{width:22px;height:22px}
+body:not(.legacy) .inline-bar.il-tidy .btn{padding:7px 16px;font-size:13.5px;border-radius:18px}
+body:not(.legacy) .note:has(textarea.inline-ed) .notetools,
+body:not(.legacy) .note:has(textarea.inline-ed) .tools,
+body:not(.legacy) .note:has(textarea.inline-ed) details{display:none}
+body.il-typing:not(.legacy)[data-view="read"] .bottomnav,body.il-typing:not(.legacy)[data-view="read"] .readfoot,
+/* 1.2.54 a. footer: buttons float on their own, no band (16 Oct 2026) */
+body:not(.legacy)[data-view="read"] .readfoot{background:transparent!important;border-color:transparent!important;box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+body:not(.legacy)[data-view="read"] .readnav button{box-shadow:0 4px 14px rgba(0,0,0,.16)}
+body:not(.legacy)[data-view="read"] .readnav button:not(.rn-listen){background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+/* Prev and Next now look alike (both are "move"); only Listen — the one different kind of action — is filled */
+body:not(.legacy)[data-view="read"] .readnav .rn-next,body:not(.legacy)[data-view="read"] .readnav.planmode button.rn-next:hover{background:var(--panel);color:var(--ink);border-color:var(--line)}
+html[data-theme="dark"] body:not(.legacy)[data-view="read"] .readnav button{box-shadow:0 4px 16px rgba(0,0,0,.5)}
+/* the tab bar is less see-through while reading, so verses do not show through it */
+body:not(.legacy)[data-view="read"] .bottomnav{background:rgba(255,255,255,.93)}
+html[data-theme="dark"] body:not(.legacy)[data-view="read"] .bottomnav{background:rgba(30,30,28,.92)}
+/* b. no tap-highlight rectangle; a gentle press instead */
+body:not(.legacy) button,body:not(.legacy) a,body:not(.legacy) [onclick],body:not(.legacy) select,body:not(.legacy) .verse{-webkit-tap-highlight-color:transparent}
+body:not(.legacy) button:active:not(:disabled){opacity:.72;transform:scale(.97);transition:transform .08s,opacity .08s}
+body:not(.legacy) .bottomnav button:active{transform:none}
+/* c. bigger touch areas for small controls (look unchanged) */
+body:not(.legacy) .topbar .icon-btn,body:not(.legacy) #planDay,body:not(.legacy) .note .ncol,body:not(.legacy) .cmark,
+body:not(.legacy) .copytrig,body:not(.legacy) .corrlink{position:relative}
+body:not(.legacy) .topbar .icon-btn::after,body:not(.legacy) #planDay::after,body:not(.legacy) .note .ncol::after,body:not(.legacy) .cmark::after,
+body:not(.legacy) .copytrig::after,body:not(.legacy) .corrlink::after{content:"";position:absolute;inset:-8px -5px;border-radius:12px}
+body.il-typing:not(.legacy)[data-view="read"] .fabnotes{opacity:0!important;pointer-events:none!important;transform:translateY(calc(100% + 120px))!important}
 /* reference commentary (Matthew Henry) — visually distinct from Nii's journal */
 .refcomm{margin:14px 0 6px;border:1px solid var(--line);border-left:4px solid #6b7aa8;border-radius:10px;background:rgba(107,122,168,.05)}
 .refcomm summary{cursor:pointer;padding:11px 14px;font-family:var(--sans);font-size:13.5px;font-weight:700;color:#4a5680;list-style:none}
@@ -1002,6 +1037,61 @@ body.legacy #dateBtn .db-emo{display:inline}
 body:not(.legacy) .predbar{display:flex;visibility:hidden;opacity:0;min-height:36px;box-sizing:border-box;transition:opacity .15s}
 body:not(.legacy) .predbar.on{visibility:visible;opacity:1}
 body:not(.legacy) #overlay{align-items:flex-start;padding-top:max(20px,6vh)}
+/* d. ••• menu (16 Oct 2026) */
+.vmenu.tmenu .tm-th button.on{background:var(--line);color:var(--ink);font-weight:700}
+.vmenu.tmenu .tm-th button{font-size:13px;color:var(--soft)}
+.vmenu.tmenu .tm-th button+button{border-left:1px solid var(--line)}
+.vmenu.tmenu .tm-row .tm-chev{margin-left:8px;color:var(--soft);font-size:18px;line-height:1;transition:transform .2s}
+.vmenu.tmenu .tm-vrow em{margin-left:auto}
+/* a. compare: which translation is which (16 Oct 2026) */
+.cmphead,.cmptag{display:none}
+body:not(.legacy) .cmptag{display:inline-block;font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.09em;color:var(--soft);
+  border:1px solid var(--line);border-radius:5px;padding:0 5px;margin-right:7px;vertical-align:2px;line-height:1.6}
+@media(min-width:701px){
+  body:not(.legacy) .cmptag{display:none}
+  body:not(.legacy) .cmphead{display:grid;grid-template-columns:28px 1fr 1fr;gap:12px;position:sticky;top:0;z-index:5;padding:8px 0 7px;
+    font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--soft);
+    background:var(--bg);border-bottom:1px solid var(--line);box-shadow:0 -20px 0 0 var(--bg)} }
+/* narrow screens: one pinned line — "KJV ⇄ BSB ⌄ · Stop comparing" — and the picker leaves the crowded top bar */
+.cmpbar{display:none}
+@media(max-width:700px){
+  body:not(.legacy) .cmpbar{display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:5;padding:7px 2px 8px;margin-bottom:4px;
+    background:var(--bg);border-bottom:1px solid var(--line);box-shadow:0 -20px 0 0 var(--bg);font-family:var(--sans)}
+  body:not(.legacy) .cmpbar .cb-a{font-size:13px;font-weight:700;color:var(--ink);padding:0 4px}
+  body:not(.legacy) .cmpbar .cb-x .nico{display:inline-flex;width:16px;height:16px;color:var(--soft)}
+  body:not(.legacy) .cmpbar .cb-x svg{width:16px;height:16px}
+  body:not(.legacy) .cmpbar .cb-sel{height:30px;border-radius:15px;background-color:var(--line);border-color:transparent;font-weight:700;font-size:13px;padding:0 24px 0 11px}
+  body:not(.legacy) .cmpbar .cb-stop{margin-left:auto;background:none;border:none;color:var(--soft);font-family:var(--sans);font-size:12.5px;font-weight:600;padding:4px 2px;cursor:pointer}
+  body:not(.legacy)[data-view="read"] #cmpSelect{display:none!important} }
+body:not(.legacy)[data-view="read"] #cmpSelect{border-radius:20px;background-color:var(--line);border-color:transparent;font-weight:700;padding-left:11px;padding-right:22px}
+/* b. the reading footer floats above the text in frosted glass, slimmer (16 Oct 2026) */
+body:not(.legacy)[data-view="read"] .main{padding-bottom:0!important}
+body:not(.legacy)[data-view="read"] .reader{padding-bottom:calc(178px + env(safe-area-inset-bottom))}
+body:not(.legacy)[data-view="read"] .readfoot{position:fixed;left:12px;right:12px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:58;
+  max-height:none;overflow:visible;border:1px solid var(--line);border-radius:26px;
+  background:rgba(255,255,255,.74);-webkit-backdrop-filter:blur(20px) saturate(1.7);backdrop-filter:blur(20px) saturate(1.7);
+  box-shadow:0 8px 26px rgba(0,0,0,.13);transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .25s}
+html[data-theme="dark"] body:not(.legacy)[data-view="read"] .readfoot{background:rgba(30,30,28,.68);border-color:rgba(255,255,255,.08);box-shadow:0 8px 26px rgba(0,0,0,.45)}
+body:not(.legacy)[data-view="read"] .readnav{padding:6px;gap:6px}
+body:not(.legacy)[data-view="read"] .readfoot,body:not(.legacy) .bottomnav{max-width:720px;margin:0 auto}
+body:not(.legacy)[data-view="read"] .readnav button{padding:8px 10px;font-size:13.5px;border-radius:20px}
+body:not(.legacy)[data-view="read"] .readnav .rn-listen{padding:8px 16px}
+body:not(.legacy)[data-view="read"] .readnav.planmode button:not(.rn-stop){padding-top:5px;padding-bottom:5px}
+body.chrome-off:not(.legacy)[data-view="read"] .readfoot{max-height:none;border-color:var(--line);transform:translateY(calc(100% + 100px + env(safe-area-inset-bottom)));opacity:0;pointer-events:none}
+body:not(.legacy)[data-view="read"] .fabnotes{bottom:calc(146px + env(safe-area-inset-bottom))}
+body.planread:not(.legacy)[data-view="read"] .fabnotes{bottom:calc(152px + env(safe-area-inset-bottom))}
+body.chrome-off:not(.legacy)[data-view="read"] .fabnotes{bottom:calc(18px + env(safe-area-inset-bottom))}
+/* c. phone on its side: icons-only tab bar, one-line footer */
+@media (max-height:520px) and (orientation:landscape){
+  body:not(.legacy) .bottomnav button{font-size:0;padding-top:6px;padding-bottom:6px}
+  body:not(.legacy) .bottomnav{padding:3px 4px}
+  /* the tab bar and the reading footer share one row: tabs on the left, Prev · Listen · Next on the right */
+  body:not(.legacy)[data-view="read"] .bottomnav{left:12px;right:auto;width:calc(50% - 18px);max-width:none;margin:0}
+  body:not(.legacy)[data-view="read"] .readfoot{left:auto;right:12px;width:calc(50% - 18px);max-width:none;margin:0;bottom:calc(8px + env(safe-area-inset-bottom))}
+  body:not(.legacy)[data-view="read"] .readnav.planmode .rn-s{display:none}
+  body:not(.legacy)[data-view="read"] .readnav.planmode button:not(.rn-stop){padding-top:8px;padding-bottom:8px}
+  body:not(.legacy)[data-view="read"] .reader{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+  body:not(.legacy)[data-view="read"] .fabnotes,body.planread:not(.legacy)[data-view="read"] .fabnotes{bottom:calc(74px + env(safe-area-inset-bottom))} }
 .predbar button{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:16px;padding:5px 12px;
   font-family:var(--sans);font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
 .predbar button:first-child{background:var(--line);border-color:var(--line)}
@@ -1377,7 +1467,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.52', date:'12 Oct 2026'};
+const BUILD={v:'1.2.55', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1716,6 +1806,11 @@ function toggleCompare(){
   ensureVersion(def,()=>{ if(state.view==='read') renderRead(); });
 }
 function setCompare(v){ state.compare=v; ensureVersion(v,()=>{ if(state.view==='read') renderRead(); }); }
+function _fitSel(sel,code){ if(!sel) return; sel.style.width='';
+  if(document.body.classList.contains('legacy')||!code) return;
+  try{ const cs=getComputedStyle(sel), cv=(window._vmCv=window._vmCv||document.createElement('canvas')).getContext('2d');
+    cv.font=cs.fontWeight+' '+cs.fontSize+' '+cs.fontFamily;
+    sel.style.width=Math.ceil(cv.measureText(String(code)).width+parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight)+14)+'px'; }catch(e){} }
 
 /* ---------- Translation list (replaces the phone's own picker) ---------- */
 let _vsSel=null;
@@ -3082,7 +3177,10 @@ function renderRead(){
     ${refCommPanel(name,ch)}`;
   if(state.compare){
     const bibB=(window.BIBLE[state.compare]||{})[name]||{}; const vB=bibB[String(ch)]||{};
-    html+=`<div class="cmpwrap">`;
+    html+=`<div class="cmpwrap"><div class="cmphead" aria-hidden="true"><span></span><span>${escHTML(state.version)}</span><span>${escHTML(state.compare)}</span></div>
+      <div class="cmpbar"><span class="cb-a">${escHTML(state.version)}</span><span class="cb-x">${ICONS.swap}</span>
+        <select class="versel cb-sel" onchange="document.getElementById('cmpSelect').value=this.value;setCompare(this.value)" title="Compare with…">${_verOrder().filter(c=>c!==state.version).map(c=>`<option value="${c}" title="${escHTML(window.VERSIONS[c]||'')}" ${c===state.compare?'selected':''}>${c}</option>`).join('')}</select>
+        <button class="cb-stop" onclick="toggleCompare()">Stop comparing</button></div>`;
     window._chapHasNotes=Object.keys(chData).some(k=>k!=='0'&&chData[k].length);
     for(let v=1;v<=vcount;v++){
       const hs=(((window.HEADINGS||{})[name]||{})[String(ch)]||{})[String(v)];
@@ -3095,8 +3193,8 @@ function renderRead(){
       html+=`<div class="cmprow${shownC?' has-note':''}${hlcC?' hl-'+hlcC:''}" id="v${v}" data-v="${v}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${shownC?1:0})">
         <div class="cmpv">${v}${shownC?`<button class="cmark" onclick="event.stopPropagation();toggleVerse(${v})" title="Show / hide Nii Okai’s commentary">💬</button>`:''}
           <button class="vmenu-btn" onclick="event.stopPropagation();verseMenu(event,'${esc(name)}',${ch},${v})" title="Copy · Share · Note">⋯</button></div>
-        <div class="cmpcol">${(verses[String(v)]||'—')}</div>
-        <div class="cmpcol cmpb">${(vB[String(v)]||'—')}</div></div>`;
+        <div class="cmpcol"><span class="cmptag">${escHTML(state.version)}</span>${(verses[String(v)]||'—')}</div>
+        <div class="cmpcol cmpb"><span class="cmptag">${escHTML(state.compare)}</span>${(vB[String(v)]||'—')}</div></div>`;
       if(shownC){
         html+=`<div class="notewrap" id="nw${v}">`;
         if(refC){ refC.forEach((e,i)=>{ html+=modernNoteHTML(name,ch,v,e,i); });
@@ -3197,7 +3295,7 @@ function renderRead(){
   const _rk=name+'|'+ch, _anc=(window._rrKey===_rk)?_rrAnchor(r):null; window._rrKey=_rk;
   const _il=_ilCapture();
   if(typeof VSEL!=='undefined'&&VSEL.on&&(VSEL.book!==state.book||VSEL.ch!==ch)) selEnd();   /* old chapter's selection (16 Oct 2026) */
-  r.innerHTML=html; r.scrollTop=0; _chromeOff(false); setTimeout(_chtSync,0); setTimeout(()=>{ try{ _fabSync(); }catch(e){} },0); if(_anc){ _rrRestore(r,_anc); requestAnimationFrame(function(){ _rrRestore(r,_anc); }); }
+  r.innerHTML=html; r.scrollTop=0; _chromeOff(false); if(state.compare) _fitSel(document.getElementById('cmpSelect'),state.compare); setTimeout(_chtSync,0); setTimeout(()=>{ try{ _fabSync(); }catch(e){} },0); if(_anc){ _rrRestore(r,_anc); requestAnimationFrame(function(){ _rrRestore(r,_anc); }); }
   _ilRestore(_il);
   { const o=ONLINE_VERSIONS[state.version]; if(o&&!olFallback){ const r0=document.getElementById('reader'); const pg=r0.querySelector('.page'); if(pg) pg.insertAdjacentHTML('beforeend',`<div class="copyline">${escHTML(o.c)}</div>`); } }
   const foot=document.getElementById('readfoot'); foot.innerHTML=`<div class="audnote" id="audnote" style="display:none"></div><div class="audbar" id="audbar" style="display:none"></div>`+nav; foot.style.display='';
@@ -3819,6 +3917,9 @@ function _audBusy(){ try{ return !!((AUD.el&&!AUD.el.paused)||(window.speechSynt
     const nearEnd=y+r.clientHeight>=r.scrollHeight-160;
     if(y<60||nearEnd||_audBusy()){ _chromeOff(false); _scLast=y; return; }
     if(dy>12){ _chromeOff(true); _scLast=y; } else if(dy<-12){ _chromeOff(false); _scLast=y; } },{passive:true}); })();
+document.addEventListener('focusin',e=>{ if(e.target&&e.target.classList&&e.target.classList.contains('inline-ed')) document.body.classList.add('il-typing'); });
+document.addEventListener('focusout',e=>{ if(e.target&&e.target.classList&&e.target.classList.contains('inline-ed')) setTimeout(()=>{
+  const a=document.activeElement; if(!(a&&a.classList&&a.classList.contains('inline-ed'))) document.body.classList.remove('il-typing'); },150); });
 function tbSearch(){ const tb=document.querySelector('.topbar'); tb.classList.toggle('searching');
   if(tb.classList.contains('searching')){ const si=document.getElementById('search');
     try{ si.focus(); }catch(e){}                      /* inside the tap → iPhone shows the keyboard */
@@ -3830,27 +3931,39 @@ const _AUTO=_I('<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17" /><path d=
 function _fsPct(){ try{ return Math.round(parseFloat(localStorage.getItem('nok_fs')||'1')*100); }catch(e){ return 100; } }
 function _tmFont(d){ window._tmHold=Date.now(); setFont(d); const el=document.getElementById('tmFs'); if(el) el.textContent=_fsPct()+'%'; }
 function _tmNarr(v){ setNarrPref(v); const b=document.getElementById('tmDev'); if(b) b.style.display=(v==='device')?'':'none'; }
+function _tmTheme(m){ setThemeMode(m,true); document.querySelectorAll('#vmenu .tm-th button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); }
+function _tmVoiceToggle(){ const b=document.getElementById('tmVoice'); if(!b) return; const open=b.style.display==='none'; b.style.display=open?'':'none';
+  const c=document.querySelector('#vmenu .tm-vrow .tm-chev'); if(c) c.style.transform=open?'rotate(90deg)':''; }
+function _tmVoiceLabel(){ const np=narrPref(); if(np==='device') return 'This device';
+  if(np==='studio'){ try{ const V=window.AUDIO_KOKORO.voices[studioVoicePref()]; if(V) return V.name; }catch(e){} return 'Studio voice'; }
+  return 'Human narrator'; }
+function _tmNarr2(v){ setNarrPref(v); const b=document.getElementById('tmDev'); if(b) b.style.display=(v==='device')?'':'none';
+  const l=document.querySelector('#vmenu .tm-vrow em'); if(l) l.textContent=_tmVoiceLabel(); }
+function shareChapter(){ const name=window.BOOKS[state.book].name, ch=state.chapter;
+  const url=location.origin+'/?b='+encodeURIComponent(name)+'&c='+ch, title=name+' '+ch+' — Nii Okai’s Bible Journal';
+  if(navigator.share) navigator.share({title:title,url:url}).catch(()=>{}); else _clip(url,'Link copied — paste it to share'); }
 function tbMoreMenuNew(ev){ ev.stopPropagation(); closeVerseMenu();
   const m=document.createElement('div'); m.className='vmenu tmenu'; m.id='vmenu';
-  const rd=state.view==='read'; const np=narrPref();
-  const theme=_themeMode==='auto'?[_AUTO,'Appearance','Automatic']:(_themeMode==='dark'?[ICONS.moon,'Appearance','Always dark']:[_SUN,'Appearance','Always light']);
-  m.innerHTML=`${rd?`<div class="vm-sec">Listen with</div>
-    ${(window.AUDIO_KJV||window.AUDIO_KOKORO)?`<select class="btn vsel vm-voice" id="narrSel" onchange="_tmNarr(this.value)">
-      ${window.AUDIO_KJV?`<option value="human" ${np==='human'?'selected':''}>Human narrator (LibriVox)</option>`:''}
-      ${studioVoices().map(v=>{ const V=window.AUDIO_KOKORO.voices[v]; return `<option value="studio:${v}" ${np==='studio'&&studioVoicePref()===v?'selected':''}>Studio voice: ${escHTML(V.name)}</option>`; }).join('')}
-      <option value="device" ${np==='device'?'selected':''}>This device’s voice (offline)</option></select>`:''}
-    <div id="tmDev" style="${np==='device'||!(window.AUDIO_KJV||window.AUDIO_KOKORO)?'':'display:none'}">
-      <div class="vm-sec">Device voice</div>
-      <select class="btn vsel vm-voice" id="voiceSel" onchange="setVoicePref(this.value)"></select></div>
-    <div class="vm-sec">Text size</div>
-    <div class="tm-fs"><button onclick="_tmFont(-0.08)" aria-label="Smaller text">A−</button><span id="tmFs">${_fsPct()}%</span><button onclick="_tmFont(0.08)" aria-label="Larger text"><b>A+</b></button></div>
-    <div class="vm-div"></div>`:''}
-    <button class="tm-row" onclick="closeVerseMenu();toggleCompare()">${ICONS.swap}<span>Compare translations</span></button>
-    <button class="tm-row" onclick="closeVerseMenu();toggleTheme()">${theme[0]}<span>${theme[1]}</span><em>${theme[2]}</em></button>
+  const rd=state.view==='read'; const np=narrPref(); const tm=_themeMode;
+  const hasAudio=!!(window.AUDIO_KJV||window.AUDIO_KOKORO);
+  m.innerHTML=`${rd?`<div class="vm-sec">Text size</div>
+    <div class="tm-fs"><button onclick="_tmFont(-0.08)" aria-label="Smaller text">A−</button><span id="tmFs">${_fsPct()}%</span><button onclick="_tmFont(0.08)" aria-label="Larger text"><b>A+</b></button></div>`:''}
+    <div class="vm-sec">Appearance</div>
+    <div class="tm-fs tm-th"><button data-m="auto" class="${tm==='auto'?'on':''}" onclick="_tmTheme('auto')">Auto</button><button data-m="light" class="${tm==='light'?'on':''}" onclick="_tmTheme('light')">Light</button><button data-m="dark" class="${tm==='dark'?'on':''}" onclick="_tmTheme('dark')">Dark</button></div>
+    <div class="vm-div"></div>
+    ${rd?`<button class="tm-row" onclick="closeVerseMenu();toggleCompare()">${ICONS.swap}<span>Compare translations</span><em>${state.compare?'With '+escHTML(state.compare):'Off'}</em></button>`:''}
+    ${rd&&hasAudio?`<button class="tm-row tm-vrow" onclick="_tmVoiceToggle()">${ICONS.headphones}<span>Listen with</span><em>${escHTML(_tmVoiceLabel())}</em><span class="tm-chev">›</span></button>
+      <div id="tmVoice" style="display:none">
+        <select class="btn vsel vm-voice" id="narrSel" onchange="_tmNarr2(this.value)">
+          ${window.AUDIO_KJV?`<option value="human" ${np==='human'?'selected':''}>Human narrator (LibriVox)</option>`:''}
+          ${studioVoices().map(v=>{ const V=window.AUDIO_KOKORO.voices[v]; return `<option value="studio:${v}" ${np==='studio'&&studioVoicePref()===v?'selected':''}>Studio voice: ${escHTML(V.name)}</option>`; }).join('')}
+          <option value="device" ${np==='device'?'selected':''}>This device’s voice (offline)</option></select>
+        <div id="tmDev" style="${np==='device'?'':'display:none'}"><select class="btn vsel vm-voice" id="voiceSel" onchange="setVoicePref(this.value)"></select></div></div>`:''}
+    ${rd?`<button class="tm-row" onclick="closeVerseMenu();shareChapter()">${ICONS.share}<span>Share this chapter</span></button>`:''}
     ${localStorage.getItem('nok_dates_unlocked')&&isOwner()?`<button class="tm-row" onclick="closeVerseMenu();toggleDates()">${ICONS.cal}<span>Note dates</span></button>`:''}`;
-  m.addEventListener('click',e=>e.stopPropagation());   /* A− / A+ / the pickers keep the menu open */
+  m.addEventListener('click',e=>e.stopPropagation());   /* size, appearance and the voice list keep the menu open */
   document.body.appendChild(m);
-  if(rd) fillVoiceSel();
+  if(rd&&hasAudio) fillVoiceSel();
   const r=ev.currentTarget.getBoundingClientRect(); const mw=m.offsetWidth;
   m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(8,Math.min(r.right-mw,window.innerWidth-mw-8))+'px'; }
 function tbMoreMenu(ev){ if(!document.body.classList.contains('legacy')) return tbMoreMenuNew(ev);
@@ -4046,6 +4159,15 @@ function inlineEditNote(el,name,ch,v,id){
         <button class="sw sw-p" data-c="p" onclick="ilColour(event,'${esc(name)}',${ch},'${v}','p')"></button>
       </span>`:''}
       <span class="inline-hint">Saves as you type · Enter closes</span></div>`;
+  if(!document.body.classList.contains('legacy')){ try{   /* tidy layout (16 Oct 2026) */
+    const bar=el.querySelector('.inline-bar'), pb=el.querySelector('.predbar'), hint=bar.querySelector('.inline-hint');
+    const row=document.createElement('div'); row.className='il-row2'; pb.before(row); row.appendChild(pb); row.appendChild(hint);
+    const cols=bar.querySelector('.inline-colours'); if(cols){ const l=cols.querySelector('.lbl'); if(l) l.remove(); cols.title='Colour this note — it also highlights the verse'; }
+    const done=bar.querySelector('.btn.primary'), cancel=bar.querySelector('.btn:not(.primary)');
+    const sp=document.createElement('span'); sp.className='il-sp'; bar.appendChild(sp); bar.appendChild(cancel); bar.appendChild(done);
+    if(cols) bar.prepend(cols); bar.classList.add('il-tidy');
+    /* the note body keeps line breaks (pre-wrap), so the blank lines between these parts showed as an empty band */
+    [...el.childNodes].forEach(n=>{ if(n.nodeType===3&&!n.textContent.trim()) n.remove(); }); }catch(e){} }
   const t=el.querySelector('textarea'); t.value=cur; t.onclick=e=>e.stopPropagation();
   t.dataset.nid=id; t.dataset.book=name; t.dataset.ch=String(ch); t.dataset.v=String(v); t.dataset.orig=cur;
   t.onkeydown=e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); el.querySelector('.inline-bar .primary').click(); }
@@ -4543,7 +4665,7 @@ function selPaint(){
     +(hasNote?act('selRead()',ICONS.chat,'Commentary'):'')
     +act('selCompare()',ICONS.swap,'Compare')
     +act('selGoogle()',ICONS.search,'Google')
-    +act('selAll()',ICONS.chapter,'Chapter')
+    +act('selAll()',ICONS.chapter,document.body.classList.contains('legacy')?'Chapter':'Select all')
     +'</div>';
 }
 function selNote(){ if(!VSEL.on) return; const name=window.BOOKS[state.book].name, ch=VSEL.ch, v=selList()[0]; selEnd(); openEditor(name,ch,v); }
