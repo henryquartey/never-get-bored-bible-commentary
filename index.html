@@ -243,8 +243,8 @@ body:not(.legacy) .readnav.planmode .rn-l{display:inline-flex;align-items:center
 body:not(.legacy) .readnav.planmode .rn-s{font-size:10.5px;font-weight:600;opacity:.62;margin-top:2px;white-space:nowrap;letter-spacing:.1px}
 body:not(.legacy) .readnav.planmode .rn-listen .rn-s{opacity:.78}
 @media(max-width:860px){ body.planread:not(.legacy) .fabnotes{bottom:calc(146px + env(safe-area-inset-bottom))} }   /* clear of the taller footer */
-/* bars slip away while reading down (phones, new UI) */
-@media(max-width:860px){
+/* bars slip away while reading down (new UI; every screen size since 16 Oct 2026) */
+@media all{
   body:not(.legacy) .main{transition:padding-bottom .3s cubic-bezier(.4,0,.2,1)}
   body:not(.legacy) .readfoot{max-height:420px;overflow:hidden;transition:max-height .3s cubic-bezier(.4,0,.2,1),border-color .3s,box-shadow .3s}
   body:not(.legacy) .fabnotes{transition:opacity .25s ease,transform .25s ease,bottom .3s cubic-bezier(.4,0,.2,1)}
@@ -1377,7 +1377,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.50', date:'12 Oct 2026'};
+const BUILD={v:'1.2.51', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3807,7 +3807,7 @@ function _chromeOff(on){ const b=document.body; if(b.classList.contains('legacy'
 function _audBusy(){ try{ return !!((AUD.el&&!AUD.el.paused)||(window.speechSynthesis&&speechSynthesis.speaking)); }catch(e){ return false; } }
 (function(){ const r=document.getElementById('reader'); if(!r) return; const phone=matchMedia('(max-width:860px)');
   r.addEventListener('scroll',()=>{ const y=r.scrollTop, dy=y-_scLast;
-    if(state.view!=='read'||!phone.matches||document.body.classList.contains('legacy')){ _scLast=y; _chromeOff(false); return; }
+    if(state.view!=='read'||document.body.classList.contains('legacy')){   /* phones and Macs alike (16 Oct 2026) */ _scLast=y; _chromeOff(false); return; }
     if(Date.now()-_scHold<380){ _scLast=y; return; }            /* the page is still settling after the bars moved */
     const nearEnd=y+r.clientHeight>=r.scrollHeight-160;
     if(y<60||nearEnd||_audBusy()){ _chromeOff(false); _scLast=y; return; }
