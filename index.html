@@ -1370,14 +1370,14 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <script src="data/refined.js" defer onload="_refinedArrived()"></script>
 <script src="data/chronological.js"></script>
 <script src="data/headings.js" onerror="window.HEADINGS=null"></script>
-<script src="data/audio_kjv.js"></script>
+<script src="data/audio_kjv.js?v=2"></script>
 <script src="data/audio_kokoro.js" onerror="window.AUDIO_KOKORO=null"></script>
 
 <script>
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.51', date:'12 Oct 2026'};
+const BUILD={v:'1.2.52', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2118,9 +2118,16 @@ function stopReadAloud(reset){
   if(reset&&AUD.note) AUD.note=null;
   _rdSyncBtn(); if(reset&&wasTTS) toast('Stopped — next time starts at verse 1'); }
 (function(){ let t=null, fired=false;
-  document.addEventListener('touchstart',e=>{ const b=e.target.closest&&e.target.closest('#readAloudBtn,.ab-voice'); if(!b) return;
+  document.addEventListener('touchstart',e=>{ const b=e.target.closest&&e.target.closest('#readAloudBtn,.ab-voice,.ab-play'); if(!b) return;
     fired=false; clearTimeout(t); t=setTimeout(()=>{ fired=true; if(navigator.vibrate){ try{ navigator.vibrate(12); }catch(err){} } listenMenu({currentTarget:b,stopPropagation(){}}); },500); },{passive:true});
-  document.addEventListener('touchend',e=>{ clearTimeout(t); if(fired){ const b=e.target.closest&&e.target.closest('#readAloudBtn,.ab-voice'); if(b){ e.preventDefault(); } fired=false; } },{passive:false});
+  document.addEventListener('touchend',e=>{ clearTimeout(t); if(fired){ const b=e.target.closest&&e.target.closest('#readAloudBtn,.ab-voice,.ab-play'); if(b){ e.preventDefault(); } fired=false; } },{passive:false});
+  /* Mouse / trackpad: press and hold Play (or Listen) for half a second → the voice choices (1.2.52) */
+  let mt=null, mFired=0;
+  document.addEventListener('mousedown',e=>{ if(e.button!==0) return; const b=e.target.closest&&e.target.closest('#readAloudBtn,.ab-voice,.ab-play'); if(!b) return;
+    clearTimeout(mt); mt=setTimeout(()=>{ mFired=Date.now(); listenMenu({currentTarget:b,stopPropagation(){}}); },500); });
+  document.addEventListener('mouseup',()=>clearTimeout(mt));
+  document.addEventListener('mousemove',e=>{ if(mt&&(Math.abs(e.movementX)+Math.abs(e.movementY))>6) clearTimeout(mt); });
+  document.addEventListener('click',e=>{ if(mFired&&Date.now()-mFired<1500&&e.target.closest&&e.target.closest('#readAloudBtn,.ab-voice,.ab-play')){ e.stopPropagation(); e.preventDefault(); mFired=0; } },true);
   document.addEventListener('touchmove',()=>clearTimeout(t),{passive:true});
   document.addEventListener('contextmenu',e=>{ if(e.target.closest&&e.target.closest('#readAloudBtn,.ab-voice,.audbar,.readfoot,#reader .verse,.bottomnav,.selbar')) e.preventDefault(); });
 })();
@@ -2385,7 +2392,7 @@ function _audRender(){ const bar=document.getElementById('audbar'), nt=document.
       <button class="ab-btn ab-voice" onclick="listenMenu(event)" title="Change the voice — carries on at this verse">${vico}<span>${vlbl}</span> ▾</button>
       <span class="ab-mid">
         <button class="ab-ic" onclick="audSkip(-15)" title="Back 15 seconds">${ICONS.back15}</button>
-        <button class="ab-play" onclick="readChapterAloud(event)" title="${paused?'Resume':'Pause'}">${paused?ICONS.play:ICONS.pause}</button>
+        <button class="ab-play" onclick="readChapterAloud(event)" title="${paused?'Resume':'Pause'} · press and hold for voices">${paused?ICONS.play:ICONS.pause}</button>
         <button class="ab-ic" onclick="audSkip(30)" title="Forward 30 seconds">${ICONS.fwd30}</button>
       </span>
       <span class="ab-time${AUD.loading||AUD.buffering?' ab-buf':''}" id="abTime">${status}</span>
