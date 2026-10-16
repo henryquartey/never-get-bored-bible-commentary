@@ -156,6 +156,7 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .vspop{position:fixed;z-index:9000;background:var(--panel);border:1px solid var(--line);border-radius:12px;
   box-shadow:0 12px 32px rgba(0,0,0,.18);padding:5px;overflow-y:auto;-webkit-overflow-scrolling:touch;
   font-family:var(--sans);animation:vsIn .12s ease-out}
+.vspop.more-below{-webkit-mask-image:linear-gradient(#000 calc(100% - 44px),transparent);mask-image:linear-gradient(#000 calc(100% - 44px),transparent)}
 @keyframes vsIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 .vspop .vsi{display:flex;align-items:baseline;gap:10px;width:100%;text-align:left;border:none;background:transparent;
   color:var(--ink);padding:8px 10px 8px 8px;border-radius:8px;cursor:pointer;font:inherit}
@@ -219,6 +220,24 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .vmenu .vm-row button{flex:1;text-align:center;border:1px solid var(--line)}
 .vmenu .vm-voice{width:calc(100% - 16px);margin:2px 8px 4px;font-size:12.5px}
 .vmenu .vm-div{height:1px;background:var(--line);margin:6px 4px}
+/* plan reading: the day sits under the chapter name in the top bar (16 Oct 2026) */
+body.planread:not(.legacy)[data-view="read"] #crumb.twoline{display:flex!important;flex-direction:column;justify-content:center;align-items:flex-start;line-height:1.12}
+body.planread:not(.legacy)[data-view="read"] #crumb.twoline .cr-n{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.planread:not(.legacy)[data-view="read"] #crumb.twoline .cr-d{font-size:10.5px;font-weight:600;color:var(--soft);white-space:nowrap;letter-spacing:.1px}
+@media(max-width:860px){ body.planread:not(.legacy)[data-view="read"] .topbar:not(.searching){gap:4px}
+  body.planread:not(.legacy)[data-view="read"] #crumb.twoline{font-size:14px;padding:0 10px 0 13px} }
+body:not(.legacy) .readnav.planmode .rn-mid{display:none}
+/* bars slip away while reading down (phones, new UI) */
+@media(max-width:860px){
+  body:not(.legacy) .main{transition:padding-bottom .3s cubic-bezier(.4,0,.2,1)}
+  body:not(.legacy) .readfoot{max-height:420px;overflow:hidden;transition:max-height .3s cubic-bezier(.4,0,.2,1),border-color .3s,box-shadow .3s}
+  body:not(.legacy) .fabnotes{transition:opacity .25s ease,transform .25s ease,bottom .3s cubic-bezier(.4,0,.2,1)}
+  body.chrome-off:not(.legacy)[data-view="read"] .main{padding-bottom:env(safe-area-inset-bottom)}
+  body.chrome-off:not(.legacy)[data-view="read"] .readfoot{max-height:0;border-top-color:transparent;box-shadow:none}
+  body.chrome-off:not(.legacy)[data-view="read"] .bottomnav{transform:translateY(calc(100% + 30px + env(safe-area-inset-bottom)));opacity:0;pointer-events:none;
+    transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .25s}
+  body.chrome-off:not(.legacy)[data-view="read"] .fabnotes{bottom:calc(18px + env(safe-area-inset-bottom))}
+}
 .vmenu.tmenu{min-width:270px;padding:8px}
 .vmenu.tmenu .vm-sec{padding:8px 10px 4px;font-size:10.5px;letter-spacing:.12em;font-weight:600}
 .vmenu.tmenu .vm-voice{margin:2px 6px 6px;width:calc(100% - 12px);font-size:13.5px;padding:9px 10px}
@@ -1336,7 +1355,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.45', date:'12 Oct 2026'};
+const BUILD={v:'1.2.46', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1686,7 +1705,7 @@ function _vsOpen(sel){
     const code=o.value, on=code===sel.value, cloud=/☁/.test(o.textContent);
     const nm=o.title||names[code]||'';
     html+=`<button type="button" class="vsi${on?' on':''}" data-v="${escHTML(code)}" role="option" aria-selected="${on}">
-      <span class="ck">${on?'✓':''}</span><span class="cd">${escHTML(code)}${cloud?' ☁':''}</span><span class="nm">${escHTML(nm)}</span></button>`;
+      <span class="ck">${on?'✓':''}</span><span class="cd">${escHTML(code)}${cloud&&document.body.classList.contains('legacy')?' ☁':''}</span><span class="nm">${escHTML(nm)}</span></button>`;
   });
   const p=document.createElement('div'); p.id='vspop'; p.className='vspop'; p.setAttribute('role','listbox'); p.innerHTML=html;
   document.body.appendChild(p);
@@ -1697,6 +1716,7 @@ function _vsOpen(sel){
   if(below>=240||below>=above){ p.style.top=(r.bottom+6)+'px'; p.style.maxHeight=Math.max(160,below)+'px'; }
   else { p.style.maxHeight=Math.max(160,above)+'px'; p.style.top=Math.max(8,r.top-6-Math.min(p.scrollHeight,above))+'px'; }
   const cur=p.querySelector('.vsi.on'); if(cur) p.scrollTop=Math.max(0,cur.offsetTop-p.clientHeight/2+cur.offsetHeight/2);
+  { const _mb=()=>p.classList.toggle('more-below',p.scrollTop+p.clientHeight<p.scrollHeight-4); _mb(); p.addEventListener('scroll',_mb,{passive:true}); }
   p.addEventListener('click',e=>{ const b=e.target.closest('.vsi'); if(!b) return;
     const v=b.dataset.v; _vsClose();
     if(v!==sel.value){ sel.value=v; sel.dispatchEvent(new Event('change',{bubbles:true})); } });
@@ -2983,7 +3003,12 @@ function renderRead(){
   const nch=book.chapters.length;
   document.getElementById('crumb').innerHTML=`${name} ${ch} <span class="caret">▾</span>`;
   document.getElementById('crumb').classList.add('quiet');
-  { const pb=document.getElementById('planBackBtn'); if(pb) pb.style.display=state.plan?'':'none'; }
+  { const pb=document.getElementById('planBackBtn'); if(pb) pb.style.display=state.plan?'':'none';
+    const cr=document.getElementById('crumb');
+    if(state.plan&&!document.body.classList.contains('legacy')){ const _n=readingChapters(getPlan()[state.plan.day]).length;
+      cr.innerHTML=`<span class="cr-n">${name} ${ch} <span class="caret">▾</span></span><span class="cr-d">Day ${state.plan.day+1} · ${state.plan.ci+1} of ${_n}</span>`;
+      cr.classList.add('twoline'); document.body.classList.add('planread'); }
+    else { cr.classList.remove('twoline'); document.body.classList.remove('planread'); } }
   document.getElementById('chapselWrap').style.display='';
   const csel=document.getElementById('chapSelect');
   csel.innerHTML=book.chapters.map((_,i)=>`<option value="${i+1}" ${i+1===ch?'selected':''}>Ch ${i+1}</option>`).join('');
@@ -3002,8 +3027,7 @@ function renderRead(){
     planBar=document.body.classList.contains('legacy')
       ? `<div class="planctx">📖 <b>Day ${state.plan.day+1}</b> of the plan · passage ${state.plan.ci+1} of ${chaps.length}
       <button class="btn" onclick="exitPlanRead()">✕ Back to plan</button></div>`
-      : `<div class="planctx slim"><span><b>Day ${state.plan.day+1}</b> of the plan · passage ${state.plan.ci+1} of ${chaps.length}</span>
-      <button class="pc-back" onclick="exitPlanRead()">Back to plan</button></div>`; }
+      : ''; }   /* new UI: the day now sits in the top bar (16 Oct 2026) */
   /* The chapter name sits at the top of the reading, the way a printed Bible heads each chapter,
      with an arrow that opens the book and chapter picker. The bar keeps a small grey copy. (8 Oct 2026) */
   const chTitle=`<h1 class="chtitle"><button type="button" class="chtbtn" onclick="openBookPicker()" title="Choose another book or chapter" aria-label="${escHTML(name)} ${ch} — choose another book or chapter">
@@ -3127,7 +3151,7 @@ function renderRead(){
   /* same chapter drawn again (a note saved, a sync, a mark kept) — keep the reader exactly where they were (11 Oct 2026) */
   const _rk=name+'|'+ch, _anc=(window._rrKey===_rk)?_rrAnchor(r):null; window._rrKey=_rk;
   const _il=_ilCapture();
-  r.innerHTML=html; r.scrollTop=0; setTimeout(_chtSync,0); setTimeout(()=>{ try{ _fabSync(); }catch(e){} },0); if(_anc){ _rrRestore(r,_anc); requestAnimationFrame(function(){ _rrRestore(r,_anc); }); }
+  r.innerHTML=html; r.scrollTop=0; _chromeOff(false); setTimeout(_chtSync,0); setTimeout(()=>{ try{ _fabSync(); }catch(e){} },0); if(_anc){ _rrRestore(r,_anc); requestAnimationFrame(function(){ _rrRestore(r,_anc); }); }
   _ilRestore(_il);
   { const o=ONLINE_VERSIONS[state.version]; if(o&&!olFallback){ const r0=document.getElementById('reader'); const pg=r0.querySelector('.page'); if(pg) pg.insertAdjacentHTML('beforeend',`<div class="copyline">${escHTML(o.c)}</div>`); } }
   const foot=document.getElementById('readfoot'); foot.innerHTML=`<div class="audnote" id="audnote" style="display:none"></div><div class="audbar" id="audbar" style="display:none"></div>`+nav; foot.style.display='';
@@ -3736,8 +3760,23 @@ function _bnAt(x){ const bs=_bnBtns(); let best=null,d=1e9;
   nav.addEventListener('click',e=>{ if(Date.now()-_bnClickBlock<450){ e.stopPropagation(); e.preventDefault(); } },true);
   window.addEventListener('resize',()=>_bnPlace(true));
   setTimeout(()=>_bnPlace(true),60); })();
+/* Reading on a phone: the Listen row and the tab bar slip away while you read down and come back when you
+   scroll up, reach the end of the chapter or return to the top. The commentary pill stays. (16 Oct 2026) */
+let _scLast=0,_scHold=0;
+function _chromeOff(on){ const b=document.body; if(b.classList.contains('legacy')) on=false;
+  if(!!on===b.classList.contains('chrome-off')) return; b.classList.toggle('chrome-off',!!on); _scHold=Date.now(); }
+function _audBusy(){ try{ return !!((AUD.el&&!AUD.el.paused)||(window.speechSynthesis&&speechSynthesis.speaking)); }catch(e){ return false; } }
+(function(){ const r=document.getElementById('reader'); if(!r) return; const phone=matchMedia('(max-width:860px)');
+  r.addEventListener('scroll',()=>{ const y=r.scrollTop, dy=y-_scLast;
+    if(state.view!=='read'||!phone.matches||document.body.classList.contains('legacy')){ _scLast=y; _chromeOff(false); return; }
+    if(Date.now()-_scHold<380){ _scLast=y; return; }            /* the page is still settling after the bars moved */
+    const nearEnd=y+r.clientHeight>=r.scrollHeight-160;
+    if(y<60||nearEnd||_audBusy()){ _chromeOff(false); _scLast=y; return; }
+    if(dy>12){ _chromeOff(true); _scLast=y; } else if(dy<-12){ _chromeOff(false); _scLast=y; } },{passive:true}); })();
 function tbSearch(){ const tb=document.querySelector('.topbar'); tb.classList.toggle('searching');
-  if(tb.classList.contains('searching')) setTimeout(()=>document.getElementById('search').focus(),60); }
+  if(tb.classList.contains('searching')){ const si=document.getElementById('search');
+    try{ si.focus(); }catch(e){}                      /* inside the tap → iPhone shows the keyboard */
+    setTimeout(()=>{ if(document.activeElement!==si) si.focus(); },60); } }
 /* new-UI "•••" menu (15 Oct 2026): line icons, no Matthew Henry (it is in the commentary menu),
    device voice shown only when it is the chosen reader, live text size */
 const _SUN=_I('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>');
