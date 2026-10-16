@@ -1467,7 +1467,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.55', date:'12 Oct 2026'};
+const BUILD={v:'1.2.56', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1764,7 +1764,18 @@ let _olBusy={};
 function ensureChapterOnline(v,b,c,cb){ if(_olHas(v,b,c)) return cb(true); const key=v+'|'+b+'|'+c; if(_olBusy[key]){ _olBusy[key].push(cb); return; } _olBusy[key]=[cb];
   _olFetch(v,b,c).then(()=>{ const q=_olBusy[key]; delete _olBusy[key]; q.forEach(f=>f(true)); }).catch(err=>{ const q=_olBusy[key]; delete _olBusy[key]; window._olErr=String(err&&err.message||err); q.forEach(f=>f(false)); }); }
 let _verLoading={};
+/* one book of the KJV, ahead of the whole Bible (16 Oct 2026) */
+const _kjvPartLoading={};
+function _kjvPart(book){ try{
+  if(!book||document.body.classList.contains('legacy')||(window.BIBLE&&window.BIBLE.KJV)) return;
+  if((window.KJV_PART||{})[book]||_kjvPartLoading[book]) return; _kjvPartLoading[book]=1;
+  const sc=document.createElement('script'); sc.src='data/kjv/'+book.replace(/[^A-Za-z0-9]+/g,'_')+'.js';
+  sc.onload=()=>{ delete _kjvPartLoading[book];
+    if(!(window.BIBLE&&window.BIBLE.KJV)&&state.view==='read'&&state.version==='KJV'&&(window.BOOKS[state.book]||{}).name===book) renderRead(); };
+  sc.onerror=()=>{ delete _kjvPartLoading[book]; sc.remove(); };
+  document.head.appendChild(sc); }catch(e){} }
 function ensureVersion(v,cb,book,ch){
+  if(v==='KJV'&&!(window.BIBLE&&window.BIBLE.KJV)&&state.view==='read') _kjvPart(book||(window.BOOKS[state.book]||{}).name);
   if(ONLINE_VERSIONS[v]){ window.BIBLE[v]=window.BIBLE[v]||{}; const b=book||(window.BOOKS[state.book]||{}).name, c=ch||state.chapter; if(!b) return cb();
     ensureChapterOnline(v,b,c,ok=>{ if(!ok&&v===state.version&&state.view==='read') toast(v+' could not load — showing KJV for now'); if(!ok&&!window.BIBLE.KJV){ ensureVersion('KJV',cb); return; } cb(); }); return; }
   if(window.BIBLE&&window.BIBLE[v])return cb();
@@ -3156,7 +3167,7 @@ function renderRead(){
     const rd=document.getElementById('reader'); if(rd&&!rd.querySelector('.verse')) rd.innerHTML='<div class="empty"><div class="big">📖</div>Loading '+state.version+'…</div>';
     ensureChapterOnline(state.version,name,ch,()=>{ renderRead(); }); return; }
   window._olTried=null;
-  const bib=(window.BIBLE[state.version]||{})[name]||{};
+  const bib=(window.BIBLE[state.version]||(state.version==='KJV'&&window.KJV_PART?window.KJV_PART:{}))[name]||{};
   let verses=bib[String(ch)]||{}; let olFallback='';
   if(ONLINE_VERSIONS[state.version]&&!Object.keys(verses).length){ verses=((window.BIBLE.KJV||{})[name]||{})[String(ch)]||{}; olFallback=state.version+' needs a connection — this is the KJV wording'; }
   const vcount=book.chapters[ch-1];
@@ -4046,7 +4057,7 @@ function editNote(name,ch,v,id,liveText){
 function showVerseInEditor(name,ch,v){
   const el=document.getElementById('edVerse');
   if(v===0||v==='0'){ el.textContent=`${name} — Chapter ${ch} (chapter-level note)`; return; }
-  const bib=(window.BIBLE[state.version]||{})[name]||{};
+  const bib=(window.BIBLE[state.version]||(state.version==='KJV'&&window.KJV_PART?window.KJV_PART:{}))[name]||{};
   const txt=(bib[String(ch)]||{})[String(v)]||'';
   el.innerHTML=`<b>${name} ${ch}:${v}</b> &nbsp;<span style="color:var(--soft)">${state.version}</span><br>${txt}`;
 }
@@ -6074,6 +6085,7 @@ window.addEventListener('beforeunload',e=>{ if(state.dirty){ e.preventDefault();
 try{ init(); } finally { window._bootDone&&window._bootDone(); }
 /* Heavy data (Bible text, spell dictionary) loads in the background after first paint */
 _syncThemeColor();
+try{ if(state.version==='KJV'&&state.view==='read') _kjvPart((window.BOOKS[state.book]||{}).name); }catch(e){}
 window.addEventListener('load',()=>{ setTimeout(()=>{
   ensureVersion(state.version,()=>{ if(state.view==='read'||state.view==='home'||state.view==='explore') render(); });
   const d=document.createElement('script'); d.src='data/dict.js';
