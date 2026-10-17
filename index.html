@@ -1550,7 +1550,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.62', date:'12 Oct 2026'};
+const BUILD={v:'1.2.63', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -5098,6 +5098,18 @@ function _sideTarget(dir){
   if(c<1){ if(bi===0) return {kind:'end',label:'The beginning of the Bible'}; bi--; c=B[bi].chapters.length; }
   else if(c>B[bi].chapters.length){ if(bi===B.length-1) return {kind:'end',label:'The end of the Bible'}; bi++; c=1; }
   return {b:B[bi].name,c,kind:'ch',go:()=>dir>0?nextChapter():prevChapter()}; }
+/* continuous scrolling goes one step further than Next: at the end of a plan day it carries on into the next day */
+function _contTarget(){ const T=_sideTarget(1); if(T.kind!=='finish'||!state.plan) return T;
+  const C=getPlan(); const day=state.plan.day; let nd=day+1;
+  while(nd<C.length&&!readingChapters(C[nd]).length) nd++;          /* skip rest / catch-up days */
+  if(nd>=C.length) return T;
+  const [b,c]=readingChapters(C[nd])[0];
+  return {b,c,kind:'ch',label:`Day ${nd+1} · ${b} ${c}`,go:()=>_planFlowNextDay(day,nd)}; }
+function _planFlowNextDay(day,nd){ const ci=state.plan?state.plan.ci:0;
+  _markPlanChapterRead(day,ci);
+  try{ const C=getPlan(); if(readingDone(C[day],chDone())){ const pd=JSON.parse(localStorage.getItem('nok_plan_done')||'{}'); if(!pd[day]) pd[day]=new Date().toISOString(); localStorage.setItem('nok_plan_done',JSON.stringify(pd)); } }catch(e){}
+  planRead(nd,0);
+  toast(`Day ${day+1} complete ✓ · now Day ${nd+1}`); }
 function _chapText(b,c){ const ver=state.version, B=window.BIBLE||{};
   const src=(B[ver]&&B[ver][b])?B[ver]:(ver==='KJV'&&window.KJV_PART&&window.KJV_PART[b]?window.KJV_PART:null);
   const t=src&&src[b]&&src[b][String(c)]; return t&&Object.keys(t).length?t:null; }
@@ -5121,12 +5133,12 @@ function _chapPreviewHTML(b,c,max,withNotes){ const verses=_chapText(b,c); if(!v
 function _contAppend(){ try{
   const r=document.getElementById('reader'); const old=document.getElementById('contNext'); if(old) old.remove();
   if(document.body.classList.contains('legacy')||state.view!=='read'||!_contOn()||state.compare) return;
-  const T=_sideTarget(1); if(T.kind!=='ch') return;
+  const T=_contTarget(); if(T.kind!=='ch') return;
   if(ONLINE_VERSIONS[state.version]&&!_olHas(state.version,T.b,T.c)){ const k=_rdKey();
     ensureChapterOnline(state.version,T.b,T.c,ok=>{ if(ok&&state.view==='read'&&_rdKey()===k) _contAppend(); }); return; }
   if(!_chapText(T.b,T.c)){ if(state.version==='KJV'&&!(window.BIBLE&&window.BIBLE.KJV)) _kjvPart(T.b); return; }
   const pg=r.querySelector('.page'); if(!pg) return;
-  pg.insertAdjacentHTML('beforeend',`<div class="contnext" id="contNext" aria-hidden="true"><div class="cn-head"><span>${escHTML(T.b)} ${T.c}</span></div>${_chapPreviewHTML(T.b,T.c,0,true)}</div>`);
+  pg.insertAdjacentHTML('beforeend',`<div class="contnext" id="contNext" aria-hidden="true"><div class="cn-head"><span>${escHTML(T.label||(T.b+' '+T.c))}</span></div>${_chapPreviewHTML(T.b,T.c,0,true)}</div>`);
   const cn=document.getElementById('contNext'); if(cn) cn.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id'));
 }catch(e){} }
 /* once the next chapter's first verse is above the top and you pause, it becomes the chapter you are in */
@@ -5134,7 +5146,7 @@ function _contSwap(){ try{
   const r=document.getElementById('reader'), cn=document.getElementById('contNext'); if(!r||!cn||state.view!=='read') return;
   if(document.body.classList.contains('legacy')||!_contOn()||(typeof VSEL!=='undefined'&&VSEL.on)||document.querySelector('textarea.inline-ed')||_audBusy()) return;
   const rTop=r.getBoundingClientRect().top, first=cn.querySelector('.cn-v'); if(!first||first.getBoundingClientRect().top>rTop) return;
-  const T=_sideTarget(1); if(T.kind!=='ch') return;
+  const T=_contTarget(); if(T.kind!=='ch') return;
   let a=null; for(const el of cn.querySelectorAll('.cn-v')){ if(el.getBoundingClientRect().bottom>rTop+2){ a=el; break; } }
   if(!a) a=cn.querySelector('.cn-v:last-of-type');
   const v=+a.dataset.pv, off=a.getBoundingClientRect().top-rTop, hid=document.body.classList.contains('chrome-off');
