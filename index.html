@@ -773,6 +773,13 @@ body:not(.legacy) .contnext .note .notetools,body:not(.legacy) .contnext .note .
 body:not(.legacy)[data-view="read"] .readnav button{height:36px;box-sizing:border-box;padding-top:0!important;padding-bottom:0!important}
 body:not(.legacy)[data-view="read"] .readnav.planmode .rn-l{line-height:1.1}
 body:not(.legacy)[data-view="read"] .readnav.planmode .rn-s{font-size:9.5px;line-height:1.05;margin-top:1px}
+/* Menu page: Turn chapters by (17 Oct 2026) */
+.menulist .mturn{cursor:default;align-items:flex-start}
+.menulist .tm-turn{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:8px 0 6px;max-width:340px}
+.menulist .tm-turn button{flex:1;padding:9px 6px;background:var(--panel);border:0;color:var(--soft);font:13px var(--sans);cursor:pointer}
+.menulist .tm-turn button+button{border-left:1px solid var(--line)}
+.menulist .tm-turn button.on{background:var(--line);color:var(--ink);font-weight:700}
+.vmenu.tmenu .tm-full em{font-size:12px}
 .donepill{font-size:11px;background:var(--accent);color:var(--on-accent);border-radius:20px;padding:1px 9px;font-weight:700;vertical-align:middle}
 /* plan context bar in the reader */
 .planctx{background:var(--accent-soft);border:1px solid var(--note-line);border-radius:10px;padding:10px 14px;margin:0 0 16px;font-size:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -1558,7 +1565,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.64', date:'12 Oct 2026'};
+const BUILD={v:'1.2.65', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -1627,6 +1634,7 @@ function init(){
   setupResizer();
   _trackStreak();
   document.querySelectorAll('[data-ico]').forEach(b=>{ b.insertAdjacentHTML('afterbegin',ICONS[b.dataset.ico]); });
+  _tbMoreIco();
   document.getElementById('notesBtn').innerHTML=ICONS.chat;
   { const yb=document.getElementById('youBtn'); if(yb) yb.innerHTML=ICONS.user; const mb=document.getElementById('menuTopBtn'); if(mb) mb.innerHTML=ICONS.menu; }
   document.getElementById('refBtn').innerHTML=ICONS.library;
@@ -3017,13 +3025,18 @@ function renderMenu(){
     ${item(ICONS.library,'Nii Okai’s Bible Journal, verse by verse','Every note in order, book by book',"setView('mine')")}
     ${item(ICONS.library,'Matthew Henry’s Commentary','The classic commentary, shown alongside your reading','menuMHC()')}
     ${BLOG_URL?item(ICONS.pen,'Blog','Reflections and essays from Nii Okai',`window.open(BLOG_URL,'_blank','noopener')`):''}
+    ${!document.body.classList.contains('legacy')?`${head('Reading')}
+    ${item(_themeGlyph(),'Appearance',_themeDesc(),'appearanceMenu()')}
+    <div class="mitem mturn"><span class="mi">${ICONS.chapter}</span><div style="flex:1;min-width:0"><div class="mt">Turn chapters by</div>
+      <div class="tm-turn">${[['scroll','Scroll'],['swipe','Swipe'],['both','Both']].map(([k,l])=>`<button data-m="${k}" class="${_turnMode()===k?'on':''}" onclick="event.stopPropagation();_tmTurn('${k}')">${l}</button>`).join('')}</div>
+      <div class="md" id="tmTurnHint">${_turnHint(_turnMode())}</div></div></div>`:''}
     ${head('Your notes')}
     ${item('💾','Back up or restore','Save your notes to a file, or bring them back in','backupMenu()')}
     ${head('The app')}
     ${item('👋','The welcome','Nii Okai’s invitation — read or listen to it again any time','showWelcomeAgain()')}
     ${item('✎','Your name',(()=>{ const nm=readerName();
       return nm?('The app greets you as “'+escHTML(nm)+'” — tap to change it'):'Tell the app what to call you when you open it'; })(),'nameMenu()')}
-    ${item(_themeGlyph(),'Appearance',_themeDesc(),'appearanceMenu()')}
+    ${document.body.classList.contains('legacy')?item(_themeGlyph(),'Appearance',_themeDesc(),'appearanceMenu()'):''}
     ${item('📲','Install the App','Put it on your home screen — opens full-screen, works offline','installApp()')}
     ${item('🔄','Check for Updates',`You are on version ${BUILD.v} — tap to look for a newer one`,'checkForUpdates()')}
     ${head('Account')}
@@ -3162,8 +3175,11 @@ function _renderBP(){ const idx=window.BOOKS.map((b,i)=>i);
     const chev=document.body.classList.contains('legacy')?'':`<span class="bp-chev${open?' up':''}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>`;
     return `<div class="bp-book ${open?'cur':''}" onclick="bpToggle(${i})"><span>${b.name}</span>${chev}</div>${inner}`;
   }).join(''); }
+/* the Bible tab's corner button: ≡ like every other tab in the new UI, ••• in Legacy (17 Oct 2026) */
+function _tbMoreIco(){ const b=document.getElementById('tbMore'); if(!b) return; const leg=document.body.classList.contains('legacy');
+  b.innerHTML=leg?ICONS.dots:ICONS.menu; b.title=leg?'More':'Menu'; b.setAttribute('aria-label',b.title); }
 function toggleLegacy(){ const on=!document.body.classList.contains('legacy');
-  document.body.classList.toggle('legacy',on);
+  document.body.classList.toggle('legacy',on); try{ _tbMoreIco(); }catch(e){}
   try{ localStorage.setItem('nok_legacy',on?'1':''); }catch(e){}
   const b=document.getElementById('uiSwitch'); if(b) b.textContent=on?'✨ New UI':'🖥 Legacy UI';
   setView(on?'read':'home'); }
@@ -4114,13 +4130,9 @@ function tbMoreMenuNew(ev,back){ ev.stopPropagation(); closeVerseMenu();
   const _nNoted=(window._chapNoted||[]).length;
   m.innerHTML=`${_phoneCm?`<button class="tm-row tm-cm" onclick="event.stopPropagation();commentaryMenu({stopPropagation(){},currentTarget:document.getElementById('tbMore')},true)">${ICONS.chat}<span>Commentary</span><em>${_nNoted?_nNoted+(_nNoted===1?' note':' notes'):'None here'}</em><span class="tm-chev">›</span></button><div class="vm-div"></div>`:''}${rd?`<div class="vm-sec">Text size</div>
     <div class="tm-fs"><button onclick="_tmFont(-0.08)" aria-label="Smaller text">A−</button><span id="tmFs">${_fsPct()}%</span><button onclick="_tmFont(0.08)" aria-label="Larger text"><b>A+</b></button></div>`:''}
-    <div class="vm-sec">Appearance</div>
-    <div class="tm-fs tm-th"><button data-m="auto" class="${tm==='auto'?'on':''}" onclick="_tmTheme('auto')">Auto</button><button data-m="light" class="${tm==='light'?'on':''}" onclick="_tmTheme('light')">Light</button><button data-m="dark" class="${tm==='dark'?'on':''}" onclick="_tmTheme('dark')">Dark</button></div>
     <div class="vm-div"></div>
     ${rd?`<button class="tm-row" onclick="closeVerseMenu();toggleCompare()">${ICONS.swap}<span>Compare translations</span><em>${state.compare?'With '+escHTML(state.compare):'Off'}</em></button>`:''}
-    ${rd?(()=>{ const tm2=_turnMode(); return `<div class="vm-sec">Turn chapters by</div>
-      <div class="tm-fs tm-turn">${[['scroll','Scroll'],['swipe','Swipe'],['both','Both']].map(([k,l])=>`<button data-m="${k}" class="${tm2===k?'on':''}" onclick="_tmTurn('${k}')">${l}</button>`).join('')}</div>
-      <div class="tm-hint" id="tmTurnHint">${_turnHint(tm2)}</div>`; })():''}
+
     ${rd&&hasAudio?`<button class="tm-row tm-vrow" onclick="_tmVoiceToggle()">${ICONS.headphones}<span>Listen with</span><em>${escHTML(_tmVoiceLabel())}</em><span class="tm-chev">›</span></button>
       <div id="tmVoice" style="display:none">
         <select class="btn vsel vm-voice" id="narrSel" onchange="_tmNarr2(this.value)">
@@ -4129,7 +4141,9 @@ function tbMoreMenuNew(ev,back){ ev.stopPropagation(); closeVerseMenu();
           <option value="device" ${np==='device'?'selected':''}>This device’s voice (offline)</option></select>
         <div id="tmDev" style="${np==='device'?'':'display:none'}"><select class="btn vsel vm-voice" id="voiceSel" onchange="setVoicePref(this.value)"></select></div></div>`:''}
     ${rd?`<button class="tm-row" onclick="closeVerseMenu();shareChapter()">${ICONS.share}<span>Share this chapter</span></button>`:''}
-    ${localStorage.getItem('nok_dates_unlocked')&&isOwner()?`<button class="tm-row" onclick="closeVerseMenu();toggleDates()">${ICONS.cal}<span>Note dates</span></button>`:''}`;
+    ${localStorage.getItem('nok_dates_unlocked')&&isOwner()?`<button class="tm-row" onclick="closeVerseMenu();toggleDates()">${ICONS.cal}<span>Note dates</span></button>`:''}
+    <div class="vm-div"></div>
+    <button class="tm-row tm-full" onclick="closeVerseMenu();setView('menu')">${ICONS.menu}<span>Full menu</span><em>Appearance, settings…</em><span class="tm-chev">›</span></button>`;
   m.addEventListener('click',e=>e.stopPropagation());   /* size, appearance and the voice list keep the menu open */
   document.body.appendChild(m);
   if(rd&&hasAudio) fillVoiceSel();
@@ -5100,7 +5114,7 @@ function _turnMode(){ try{ const m=localStorage.getItem('nok_turn'); if(m==='bot
 function _contOn(){ return _turnMode()!=='swipe'; }
 function _swipeOn(){ return _turnMode()!=='scroll'; }
 function _tmTurn(m){ try{ localStorage.setItem('nok_turn',m); }catch(e){}
-  document.querySelectorAll('#vmenu .tm-turn button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  document.querySelectorAll('.tm-turn button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
   const h=document.getElementById('tmTurnHint'); if(h) h.textContent=_turnHint(m);
   if(state.view==='read'){ const r=document.getElementById('reader'), y=r?r.scrollTop:0; renderRead(); if(r) r.scrollTop=y; } }
 function _turnHint(m){ return m==='scroll'?'Keep scrolling down into the next chapter':m==='swipe'?'Swipe sideways to turn the chapter':'Scroll down or swipe sideways'; }
