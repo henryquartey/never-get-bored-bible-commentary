@@ -765,6 +765,14 @@ body:not(.legacy) .contnext .note .notetools,body:not(.legacy) .contnext .note .
 .swghost .sw-msg{position:absolute;top:40%;left:0;width:min(44vw,170px);text-align:left;padding:0 16px;font:600 14px/1.45 var(--sans);color:var(--soft)}
 .swghost[data-dir="-1"] .sw-msg{left:auto;right:0;text-align:right}
 .swghost .sw-msg.sw-fin{color:var(--ink);font-family:var(--serif);font-size:21px;font-weight:700}
+.vmenu.tmenu .tm-turn button{font-size:13px;color:var(--soft)}
+.vmenu.tmenu .tm-turn button.on{background:var(--line);color:var(--ink);font-weight:700}
+.vmenu.tmenu .tm-turn button+button{border-left:1px solid var(--line)}
+.vmenu.tmenu .tm-hint{font:12px/1.35 var(--sans);color:var(--soft);margin:0 10px 6px}
+/* Prev · Listen · Next: one size on the Bible tab and in a plan (17 Oct 2026) */
+body:not(.legacy)[data-view="read"] .readnav button{height:36px;box-sizing:border-box;padding-top:0!important;padding-bottom:0!important}
+body:not(.legacy)[data-view="read"] .readnav.planmode .rn-l{line-height:1.1}
+body:not(.legacy)[data-view="read"] .readnav.planmode .rn-s{font-size:9.5px;line-height:1.05;margin-top:1px}
 .donepill{font-size:11px;background:var(--accent);color:var(--on-accent);border-radius:20px;padding:1px 9px;font-weight:700;vertical-align:middle}
 /* plan context bar in the reader */
 .planctx{background:var(--accent-soft);border:1px solid var(--note-line);border-radius:10px;padding:10px 14px;margin:0 0 16px;font-size:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -1550,7 +1558,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.63', date:'12 Oct 2026'};
+const BUILD={v:'1.2.64', date:'12 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3497,7 +3505,7 @@ function _syncCmark(v){ const el=document.getElementById('v'+v); if(!el) return;
   const hidden=document.documentElement.classList.contains('hide-notes');
   const shown=hidden ? el.classList.contains('revealed') : !el.classList.contains('collapsed');
   m.classList.toggle('on',shown); m.title=(shown?'Hide':'Read')+' Nii Okai’s note on this verse'; }
-function toggleVerse(v){ const el=document.getElementById('v'+v); if(!el)return;
+function toggleVerse(v){ if(window._swEndT&&Date.now()-window._swEndT<400) return; const el=document.getElementById('v'+v); if(!el)return;
   if(document.documentElement.classList.contains('hide-notes')) el.classList.toggle('revealed'); // commentary globally off → reveal just this verse
   else el.classList.toggle('collapsed');                                                        // commentary on → hide just this verse
   _syncCmark(v); }
@@ -4110,7 +4118,9 @@ function tbMoreMenuNew(ev,back){ ev.stopPropagation(); closeVerseMenu();
     <div class="tm-fs tm-th"><button data-m="auto" class="${tm==='auto'?'on':''}" onclick="_tmTheme('auto')">Auto</button><button data-m="light" class="${tm==='light'?'on':''}" onclick="_tmTheme('light')">Light</button><button data-m="dark" class="${tm==='dark'?'on':''}" onclick="_tmTheme('dark')">Dark</button></div>
     <div class="vm-div"></div>
     ${rd?`<button class="tm-row" onclick="closeVerseMenu();toggleCompare()">${ICONS.swap}<span>Compare translations</span><em>${state.compare?'With '+escHTML(state.compare):'Off'}</em></button>`:''}
-    ${rd?`<button class="tm-row" onclick="_contToggle()">${ICONS.chapter}<span>Continuous scrolling</span><em>${_contOn()?'On':'Off'}</em></button>`:''}
+    ${rd?(()=>{ const tm2=_turnMode(); return `<div class="vm-sec">Turn chapters by</div>
+      <div class="tm-fs tm-turn">${[['scroll','Scroll'],['swipe','Swipe'],['both','Both']].map(([k,l])=>`<button data-m="${k}" class="${tm2===k?'on':''}" onclick="_tmTurn('${k}')">${l}</button>`).join('')}</div>
+      <div class="tm-hint" id="tmTurnHint">${_turnHint(tm2)}</div>`; })():''}
     ${rd&&hasAudio?`<button class="tm-row tm-vrow" onclick="_tmVoiceToggle()">${ICONS.headphones}<span>Listen with</span><em>${escHTML(_tmVoiceLabel())}</em><span class="tm-chev">›</span></button>
       <div id="tmVoice" style="display:none">
         <select class="btn vsel vm-voice" id="narrSel" onchange="_tmNarr2(this.value)">
@@ -5084,10 +5094,16 @@ document.addEventListener('mousedown',e=>{ window._vPoint={x:e.clientX,y:e.clien
     if(dx<0){ state.plan?planNav(1):nextChapter(); } else { state.plan?planNav(-1):prevChapter(); } },{passive:true});
 })();
 /* ---------- Reading that flows: swipe follows the finger, continuous scrolling (17 Oct 2026, new UI) ---------- */
-function _contOn(){ try{ return localStorage.getItem('nok_cont')!=='0'; }catch(e){ return true; } }
-function _contToggle(){ const on=!_contOn(); try{ localStorage.setItem('nok_cont',on?'1':'0'); }catch(e){}
-  closeVerseMenu(); if(state.view==='read') renderRead();
-  toast(on?'Continuous scrolling on — keep scrolling into the next chapter':'Continuous scrolling off'); }
+/* how chapters turn: 'both' (default) · 'scroll' (keep scrolling down) · 'swipe' (sideways) — 17 Oct 2026 */
+function _turnMode(){ try{ const m=localStorage.getItem('nok_turn'); if(m==='both'||m==='scroll'||m==='swipe') return m;
+  return localStorage.getItem('nok_cont')==='0'?'swipe':'both'; }catch(e){ return 'both'; } }
+function _contOn(){ return _turnMode()!=='swipe'; }
+function _swipeOn(){ return _turnMode()!=='scroll'; }
+function _tmTurn(m){ try{ localStorage.setItem('nok_turn',m); }catch(e){}
+  document.querySelectorAll('#vmenu .tm-turn button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  const h=document.getElementById('tmTurnHint'); if(h) h.textContent=_turnHint(m);
+  if(state.view==='read'){ const r=document.getElementById('reader'), y=r?r.scrollTop:0; renderRead(); if(r) r.scrollTop=y; } }
+function _turnHint(m){ return m==='scroll'?'Keep scrolling down into the next chapter':m==='swipe'?'Swipe sideways to turn the chapter':'Scroll down or swipe sideways'; }
 /* where Next (dir 1) or Prev (dir -1) leads from here */
 function _sideTarget(dir){
   if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]); const ci=state.plan.ci+dir;
@@ -5183,7 +5199,7 @@ function _swEnd(dx,vel){ const S=SW.s; SW.s=null; if(!S||!S.T) return; const r=d
   else { r.style.transform='translate3d(0,0,0)'; if(g) g.style.transform=`translate3d(${dir>0?w+12:-w-12}px,0,0)`;
     setTimeout(()=>{ r.style.transition=''; r.style.transform=''; if(g) g.remove(); },260); } }
 (function(){ const r=document.getElementById('reader'); if(!r) return;
-  const can=e=>{ if(document.body.classList.contains('legacy')||state.view!=='read'||e.touches.length!==1) return false;
+  const can=e=>{ if(document.body.classList.contains('legacy')||state.view!=='read'||e.touches.length!==1||!_swipeOn()) return false;
     const t=e.target; if(t.closest&&t.closest('textarea,input,select,.vmenu,#vspop,.copypop,.selbar,.inline-bar')) return false;
     if(typeof VSEL!=='undefined'&&VSEL.on) return false;
     const x=e.touches[0].clientX; return x>16&&x<window.innerWidth-16; };
@@ -5195,9 +5211,9 @@ function _swEnd(dx,vel){ const S=SW.s; SW.s=null; if(!S||!S.T) return; const r=d
         st.mode='h'; st.x=p.clientX-(dx>0?10:-10); SW.s={w:r.clientWidth,dir:0,T:null,g:null,dx:0}; try{ closeVerseMenu(); }catch(err){} }
       else { st.mode='v'; return; } }
     if(st.mode!=='h') return; e.preventDefault(); _swPlace(p.clientX-st.x); },{passive:false});
-  r.addEventListener('touchend',e=>{ if(!st) return; const m=st.mode; const ct=e.changedTouches&&e.changedTouches[0];
-    if(m==='h'){ const dx=ct?ct.clientX-st.x:0; _swEnd(dx,Math.abs(dx)/Math.max(1,Date.now()-st.t)); } st=null; },{passive:true});
-  r.addEventListener('touchcancel',()=>{ if(st&&st.mode==='h') _swEnd(0,0); st=null; },{passive:true});
+  document.addEventListener('touchend',e=>{ if(!st) return; const m=st.mode; const ct=e.changedTouches&&e.changedTouches[0];
+    if(m==='h'){ window._swEndT=Date.now(); const dx=ct?ct.clientX-st.x:0; _swEnd(dx,Math.abs(dx)/Math.max(1,Date.now()-st.t)); } st=null; },{passive:true,capture:true});
+  document.addEventListener('touchcancel',()=>{ if(st&&st.mode==='h'){ window._swEndT=Date.now(); _swEnd(0,0); } st=null; },{passive:true,capture:true});
 })();
 /* Desktop: two-finger horizontal swipe on a trackpad, or ← → keys, change chapter */
 (function(){ const rd=document.getElementById('reader'); if(!rd) return;
