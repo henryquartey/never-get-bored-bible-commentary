@@ -780,6 +780,26 @@ body:not(.legacy)[data-view="read"] .readnav.planmode .rn-s{font-size:9.5px;line
 .menulist .tm-turn button+button{border-left:1px solid var(--line)}
 .menulist .tm-turn button.on{background:var(--line);color:var(--ink);font-weight:700}
 .vmenu.tmenu .tm-full em{font-size:12px}
+/* the one menu: sheet from the bottom on phones, panel from the right on computers (17 Oct 2026) */
+.appsheet-bg{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.32);opacity:0;transition:opacity .22s}
+.appsheet-bg.on{opacity:1}
+.appsheet{position:fixed;left:0;right:0;bottom:0;z-index:151;max-height:88vh;display:flex;flex-direction:column;background:var(--bg);
+  border-radius:18px 18px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.25);transform:translateY(100%);transition:transform .24s cubic-bezier(.2,.8,.2,1)}
+.appsheet.on{transform:none}
+.appsheet .as-head{position:relative;display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px;font:700 17px var(--sans);color:var(--ink)}
+.appsheet .as-grab{position:absolute;top:6px;left:50%;width:38px;height:4px;margin-left:-19px;border-radius:3px;background:var(--line)}
+.appsheet .as-done{border:0;background:none;color:var(--ink);font:600 15px var(--sans);padding:6px 4px;cursor:pointer}
+.appsheet .as-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 14px calc(18px + env(safe-area-inset-bottom));max-width:none}
+.appsheet .mhead{margin:14px 4px 6px}
+.appsheet .mhead:first-child{margin-top:2px}
+.appsheet .mitem{padding:11px 14px;margin-bottom:7px;box-shadow:none}
+.appsheet .mitem .mi svg{width:20px;height:20px}
+.mitem.mstay{cursor:default}
+.mitem .tm-turn .ms-pct{color:var(--soft);cursor:default}
+.appsheet .ms-voice{margin:-2px 0 8px;padding:0 4px}
+.appsheet .ms-voice select{width:100%;margin:0 0 6px}
+@media (min-width:861px){ .appsheet{left:auto;top:0;width:420px;max-height:none;border-radius:0;transform:translateX(100%)} .appsheet.on{transform:none} .appsheet .as-grab{display:none} }
+@media (hover:none){ body:not(.legacy) .mitem:hover{border-color:var(--line)} }
 .donepill{font-size:11px;background:var(--accent);color:var(--on-accent);border-radius:20px;padding:1px 9px;font-weight:700;vertical-align:middle}
 /* plan context bar in the reader */
 .planctx{background:var(--accent-soft);border:1px solid var(--note-line);border-radius:10px;padding:10px 14px;margin:0 0 16px;font-size:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -1565,7 +1585,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.65', date:'12 Oct 2026'};
+const BUILD={v:'1.2.66', date:'17 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3011,6 +3031,78 @@ function renderDiscourse(){
 }
 function menuMHC(){ if(!document.body.classList.contains('legacy')){ setView('read'); setTimeout(openMHSheet,120); return; }
   if(!state.refcomm) toggleRefComm(); setView('read'); }
+/* ---------- One menu for every tab (17 Oct 2026, new UI) ----------
+   The list is built once here; the sheet (≡ on any tab) and the Menu page both use it. Order = most used first,
+   a best guess until there are visitor numbers. */
+function _appMenuHTML(withChapter,inSheet){
+  const close=inSheet?'_appSheetClose();':'';
+  const item=(ic,t,d,go,soon,stay)=>`<div class="mitem${stay?' mstay':''}" onclick="${soon?`toast('Coming soon — ${d}')`:(stay?'':close)+go}">
+    <span class="mi">${ic}</span><div><div class="mt">${t}</div><div class="md">${d}</div></div>
+    ${soon?'<span class="soon">Coming soon</span>':'<span class="chev">›</span>'}</div>`;
+  const head=t=>`<div class="mhead">${t}</div>`;
+  let h='';
+  if(withChapter){ const B=window.BOOKS[state.book]||{name:''}, here=B.name+' '+state.chapter, n=(window._chapNoted||[]).length;
+    const hasAudio=!!(window.AUDIO_KJV||window.AUDIO_KOKORO), np=narrPref();
+    h+=head('This chapter · '+escHTML(here));
+    h+=item(ICONS.chat,'Commentary',n?n+(n===1?' note':' notes')+' in this chapter — jump to one':'No notes in this chapter yet',
+      "commentaryMenu({stopPropagation(){},currentTarget:document.getElementById('tbMore')},true)");
+    h+=`<div class="mitem mstay"><span class="mi">${ICONS.chapter}</span><div style="flex:1;min-width:0"><div class="mt">Text size</div>
+      <div class="tm-turn"><button onclick="event.stopPropagation();_tmFont(-0.08)" aria-label="Smaller text">A−</button><button id="tmFs" class="ms-pct" tabindex="-1">${_fsPct()}%</button><button onclick="event.stopPropagation();_tmFont(0.08)" aria-label="Larger text"><b>A+</b></button></div></div></div>`;
+    h+=item(ICONS.swap,'Compare translations',state.compare?'On — with '+escHTML(state.compare):'Read two translations side by side','toggleCompare()');
+    if(hasAudio){ h+=item(ICONS.headphones,'Listen with',escHTML(_tmVoiceLabel()),'_tmVoiceToggle()',false,true);
+      h+=`<div id="tmVoice" class="ms-voice" style="display:none">
+        <select class="btn vsel vm-voice" id="narrSel" onchange="_tmNarr2(this.value)">
+          ${window.AUDIO_KJV?`<option value="human" ${np==='human'?'selected':''}>Human narrator (LibriVox)</option>`:''}
+          ${studioVoices().map(v=>{ const V=window.AUDIO_KOKORO.voices[v]; return `<option value="studio:${v}" ${np==='studio'&&studioVoicePref()===v?'selected':''}>Studio voice: ${escHTML(V.name)}</option>`; }).join('')}
+          <option value="device" ${np==='device'?'selected':''}>This device’s voice (offline)</option></select>
+        <div id="tmDev" style="${np==='device'?'':'display:none'}"><select class="btn vsel vm-voice" id="voiceSel" onchange="setVoicePref(this.value)"></select></div></div>`; }
+    h+=item(ICONS.share,'Share this chapter','Send a link to '+escHTML(here),'shareChapter()');
+    if(localStorage.getItem('nok_dates_unlocked')&&isOwner()) h+=item(ICONS.cal,'Note dates','Show or hide when each note was written','toggleDates()'); }
+  h+=head('Read');
+  h+=item(ICONS.pen,'Explore the journal','Newest notes, themes, books, and the most written-about chapters',"setView('explore')");
+  h+=item(ICONS.library,'Nii Okai’s Bible Journal, verse by verse','Every note in order, book by book',"setView('mine')");
+  h+=item(ICONS.library,'Matthew Henry’s Commentary','The classic commentary, shown alongside your reading','menuMHC()');
+  if(BLOG_URL) h+=item(ICONS.pen,'Blog','Reflections and essays from Nii Okai',`window.open(BLOG_URL,'_blank','noopener')`);
+  h+=head('Reading settings');
+  h+=item(_themeGlyph(),'Appearance',_themeDesc(),'appearanceMenu()');
+  h+=`<div class="mitem mstay mturn"><span class="mi">${ICONS.chapter}</span><div style="flex:1;min-width:0"><div class="mt">Turn chapters by</div>
+      <div class="tm-turn">${[['scroll','Scroll'],['swipe','Swipe'],['both','Both']].map(([k,l])=>`<button data-m="${k}" class="${_turnMode()===k?'on':''}" onclick="event.stopPropagation();_tmTurn('${k}')">${l}</button>`).join('')}</div>
+      <div class="md" id="tmTurnHint">${_turnHint(_turnMode())}</div></div></div>`;
+  h+=head('Your notes');
+  h+=item('💾','Back up or restore','Save your notes to a file, or bring them back in','backupMenu()');
+  h+=head('Account');
+  h+=fbUser()?item('<span class="acav">'+_acLetter()+'</span>','Signed in as '+(fbUser().email||'your Google account'),'Your place and highlights follow you to every device','accountMenu()')
+             :item(ICONS.user,'Sign in with Google','Keep your reading place and highlights on every device you use','fbSignIn()');
+  h+=head('The app');
+  h+=item('👋','The welcome','Nii Okai’s invitation — read or listen to it again any time','showWelcomeAgain()');
+  h+=item('✎','Your name',(()=>{ const nm=readerName(); return nm?('The app greets you as “'+escHTML(nm)+'” — tap to change it'):'Tell the app what to call you when you open it'; })(),'nameMenu()');
+  h+=item('📲','Install the App','Put it on your home screen — opens full-screen, works offline','installApp()');
+  h+=item('🔄','Check for Updates',`You are on version ${BUILD.v} — tap to look for a newer one`,'checkForUpdates()');
+  if(isOwner()){ h+=head('Owner tools');
+    h+=`<div class="mitem" id="goLiveItem" onclick="${close}goLive()"><span class="mi">🚀</span><div><div class="mt">Go live</div><div class="md" id="goLiveDesc">Checking whether anything is waiting…</div></div><span class="chev">›</span></div>`;
+    h+=item(ICONS.download,'Export My Notes','Save your notes to a file for publishing','exportCommentary()');
+    h+=item(ICONS.upload,'Import Notes','Bring notes back in from a file',"document.getElementById('importFile').click()");
+    h+=item('👁','Preview as a Reader','See the app exactly as your readers see it','togglePreview()');
+    h+=item('🖥','Switch Interface','Toggle between the new UI and the legacy UI','toggleLegacy()'); }
+  h+=`<p style="text-align:center;color:var(--soft);font-size:11.5px;font-family:var(--sans)">Never Get Bored · v${BUILD.v} · built ${BUILD.date}</p>`;
+  return h; }
+function openAppMenu(){ try{ closeVerseMenu(); }catch(e){} try{ if(typeof closeSelMenu==='function') closeSelMenu(); }catch(e){}
+  _appSheetClose(true);
+  const bg=document.createElement('div'); bg.id='appSheetBg'; bg.className='appsheet-bg'; bg.onclick=()=>_appSheetClose();
+  const sh=document.createElement('div'); sh.id='appSheet'; sh.className='appsheet'; sh.setAttribute('role','dialog'); sh.setAttribute('aria-label','Menu');
+  sh.innerHTML=`<div class="as-head"><span class="as-grab"></span><b>Menu</b><button class="as-done" onclick="_appSheetClose()">Done</button></div>
+    <div class="as-body menulist">${_appMenuHTML(state.view==='read',true)}</div>`;
+  sh.addEventListener('click',e=>e.stopPropagation());
+  document.body.appendChild(bg); document.body.appendChild(sh);
+  requestAnimationFrame(()=>{ bg.classList.add('on'); sh.classList.add('on'); });
+  try{ if(document.getElementById('narrSel')) fillVoiceSel(); }catch(e){}
+  if(isOwner()) try{ _checkDraft(); }catch(e){} }
+function _appSheetClose(now){ const sh=document.getElementById('appSheet'), bg=document.getElementById('appSheetBg');
+  if(!sh&&!bg) return;
+  if(now){ if(sh) sh.remove(); if(bg) bg.remove(); return; }
+  if(sh){ sh.id=''; sh.classList.remove('on'); setTimeout(()=>sh.remove(),240); }
+  if(bg){ bg.id=''; bg.classList.remove('on'); setTimeout(()=>bg.remove(),240); } }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&document.getElementById('appSheet')) _appSheetClose(); });
 function renderMenu(){
   document.getElementById('crumb').textContent='Menu';
   document.getElementById('chapselWrap').style.display='none';
@@ -3019,6 +3111,9 @@ function renderMenu(){
     <span class="mi">${ic}</span><div><div class="mt">${t}</div><div class="md">${d}</div></div>
     ${soon?'<span class="soon">Coming soon</span>':'<span class="chev">›</span>'}</div>`;
   const head=t=>`<div class="mhead">${t}</div>`;
+  if(!document.body.classList.contains('legacy')){
+    document.getElementById('reader').innerHTML=`<div class="page"><div class="menulist">${_appMenuHTML(false,false)}</div></div>`;
+    document.getElementById('reader').scrollTop=0; if(isOwner()) _checkDraft(); return; }
   document.getElementById('reader').innerHTML=`<div class="page"><div class="menulist">
     ${head('Read')}
     ${item(ICONS.pen,'Explore the journal','Newest notes, themes, books, and the most written-about chapters',"setView('explore')")}
@@ -3991,6 +4086,7 @@ function setView(v){
   if(v==='plan' && state.view==='read' && state.plan){ state.plan=null; state.view='plan'; setViewTabs(); render(); toggleSidebar(false); return; }
   if(v==='plan' && planResume){ planRead(planResume.day,planResume.ci); return; } // resume where you left off in the plan
   if(v==='plan' && !document.body.classList.contains('legacy')) _planPicked=false;
+  if(v==='menu'&&!document.body.classList.contains('legacy')){ openAppMenu(); return; }   /* one menu, over the page you are on (17 Oct 2026) */
   if(v==='menu'){ if(state.view==='menu'){ v=state._back||'home'; } else { state._back=state.view; } } // tap Menu again to go back
   state.plan=null; state.view=v; setViewTabs(); render(); toggleSidebar(false); }
 /* Warm, congratulatory completion chime — an ascending major arpeggio that resolves into a chord.
@@ -4122,7 +4218,7 @@ function _tmNarr2(v){ setNarrPref(v); const b=document.getElementById('tmDev'); 
 function shareChapter(){ const name=window.BOOKS[state.book].name, ch=state.chapter;
   const url=location.origin+'/?b='+encodeURIComponent(name)+'&c='+ch, title=name+' '+ch+' — Nii Okai’s Bible Journal';
   if(navigator.share) navigator.share({title:title,url:url}).catch(()=>{}); else _clip(url,'Link copied — paste it to share'); }
-function tbMoreMenuNew(ev,back){ ev.stopPropagation(); closeVerseMenu();
+function tbMoreMenuNew(ev,back){ if(ev&&ev.stopPropagation) ev.stopPropagation(); if(!document.body.classList.contains('legacy')) return openAppMenu(); closeVerseMenu();
   const m=document.createElement('div'); m.className='vmenu tmenu'+(back?' tm-in-l':''); m.id='vmenu';
   const rd=state.view==='read'; const np=narrPref(); const tm=_themeMode;
   const hasAudio=!!(window.AUDIO_KJV||window.AUDIO_KOKORO);
@@ -4149,7 +4245,7 @@ function tbMoreMenuNew(ev,back){ ev.stopPropagation(); closeVerseMenu();
   if(rd&&hasAudio) fillVoiceSel();
   const r=ev.currentTarget.getBoundingClientRect(); const mw=m.offsetWidth;
   m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(8,Math.min(r.right-mw,window.innerWidth-mw-8))+'px'; }
-function tbMoreMenu(ev){ if(!document.body.classList.contains('legacy')) return tbMoreMenuNew(ev);
+function tbMoreMenu(ev){ if(!document.body.classList.contains('legacy')){ if(ev&&ev.stopPropagation) ev.stopPropagation(); return openAppMenu(); }
   ev.stopPropagation(); closeVerseMenu();
   const m=document.createElement('div'); m.className='vmenu'; m.id='vmenu';
   const dark=document.documentElement.dataset.theme==='dark';
