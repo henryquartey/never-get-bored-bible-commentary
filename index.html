@@ -1585,7 +1585,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.66', date:'17 Oct 2026'};
+const BUILD={v:'1.2.67', date:'18 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -5325,11 +5325,32 @@ function _swEnd(dx,vel){ const S=SW.s; SW.s=null; if(!S||!S.T) return; const r=d
     if(m==='h'){ window._swEndT=Date.now(); const dx=ct?ct.clientX-st.x:0; _swEnd(dx,Math.abs(dx)/Math.max(1,Date.now()-st.t)); } st=null; },{passive:true,capture:true});
   document.addEventListener('touchcancel',()=>{ if(st&&st.mode==='h'){ window._swEndT=Date.now(); _swEnd(0,0); } st=null; },{passive:true,capture:true});
 })();
+/* Mac / PC: the two-finger sideways swipe follows the fingers too (18 Oct 2026, new UI) */
+function _swKey(dir){ if(SW.s||document.getElementById('swGhost')) return; const r=document.getElementById('reader'); if(!r) return;
+  SW.s={w:r.clientWidth,dir:0,T:null,g:null,dx:0}; _swPlace(dir>0?-1:1);
+  const w=r.clientWidth; _swEnd(dir>0?-w*0.5:w*0.5,1); }
+(function(){ const r=document.getElementById('reader'); if(!r) return;
+  let acc=0, tmr=0, on=false, lockUntil=0;
+  r.addEventListener('wheel',e=>{
+    if(document.body.classList.contains('legacy')||state.view!=='read'||!_swipeOn()) return;
+    const ax=Math.abs(e.deltaX), ay=Math.abs(e.deltaY);
+    if(Date.now()<lockUntil){ if(ax>ay) e.preventDefault(); return; }       /* the tail of the last flick */
+    if(!on){ if(ax<3||ax<=ay*1.5) return;                                    /* mostly up/down → ordinary scrolling */
+      if(document.querySelector('textarea.inline-ed')||(typeof VSEL!=='undefined'&&VSEL.on)) return;
+      on=true; acc=0; SW.s={w:r.clientWidth,dir:0,T:null,g:null,dx:0}; try{ closeVerseMenu(); }catch(err){} }
+    e.preventDefault();
+    const w=r.clientWidth; acc=Math.max(-w*1.05,Math.min(w*1.05,acc-(e.deltaMode===1?e.deltaX*16:e.deltaX)));
+    if(acc!==0) _swPlace(acc);
+    clearTimeout(tmr);
+    tmr=setTimeout(()=>{ on=false; lockUntil=Date.now()+380; const a=acc; acc=0;
+      if(SW.s&&SW.s.T) _swEnd(a,0); else SW.s=null; },140);
+  },{passive:false});
+})();
 /* Desktop: two-finger horizontal swipe on a trackpad, or ← → keys, change chapter */
 (function(){ const rd=document.getElementById('reader'); if(!rd) return;
   let acc=0,lock=0,tmr=0;
   rd.addEventListener('wheel',e=>{
-    if(state.view!=='read') return;
+    if(state.view!=='read'||!document.body.classList.contains('legacy')) return;
     if(Math.abs(e.deltaX)<=Math.abs(e.deltaY)*1.5) { acc=0; return; }   // mostly vertical → normal scroll
     const now=Date.now(); if(now<lock) return;
     acc+=e.deltaX; clearTimeout(tmr); tmr=setTimeout(()=>{acc=0;},220);
@@ -5340,6 +5361,7 @@ function _swEnd(dx,vel){ const S=SW.s; SW.s=null; if(!S||!S.T) return; const r=d
     if(state.view!=='read') return;
     const t=e.target; if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)) return;
     if(e.metaKey||e.ctrlKey||e.altKey) return;
+    if(!document.body.classList.contains('legacy')&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){ e.preventDefault(); _swKey(e.key==='ArrowRight'?1:-1); return; }
     if(e.key==='ArrowRight'){ state.plan?planNav(1):nextChapter(); e.preventDefault(); }
     else if(e.key==='ArrowLeft'){ state.plan?planNav(-1):prevChapter(); e.preventDefault(); }
   });
