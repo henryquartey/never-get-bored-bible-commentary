@@ -1585,7 +1585,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.68', date:'18 Oct 2026'};
+const BUILD={v:'1.2.69', date:'21 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3530,7 +3530,7 @@ function renderRead(){
       const mark=shown?`<span onclick="event.stopPropagation();toggleVerse(${v})" ontouchend="event.stopPropagation();event.preventDefault();toggleVerse(${v})" title="${_openNow?'Hide':'Read'} Nii Okai’s note${shown>1?'s':''} on this verse" class="cmark${_openNow?' on':''}">${ICONS.chat}${shown>1?'<b>'+shown+'</b>':''}</span>`:'';
       const ncTier=shown?(shown>=3?' nc3':shown===2?' nc2':' nc1'):'';
       const hlc=hlGet(name,ch,v);
-      html+=`<div class="verse ${shown?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" data-hint="${shown?'Click for options · double-click to read the note · triple-click to write another':'Click for options · double-click to write a note'}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${shown?1:0})">
+      html+=`<div class="verse ${shown?'has-note':''}${ncTier}${hlc?' hl-'+hlc:''}" id="v${v}" data-v="${v}" data-hint="${shown?(document.body.classList.contains('legacy')?'Click for options · double-click to read the note · triple-click to write another':'Click for options · double-click to read the note · double-click again to write another'):'Click for options · double-click to write a note'}" onclick="vTap(event,'${esc(name)}',${ch},${v})" ondblclick="vDbl(event,'${esc(name)}',${ch},${v},${shown?1:0})">
         <span class="vn" onclick="event.stopPropagation();openEditor('${esc(name)}',${ch},${v})" title="Add a note">${v}</span>${txt||'<i style="color:var(--soft)">(verse not in this translation)</i>'}${mark}</div>`;
       /* A thought can sit in the refined edition on a verse that carries no raw note — that is
          how a mis-filed note is put right without altering Legacy. Render on either. (21 Sep 2026) */
@@ -3631,6 +3631,12 @@ function dblAddNote(name,ch,v){ try{ const s=window.getSelection(); if(s&&s.remo
 let _vTapT=null;
 /* Triple-click (or triple-tap) a verse that already has notes to write another one. Double-click
    still reads the notes; the third click puts that back and opens a fresh note. (28 Sep 2026) */
+/* new UI: double-tap a verse whose note is already open → write another note (21 Oct 2026) */
+function _noteOpen(v){ const el=document.getElementById('v'+v); if(!el) return false;
+  return document.documentElement.classList.contains('hide-notes')?el.classList.contains('revealed'):!el.classList.contains('collapsed'); }
+function _dblNote(name,ch,v,has){
+  if(has&&!document.body.classList.contains('legacy')&&_noteOpen(v)){ window._noSelUntil=Date.now()+900; openEditor(name,ch,v); return; }
+  if(has) toggleVerse(v); else openEditor(name,ch,v); }
 function _tripleNew(name,ch,v){
   const row=document.getElementById('v'+v); if(!row||!row.classList.contains('has-note')) return;
   clearTimeout(_vTapT); closeVerseMenu(); if(typeof closeSelMenu==='function') closeSelMenu();
@@ -3660,11 +3666,11 @@ function vDbl(ev,name,ch,v,hasNote){ if(IS_TOUCH) return; if(VSEL.on) return; cl
   try{ const s=window.getSelection(); if(s&&s.removeAllRanges) s.removeAllRanges(); }catch(e){}
   if(typeof closeSelMenu==='function') closeSelMenu();
   window._lastDbl={name:name,ch:ch,v:v,has:!!hasNote,t:Date.now()};
-  if(hasNote) toggleVerse(v); else openEditor(name,ch,v); }
+  _dblNote(name,ch,v,!!hasNote); }
 document.addEventListener('click',e=>{ const d=window._lastDbl;
   if(e.detail!==3||!d||Date.now()-d.t>700) return;
   window._lastDbl=null; e.stopPropagation(); e.preventDefault();
-  if(d.has&&!VSEL.on) _tripleNew(d.name,d.ch,d.v); },true);
+  if(d.has&&!VSEL.on&&document.body.classList.contains('legacy')) _tripleNew(d.name,d.ch,d.v); },true);
 /* menu → 'Read Nii Okai's note': make sure it's open, then bring it into view */
 function vmReadNote(ev,v){ ev.stopPropagation(); closeVerseMenu();
   const el=document.getElementById('v'+v); if(!el) return;
@@ -5167,7 +5173,7 @@ document.addEventListener('mousedown',e=>{ window._vPoint={x:e.clientX,y:e.clien
       clearTimeout(timer); lastKey=''; return; }        // a scroll or a long press, not a tap
     { const dt=window._dblTap;                                // third quick tap → a new note on that verse
       if(dt&&Date.now()-dt.t<380){ window._dblTap=null; clearTimeout(timer); lastKey='';
-        if(dt.has&&!VSEL.on) _tripleNew(dt.name,dt.ch,dt.v); return; } }
+        if(dt.has&&!VSEL.on&&document.body.classList.contains('legacy')) _tripleNew(dt.name,dt.ch,dt.v); return; } }
     const t=e.target;
     if(t.closest&&t.closest('.vn,.cmark,.vmenu-btn,.corrlink,a,button,select,input,textarea,.note,.notewrap,.vmenu,.copypop')) return;
     const row=t.closest&&t.closest('.verse,.cmprow'); if(!row||!row.dataset.v) return;
@@ -5182,7 +5188,7 @@ document.addEventListener('mousedown',e=>{ window._vPoint={x:e.clientX,y:e.clien
       const has=row.classList.contains('has-note');
       window._dblTap={t:now,has:has,name:name,ch:ch,v:v};
       closeVerseMenu(); if(typeof closeSelMenu==='function')closeSelMenu();
-      if(has) toggleVerse(v); else openEditor(name,ch,v);
+      _dblNote(name,ch,v,has);
       return; }
     lastKey=key; lastT=now;
     clearTimeout(timer);
