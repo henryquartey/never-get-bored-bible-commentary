@@ -800,6 +800,50 @@ body:not(.legacy)[data-view="read"] .readnav.planmode .rn-s{font-size:9.5px;line
 .appsheet .ms-voice select{width:100%;margin:0 0 6px}
 @media (min-width:861px){ .appsheet{left:auto;top:0;width:420px;max-height:none;border-radius:0;transform:translateX(100%)} .appsheet.on{transform:none} .appsheet .as-grab{display:none} }
 @media (hover:none){ body:not(.legacy) .mitem:hover{border-color:var(--line)} }
+/* Discourse (21 Oct 2026) */
+.ds .ds-manners .cnt{font:14px/1.6 var(--sans);color:var(--soft)}
+.ds .hk{color:var(--ink)}
+.ds .hcard.hero .hk{color:var(--on-accent)}
+.ds .ds-kind{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:4px 0 10px}
+.ds .ds-kind button{flex:1;padding:9px 6px;background:var(--panel);border:0;color:var(--soft);font:13px var(--sans);cursor:pointer}
+.ds .ds-kind button+button{border-left:1px solid var(--line)}
+.ds .ds-kind button.on{background:var(--line);color:var(--ink);font-weight:700}
+.ds .ds-in{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:15px var(--sans);padding:10px 12px;margin:0 0 8px}
+.ds .ds-lbl{display:block;font:600 12.5px var(--sans);color:var(--soft);margin:2px 0 0}
+.ds .ds-lbl .ds-in{margin-top:5px}
+.ds .ds-ok{display:flex;gap:8px;align-items:center;font:13.5px var(--sans);color:var(--ink);margin:4px 0 10px}
+.ds .ds-ok input{width:18px;height:18px}
+.ds .ds-fine{font-size:12px;margin:8px 0 0}
+.ds .ds-small{font-size:12.5px}
+.ds .ds-filt{display:flex;gap:8px;margin:4px 0 12px}
+.ds .ds-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.ds .ds-tag{font:700 10.5px var(--sans);letter-spacing:.8px;text-transform:uppercase;color:var(--soft)}
+.ds .ds-ref,.ds .ds-refx{font:600 13px var(--sans);color:var(--ink);background:none;border:0;padding:0;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.ds .ds-refx{text-decoration:none;cursor:default}
+.ds .cnt{font:15.5px/1.6 var(--serif,Georgia,serif);color:var(--ink);white-space:pre-wrap}
+.ds .ds-by{font:12.5px var(--sans);color:var(--soft);margin-top:8px}
+.ds .ds-badge{font-size:11px;border:1px solid var(--line);border-radius:10px;padding:1px 7px;margin-left:4px}
+.ds .ds-act{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ds .ds-sp{flex:1}
+.ds .ds-b{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:16px;padding:6px 12px;font:600 12.5px var(--sans);cursor:pointer}
+.ds .ds-b.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ds .ds-x{color:var(--soft);border-color:transparent;background:none}
+.ds .ds-why{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.ds .ds-replies:not(:empty){margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.ds .ds-rep{padding:8px 0 10px;border-bottom:1px solid var(--line)}
+.ds .ds-rt{font:14.5px/1.55 var(--sans);color:var(--ink);white-space:pre-wrap}
+.ds .ds-rep .ds-by{display:flex;align-items:center;gap:6px;margin-top:4px}
+.ds .ds-rbox{margin-top:10px}
+.ds .ds-rin{min-height:64px}
+.ds .ds-rbox .btn{margin-top:8px}
+.ds .ds-q{padding:10px 0;border-bottom:1px solid var(--line)}
+.ds .ds-q:last-child{border-bottom:0}
+.ds .ds-qotw{border-color:var(--ink)}
+.ds .ds-seedh{font:700 10.5px var(--sans);letter-spacing:.8px;text-transform:uppercase;color:var(--soft);margin:20px 4px 10px}
+.ds .ds-empty{text-align:center;padding:22px 10px;font:14px var(--sans)}
+.ds .ds-note{display:block;margin:10px 0 0;background:none;border:0;padding:0;color:var(--ink);font:600 13px var(--sans);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.ds .ds-pinned{border-width:1.5px}
+.ds .ds-flash{outline:2px solid var(--ink);outline-offset:2px}
 .donepill{font-size:11px;background:var(--accent);color:var(--on-accent);border-radius:20px;padding:1px 9px;font-weight:700;vertical-align:middle}
 /* plan context bar in the reader */
 .planctx{background:var(--accent-soft);border:1px solid var(--note-line);border-radius:10px;padding:10px 14px;margin:0 0 16px;font-size:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -1585,7 +1629,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.69', date:'21 Oct 2026'};
+const BUILD={v:'1.2.71', date:'22 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2998,6 +3042,7 @@ function renderHome(){
   if(vd&&!vtext){ ensureVersion(state.version,()=>{ if(state.view==='home') renderHome(); }); }
 }
 function renderDiscourse(){
+  if(!document.body.classList.contains('legacy')) return renderDiscourse2();
   document.getElementById('crumb').textContent='Discourse';
   document.getElementById('chapselWrap').style.display='none';
   document.getElementById('readfoot').style.display='none';
@@ -3029,6 +3074,287 @@ function renderDiscourse(){
   </div>`;
   document.getElementById('reader').scrollTop=0;
 }
+/* ---------- Discourse: readers' shared notes and questions (21 Oct 2026, new UI; Legacy keeps its own page) ----------
+   Anyone can read. To share, reply or say Amen you sign in with Google, so every post has a real person behind it.
+   A reader's FIRST post waits for Nii Okai to approve it; after that their posts go up straight away. Anyone can report a
+   post; Nii Okai sees reports and can remove a post or block a person. Everything a reader shares they can take down.
+   Data (Firestore): disc_posts/{id} (+ /replies) · disc_queue (waiting for a look) · disc_members/{uid} · disc_reports. */
+const DS={posts:[],last:null,more:true,filter:'all',mine:[],member:null,trusted:false,queue:[],reports:[],kind:'note',
+  loaded:false,err:'',open:{},replies:{},prefill:null,busy:false};
+const DS_MANNERS=`This is a table of friends around the Word. Disagree, ask hard questions, admit doubt — all welcome. But: speak the truth in love (Ephesians 4:15). Be swift to hear, slow to speak, slow to wrath (James 1:19). Let your speech be alway with grace, seasoned with salt (Colossians 4:6). Disagree with the idea, never the person. No mockery, no selling, no links elsewhere. Anything that breaks these is taken down — quietly, and without argument.`;
+function _dsApi(){ return (window.FB&&window.FB.disc)||null; }
+function _dsId(s){ return String(s||'').replace(/[^A-Za-z0-9_-]/g,''); }
+function _dsMs(t){ if(!t) return Date.now(); if(typeof t==='number') return t; if(t.toMillis) return t.toMillis(); if(t.seconds) return t.seconds*1000; return Date.now(); }
+function _dsAgo(t){ const ms=_dsMs(t), d=(Date.now()-ms)/864e5;
+  if(d<1/24) return 'just now'; if(d<1) return Math.max(1,Math.round(d*24))+'h ago'; if(d<2) return 'yesterday'; if(d<7) return Math.floor(d)+' days ago';
+  return new Date(ms).toLocaleDateString(undefined,{day:'numeric',month:'short',year:(new Date(ms).getFullYear()===new Date().getFullYear()?undefined:'numeric')}); }
+function _dsClamp(text,lines){ return `<div class="cn" style="--cl:${lines||8}" onclick="cnToggle(event,this)"><div class="cnt">${escHTML(text)}</div><button class="cnm" type="button" aria-expanded="false"><span class="cnl">Read more</span>${ICONS.chev}</button></div>`; }
+function _dsDefaultName(){ if(isOwner()) return 'Nii Okai';
+  try{ const n=localStorage.getItem('nok_ds_name'); if(n) return n; }catch(e){}
+  const u=fbUser(); const d=((u&&u.displayName)||'').trim().split(/\s+/).filter(Boolean);
+  if(d.length>1) return d[0]+' '+d[d.length-1][0].toUpperCase()+'.'; return d[0]||readerName()||''; }
+function _dsAgreed(){ try{ return localStorage.getItem('nok_ds_ok')==='1'||!!(DS.member&&DS.member.name); }catch(e){ return false; } }
+/* Nii Okai's own notes fill the page while the feed is young — newest verses first, refined edition, never a private passage */
+function _dsSeed(){ if(!window.REFINED||!Array.isArray(window.PRIVATE)) return [];
+  const priv=new Set(window.PRIVATE.map(q=>q.b+'|'+q.c+'|'+q.v)); const seen=new Set(), out=[];
+  const all=_jrnAll().filter(n=>n.v>0).slice().sort((a,b)=>a.date<b.date?1:-1);
+  for(const n of all){ const k=n.b+'|'+n.ch+'|'+n.v; if(seen.has(k)||priv.has(k)) continue; seen.add(k);
+    const r=refinedFor(n.b,n.ch,n.v); const t=r&&r[0]&&r[0].m?_stripImport(r[0].m,n.b,n.ch,n.v):'';
+    if(!t||t.length<90||t.length>1400) continue;
+    out.push({b:n.b,ch:n.ch,v:n.v,text:t,date:n.date}); if(out.length>=6) break; }
+  return out; }
+/* Conversation starters (22 Oct 2026). r = the verse, q = the question, n = where Nii Okai's note sits if not on r. */
+const DS_STARTERS=[
+ {k:'gen6',r:'Genesis 6:2',q:'Who were the “sons of God” who took the daughters of men as wives — angels, the line of Seth, or someone else? What makes you lean the way you do?'},
+ {k:'exo17',r:'Exodus 17:12',q:'Israel won only while Moses’ hands stayed up — and he needed Aaron and Hur to hold them there. Who is holding up your hands right now? Whose hands are you holding up?'},
+ {k:'ecc1',r:'Ecclesiastes 1:2',q:'“Vanity of vanities; all is vanity.” Why does Ecclesiastes sound so hopeless — and why do you think GOD put a book like this in the Bible?'},
+ {k:'ruth120',r:'Ruth 1:20',q:'Naomi said “the Almighty hath dealt very bitterly with me.” She blamed GOD, not the devil. Do we sometimes give the devil more credit for our troubles than he is due?'},
+ {k:'neh14',r:'Nehemiah 1:4',q:'Many knew Jerusalem’s walls were broken down; only Nehemiah sat down and wept, and then acted. What breaks your heart that leaves others unmoved — could that be a clue to your calling?'},
+ {k:'1sam212',r:'1 Samuel 2:12',q:'Eli’s sons served as priests, yet “they knew not the LORD.” How can a person work in GOD’s house and still not know Him?'},
+ {k:'mat1431',r:'Matthew 14:31',q:'Peter actually walked on water, and Jesus still said, “O thou of little faith.” If that was little faith, what does great faith look like?'},
+ {k:'jonah35',r:'Jonah 3:5',q:'Nineveh believed a foreign prophet after one short message, and even the king came down from his throne to fast. Why do you think they listened?'},
+ {k:'job2229',r:'Job 22:29',q:'“When men are cast down, then thou shalt say, There is lifting up” — a much-loved verse, spoken by one of Job’s friends whom GOD later said had not spoken right. How should we read wise words from people who got the bigger picture wrong?'},
+ {k:'est416',r:'Esther 4:16',q:'“If I perish, I perish.” Esther risked her life just to approach her own husband. What would it take for you to take a risk like that?'},
+ {k:'gen1318',r:'Genesis 13:18',q:'Abram kept moving his tents because GOD spoke — and his people followed without fully understanding. Have you ever made a move that made sense only to you and GOD?'},
+ {k:'luk825',r:'Luke 8:25',q:'In the storm Jesus asked His disciples, “Where is your faith?” What do you think He expected them to do?'},
+ {k:'psa12',r:'Psalms 1:2',q:'When Psalm 1 was written there was no Bible as we have it — only the Law. What did meditating “day and night” look like for them, and what does it look like for you?'},
+ {k:'dan610',r:'Daniel 6:10',n:'Daniel 6:12',q:'Daniel could have prayed in secret for thirty days and kept his job and his life. Why do you think he kept his window open?'},
+ {k:'pro234',r:'Proverbs 23:4',q:'“Labour not to be rich.” Yet riches are not evil, and Proverbs praises the diligent hand. Where is the line?'},
+ {k:'mrk620',r:'Mark 6:20',q:'Herod feared John, “did many things, and heard him gladly” — and still had him killed. How can someone respect GOD’s word and still not obey it?'},
+ {k:'jhn1135',r:'John 11:35',n:'John 11:36',q:'“Jesus wept.” He knew He was about to raise Lazarus — so why do you think He wept?'},
+ {k:'1sam811',r:'1 Samuel 8:11',q:'Samuel told Israel exactly what a king would cost them, and they still asked for one. Why do we sometimes ask for the very thing we were warned about?'},
+ {k:'acts534',r:'Acts 5:34',q:'Gamaliel, one wise voice in a hostile council, changed the outcome. Should good people stay in corrupt places of power, or walk away from them?'},
+ {k:'ruth32',r:'Ruth 3:2',q:'Naomi was not in the field, yet she knew exactly what Ruth should do next. Who has been a Naomi to you — someone whose experience saw what you could not?'},
+ {k:'jdg1628',r:'Judges 16:28',q:'Samson’s hair grew back, but the strength still had to come from GOD. Can we meet every requirement and still be waiting on GOD to show up?'},
+ {k:'job362',r:'Job 36:2',q:'Who was Elihu? He speaks on GOD’s behalf and, unlike Job’s three friends, is never rebuked. What do you make of him?'},
+ {k:'mrk1322',r:'Mark 13:22',q:'False christs will be convincing enough to “seduce, if it were possible, even the elect.” How do you tell the real from the counterfeit?'},
+ {k:'jas411',r:'James 4:11',q:'“Speak not evil one of another.” Does that mean we should never call out what is wrong? Where is the line between judging a brother and correcting one?'},
+ {k:'mat911',r:'Matthew 9:11',q:'The Pharisees complained that Jesus ate with tax collectors and sinners. Who might the church today be uncomfortable seeing Jesus eat with?'},
+ {k:'ecc216',r:'Ecclesiastes 2:16',q:'Solomon wrote that the wise are forgotten just like the fool — yet we still remember Solomon. Was he wrong, or did he mean something deeper?'},
+ {k:'acts1529',r:'Acts 15:28',n:'Acts 15:29',q:'GOD could have settled the question of the Gentiles and the Law with a vision. Instead the apostles met, argued and decided together. Why do you think He works that way?'},
+ {k:'2ki179',r:'2 Kings 17:9',q:'Israel watched generation after generation pay for turning away, and still turned away. Why is sin so convincing even when we know how the story ends?'},
+ {k:'jon14',r:'Jonah 1:4',q:'GOD sent a great storm after His runaway prophet. Have you ever felt GOD come after you like that?'},
+ {k:'rom93',r:'Romans 9:3',q:'Paul said he could almost wish himself cut off from Christ for the sake of his own people. Is there anyone whose salvation you carry that heavily?'},
+ {k:'heb618',r:'Hebrews 6:18',q:'“Two immutable things, in which it was impossible for God to lie.” What are the two things — and why does it matter that there are two?'},
+ {k:'est38',r:'Esther 3:8',q:'Haman told the king a half-truth, and the king signed without checking. Leaders live by the counsel around them — how do we guard against a Haman in our circle?'},
+ {k:'hope',r:'',q:'Which verse would you hand to a friend who is losing hope — and why that one?'},
+ {k:'week',r:'',q:'What is GOD teaching you this week? Share the verse, and what it is showing you.'}
+];
+function _dsStarterRef(st){ if(!st.r) return null; const R=parseRefQuery(st.r); return R?{b:R.book,c:R.ch,v:R.v||0}:null; }
+function _dsHasNote(b,c,v){ try{ const a=((DATA[b]||{})[String(c)]||{})[String(v)]; return !!(a&&a.length); }catch(e){ return false; } }
+/* The owner's own app posts the starter for the current 3-day slot (it is a real post, so readers can reply). */
+async function _dsStarterTick(){ const api=_dsApi(); if(!api||!isOwner()||!fbUser()||document.body.classList.contains('legacy')) return;
+  if(window._dsTicking) return; window._dsTicking=true;
+  try{
+    const posts=DS.loaded&&!DS.err?DS.posts:await api.feed(null);
+    const wk=Date.now()-7*864e5; if(posts.filter(p=>!p.o&&_dsMs(p.t)>=wk).length>=5) return;   /* readers are talking: let them */
+    const priv=new Set((window.PRIVATE||[]).map(q=>q.b+'|'+q.c+'|'+q.v));
+    const pool=DS_STARTERS.filter(st=>{ const R=_dsStarterRef(st); return !R||!priv.has(R.b+'|'+R.c+'|'+R.v); });
+    const slot=Math.floor(Date.now()/(3*864e5)), st=pool[slot%pool.length], id='st-'+st.k+'-'+slot;
+    if(posts.some(p=>p.id===id)||await api.exists(id)) return;
+    for(const p of posts) if(p.auto&&p.id!==id&&!(p.rc>0)&&!(p.am&&Object.keys(p.am).length)) try{ await api.delPost(p.id); }catch(e){}
+    const R=_dsStarterRef(st)||{b:'',c:0,v:0};
+    await api.setPost(id,{uid:fbUser().uid,name:'Nii Okai',o:true,auto:true,kind:'q',text:st.q,ref:st.r||'',b:R.b,c:R.c,v:R.v,nr:st.n||st.r||'',pin:Date.now()});
+    if(state.view==='discourse'&&!document.body.classList.contains('legacy')) _dsLoad();
+  }catch(e){} finally{ window._dsTicking=false; } }
+async function dsFeature(id,on){ const api=_dsApi(); if(!api||!isOwner()) return;
+  try{ await api.setPin(id,on); toast(on?'Featured at the top of Discourse':'No longer featured'); await _dsLoad(); }catch(e){ toast('Could not change that — '+((e&&e.code)||'try again')); } }
+function dsReadNote(id){ const p=_dsPost(id)||(DS.pin&&_dsId(DS.pin.id)===id?DS.pin:null); if(!p) return; const R=parseRefQuery(p.nr||p.ref||''); if(R) jumpTo(R.book,R.ch,R.v||1,{note:1}); }
+function renderDiscourse2(){
+  document.getElementById('crumb').textContent='Discourse';
+  document.getElementById('chapselWrap').style.display='none';
+  document.getElementById('readfoot').style.display='none';
+  const r=document.getElementById('reader');
+  r.innerHTML=`<div class="page homefeed ds">
+    <div class="hcard hero">
+      <div class="hk">Discourse — talk it through</div>
+      <h2>Something in the Bible puzzling you? Start the conversation.</h2>
+      <p class="hq">Discourse is this journal’s meeting place — for the questions you’d ask over a coffee, not in a classroom. Bring the verse that won’t leave you alone, the story that doesn’t add up, or what GOD is teaching you this week — and let iron sharpen iron.</p>
+    </div>
+    <div id="dsPin"></div>
+    <div class="hcard ds-manners"><div class="hk">How we talk here</div>${_dsClamp(DS_MANNERS,3)}</div>
+    <div id="dsOwner"></div>
+    <div class="hcard ds-comp" id="dsComp"></div>
+    <div id="dsMine"></div>
+    <div class="ds-filt" id="dsFilt"></div>
+    <div id="dsQotw"></div>
+    <div id="dsFeed"><div class="ds-empty soft">Loading the conversation…</div></div>
+    <div id="dsSeed"></div>
+    <div class="hcard">
+      <div class="hk">Reach Nii Okai privately</div>
+      <p class="soft" style="margin:0">Questions you would rather not ask in public, corrections, testimonies — <a href="mailto:henryquarteyministries@gmail.com">henryquarteyministries@gmail.com</a>. If a note blessed you, that inbox would love to hear it.</p>
+    </div>
+  </div>`;
+  r.scrollTop=0;
+  _dsComp(); _dsPaint(); _dsLoad();
+}
+function _dsComp(){ const el=document.getElementById('dsComp'); if(!el) return; const u=fbUser();
+  const k=DS.kind, pf=DS.prefill||{};
+  const kinds=`<div class="tm-turn ds-kind">${[['note','A note on a verse'],['q','A question']].map(([v,l])=>`<button type="button" data-k="${v}" class="${k===v?'on':''}" onclick="_dsKind('${v}')">${l}</button>`).join('')}</div>`;
+  if(!u){ el.innerHTML=`<div class="hk">Share with the community</div>
+    <p class="soft" style="margin:0 0 12px">Reading is open to everyone. To share a note, ask a question, reply or say Amen, sign in — so every post here has a real person behind it.</p>
+    <button class="btn primary" onclick="fbSignIn()">Sign in with Google to take part</button>`; return; }
+  const needName=!(DS.member&&DS.member.name)&&!isOwner();
+  el.innerHTML=`<div class="hk">Share with the community</div>${kinds}
+    <input class="ds-in" id="dsRef" autocomplete="off" enterkeyhint="next" placeholder="${k==='note'?'Verse — e.g. John 3:16':'Verse (optional) — e.g. Genesis 6:2'}" value="${escHTML(pf.ref||'').replace(/"/g,'&quot;')}">
+    <textarea class="disc-input" id="dsText" maxlength="4000" placeholder="${k==='note'?'What did this verse show you?':'e.g. Who were the “sons of God” in Genesis 6?'}">${escHTML(pf.text||'')}</textarea>
+    ${needName?`<label class="ds-lbl">Your name on your posts<input class="ds-in" id="dsName" maxlength="40" autocomplete="nickname" placeholder="e.g. Ama K. or Brother Kofi" value="${escHTML(_dsDefaultName()).replace(/"/g,'&quot;')}"></label>`:''}
+    ${!_dsAgreed()&&!isOwner()?`<label class="ds-ok"><input type="checkbox" id="dsOk"> I will keep to “How we talk here”</label>`:''}
+    <div class="hrow"><button class="btn primary" id="dsSendBtn" onclick="dsSend()">Share</button>${DS.prefill?`<button class="btn" onclick="DS.prefill=null;_dsComp()">Clear</button>`:''}</div>
+    <p class="soft ds-fine">${isOwner()?'You are Nii Okai — your posts go up straight away.':DS.trusted?'Your posts go up straight away. You can take anything you share down at any time.':'Your first post is read by Nii Okai before it appears — after that, your posts go up straight away. You can take anything you share down at any time.'}${isOwner()?'':' Everything shared here is public, and Nii Okai may feature a shared note or question at the top of Discourse to start a conversation.'}</p>`; }
+function _dsKind(k){ const t=document.getElementById('dsText'), rf=document.getElementById('dsRef');
+  DS.prefill={ref:rf?rf.value:'',text:t?t.value:''}; DS.kind=k; _dsComp(); }
+async function _dsLoad(){ const api=_dsApi(); const u=fbUser();
+  if(!api){ DS.err='offline'; DS.loaded=true; _dsPaint(); return; }
+  try{ const got=await api.feed(null); DS.posts=got; DS.last=got.length?got[got.length-1]._snap:null; DS.more=got.length>=20; DS.err=''; }
+  catch(e){ DS.err=(e&&e.code)||'error'; DS.posts=[]; }
+  try{ DS.pin=await api.pinned(); }catch(e){ DS.pin=null; }
+  DS.loaded=true;
+  if(u){ try{ DS.member=await api.member(u.uid); }catch(e){ DS.member=null; }
+    DS.trusted=isOwner()||!!(DS.member&&DS.member.trusted&&!DS.member.blocked);
+    try{ DS.mine=await api.myQueue(u.uid); }catch(e){ DS.mine=[]; }
+    if(isOwner()){ try{ DS.queue=await api.queue(); }catch(e){ DS.queue=[]; } try{ DS.reports=await api.reports(); }catch(e){ DS.reports=[]; } } }
+  else { DS.member=null; DS.trusted=false; DS.mine=[]; DS.queue=[]; DS.reports=[]; }
+  if(state.view==='discourse'){ _dsComp(); _dsPaint(); }
+  if(isOwner()&&!DS.err) setTimeout(_dsStarterTick,600); }
+async function dsMore(){ const api=_dsApi(); if(!api||!DS.last) return;
+  try{ const got=await api.feed(DS.last); DS.posts=DS.posts.concat(got); DS.last=got.length?got[got.length-1]._snap:DS.last; DS.more=got.length>=20; }catch(e){ toast('Could not load more just now'); }
+  _dsPaint(); }
+function _dsPostHTML(p,qotw,pinned){ const id=_dsId(p.id), u=fbUser(), mine=u&&p.uid===u.uid;
+  const tag=pinned?(p.auto?'Conversation starter':'Featured from the community'):qotw?'Question of the week':p.kind==='q'?'Question':'Note';
+  const nR=p.o&&(p.nr||p.ref)?parseRefQuery(p.nr||p.ref):null, hasN=!!(nR&&nR.v&&_dsHasNote(nR.book,nR.ch,nR.v));
+  const am=p.am?Object.keys(p.am).length:0, iam=!!(u&&p.am&&p.am[u.uid]), rc=Math.max(0,p.rc||0);
+  const ref=p.ref?`<button class="ds-ref" onclick="dsGo('${id}')">${escHTML(p.ref)}</button>`:'';
+  const by=p.o?'<b>Nii Okai</b> <span class="ds-badge">writes this journal</span>':escHTML(p.name||'A reader');
+  return `<div class="hcard ds-post${qotw||pinned?' ds-qotw':''}${pinned?' ds-pinned':''}" id="dp-${id}">
+    <div class="ds-meta"><span class="ds-tag">${tag}</span>${ref}</div>
+    ${_dsClamp(p.text,qotw||pinned?6:8)}
+    ${hasN?`<button class="ds-note" onclick="dsReadNote('${id}')">Read Nii Okai’s note on ${escHTML(nR.book+' '+nR.ch+':'+nR.v)} →</button>`:''}
+    <div class="ds-by">${by} · ${_dsAgo(p.t)}</div>
+    <div class="ds-act">
+      <button class="ds-b${iam?' on':''}" onclick="dsAmen('${id}')" aria-pressed="${iam}">Amen${am?' · '+am:''}</button>
+      <button class="ds-b" onclick="dsReplies('${id}')">${DS.open[id]?'Hide replies':'Reply'}${rc?' · '+rc:''}</button>
+      <span class="ds-sp"></span>
+      ${isOwner()?(pinned?`<button class="ds-b ds-x" onclick="dsFeature('${id}',false)">Unfeature</button>`:p.o?'':`<button class="ds-b ds-x" onclick="dsFeature('${id}',true)">Feature</button>`):''}
+      ${isOwner()?`<button class="ds-b ds-x" onclick="dsRemove('${id}',this)">Remove</button>`:mine?`<button class="ds-b ds-x" onclick="dsRemove('${id}',this)">Delete</button>`:u?`<button class="ds-b ds-x" onclick="dsReport('${id}','',this)">Report</button>`:''}
+    </div>
+    <div class="ds-replies" id="dr-${id}">${DS.open[id]?_dsRepliesHTML(id):''}</div></div>`; }
+function _dsRepliesHTML(pid){ const rs=DS.replies[pid], u=fbUser();
+  let h=!rs?'<div class="soft ds-small">Loading replies…</div>':rs.length?rs.map(r=>{ const rid=_dsId(r.id), mine=u&&r.uid===u.uid;
+    return `<div class="ds-rep" id="rp-${rid}"><div class="ds-rt">${escHTML(r.text)}</div><div class="ds-by">${r.o?'<b>Nii Okai</b> <span class="ds-badge">writes this journal</span>':escHTML(r.name||'A reader')} · ${_dsAgo(r.t)}
+      ${isOwner()||mine?`<button class="ds-b ds-x" onclick="dsRemoveReply('${pid}','${rid}',this)">${isOwner()&&!mine?'Remove':'Delete'}</button>`:u?`<button class="ds-b ds-x" onclick="dsReport('${pid}','${rid}',this)">Report</button>`:''}</div></div>`; }).join(''):'<div class="soft ds-small">No replies yet — be the first.</div>';
+  h+=u?`<div class="ds-rbox"><textarea class="disc-input ds-rin" id="drt-${pid}" maxlength="4000" placeholder="Write a reply…"></textarea>
+      <button class="btn primary" onclick="dsReply('${pid}')">Reply</button></div>`
+     :`<button class="btn" onclick="fbSignIn()">Sign in to reply</button>`;
+  return h; }
+function _dsPaint(){ if(state.view!=='discourse'||document.body.classList.contains('legacy')) return;
+  const feed=document.getElementById('dsFeed'); if(!feed) return; const u=fbUser();
+  /* owner: what is waiting, and what was reported */
+  const ow=document.getElementById('dsOwner');
+  if(ow) ow.innerHTML=isOwner()&&(DS.queue.length||DS.reports.length)?`<div class="hcard ds-ownbox">
+    ${DS.queue.length?`<div class="hk">Waiting for your look · ${DS.queue.length}</div>${DS.queue.map(q=>{ const qid=_dsId(q.id);
+      return `<div class="ds-q" id="dq-${qid}"><div class="ds-meta"><span class="ds-tag">${q.kind==='reply'?'Reply':q.kind==='q'?'Question':'Note'}</span>${q.ref?`<span class="ds-refx">${escHTML(q.ref)}</span>`:''}</div>
+        ${_dsClamp(q.text,6)}<div class="ds-by">${escHTML(q.name||'')} · first post · ${_dsAgo(q.t)}</div>
+        <div class="ds-act"><button class="btn primary" onclick="dsApprove('${qid}')">Approve</button><button class="btn" onclick="dsReject('${qid}')">Remove</button><button class="btn ds-x" onclick="dsBlock('${qid}',this)">Remove &amp; block</button></div></div>`; }).join('')}`:''}
+    ${DS.reports.length?`<div class="hk" style="margin-top:${DS.queue.length?'16px':'0'}">Reported · ${DS.reports.length}</div>${DS.reports.map(rp=>{ const rid=_dsId(rp.id), p=DS.posts.find(x=>x.id===rp.post);
+      return `<div class="ds-q"><div class="ds-small soft">Reason: ${escHTML(rp.why||'—')}${rp.reply?' · on a reply':''}</div>
+        ${p?_dsClamp(p.text,4):'<div class="soft ds-small">(post not loaded or already removed)</div>'}
+        <div class="ds-act"><button class="btn" onclick="dsGoPost('${_dsId(rp.post)}')">Open it</button><button class="btn" onclick="dsDismiss('${rid}')">Keep it — dismiss</button></div></div>`; }).join('')}`:''}
+  </div>`:'';
+  /* your own posts still waiting */
+  const mi=document.getElementById('dsMine');
+  if(mi) mi.innerHTML=DS.mine.length?`<div class="hcard ds-mine"><div class="hk">Waiting for a quick look</div>
+    <p class="soft ds-small" style="margin:0 0 8px">Nii Okai reads every first post before it appears — usually within a day.</p>
+    ${DS.mine.map(q=>`<div class="ds-q"><div class="ds-rt">${escHTML(q.text.length>220?q.text.slice(0,220)+'…':q.text)}</div><div class="ds-act"><button class="btn" onclick="dsWithdraw('${_dsId(q.id)}')">Withdraw</button></div></div>`).join('')}</div>`:'';
+  const fl=document.getElementById('dsFilt');
+  if(fl) fl.innerHTML=DS.posts.length?[['all','All'],['note','Notes'],['q','Questions']].map(([k,l])=>`<button class="sr2-chip${DS.filter===k?' on':''}" onclick="DS.filter='${k}';_dsPaint()">${l}</button>`).join(''):'';
+  /* question of the week: the most-amened question from the last 7 days */
+  const wk=Date.now()-7*864e5; const qs=DS.posts.filter(p=>p.kind==='q'&&_dsMs(p.t)>=wk&&p.am&&Object.keys(p.am).length);
+  qs.sort((a,b)=>Object.keys(b.am).length-Object.keys(a.am).length); const top=DS.filter!=='note'?qs[0]:null;
+  const pinId=DS.pin?DS.pin.id:'', topQ=top&&top.id!==pinId?top:null;
+  const pe=document.getElementById('dsPin'); if(pe) pe.innerHTML=DS.pin?_dsPostHTML(Object.assign({},DS.posts.find(x=>x.id===pinId)||DS.pin),false,true):'';
+  const qw=document.getElementById('dsQotw'); if(qw) qw.innerHTML=topQ?_dsPostHTML(topQ,true):'';
+  const list=DS.posts.filter(p=>(DS.filter==='all'||p.kind===DS.filter)&&p!==topQ&&p.id!==pinId);
+  if(!DS.loaded) feed.innerHTML='<div class="ds-empty soft">Loading the conversation…</div>';
+  else if(DS.err&&!DS.posts.length) feed.innerHTML=`<div class="ds-empty soft">${DS.err==='offline'?'The conversation needs a connection — you are reading offline.':'The conversation could not be reached just now.'}${isOwner()&&DS.err!=='offline'?` <br><small>(${escHTML(DS.err)} — if this says “permission-denied”, the new Firestore rules have not been pasted in yet.)</small>`:''}</div>`;
+  else if(!list.length) feed.innerHTML=`<div class="ds-empty soft">${DS.posts.length?'Nothing here under this filter yet.':'No one has shared yet — the first note could be yours.'}</div>`;
+  else feed.innerHTML=list.map(p=>_dsPostHTML(p,false)).join('')+(DS.more?`<div class="hrow" style="justify-content:center"><button class="btn" onclick="dsMore()">Show more</button></div>`:'');
+  const sd=document.getElementById('dsSeed');
+  if(sd){ const seed=DS.posts.length<10&&DS.filter!=='q'?_dsSeed():[];
+    sd.innerHTML=seed.length?`<div class="ds-seedh">From Nii Okai’s journal</div>${seed.map(n=>`<div class="hcard ds-post ds-seedc">
+      <div class="ds-meta"><span class="ds-tag">Nii Okai’s note</span><button class="ds-ref" onclick="jumpTo('${esc(n.b)}',${n.ch},${n.v},{note:1})">${escHTML(n.b)} ${n.ch}:${n.v}</button></div>
+      ${cnHTML(n.text,6)}<div class="ds-act"><button class="ds-b" onclick="jumpTo('${esc(n.b)}',${n.ch},${n.v},{note:1})">Read it in the Bible →</button></div></div>`).join('')}`:''; } }
+function _dsPost(id){ return DS.posts.find(p=>_dsId(p.id)===id)||(DS.pin&&_dsId(DS.pin.id)===id?DS.pin:null); }
+function dsGo(id){ const p=_dsPost(id); if(p&&p.b) jumpTo(p.b,p.c||1,p.v||1); }
+function dsGoPost(id){ const el=document.getElementById('dp-'+id); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.add('ds-flash'); setTimeout(()=>el.classList.remove('ds-flash'),1600); } else toast('That post is no longer in the feed'); }
+async function dsSend(){ const api=_dsApi(), u=fbUser(); if(!u){ fbSignIn(); return; } if(!api){ toast('You need a connection to share'); return; }
+  if(DS.busy) return;
+  const rf=(document.getElementById('dsRef')||{}).value||'', tx=((document.getElementById('dsText')||{}).value||'').trim();
+  const nmEl=document.getElementById('dsName'), okEl=document.getElementById('dsOk');
+  if(!tx){ toast(DS.kind==='q'?'Write your question first':'Write your note first'); return; }
+  let ref='',b='',c=0,v=0;
+  if(rf.trim()){ const R=parseRefQuery(rf.trim()); if(!R){ toast('I could not find that verse — try e.g. John 3:16'); return; }
+    b=R.book; c=R.ch; v=R.v||0; ref=v?`${b} ${c}:${v}${R.v2&&R.v2>v?'-'+R.v2:''}`:`${b} ${c}`; }
+  else if(DS.kind==='note'){ toast('Which verse is your note on? e.g. John 3:16'); return; }
+  if(okEl&&!okEl.checked){ toast('Please tick that you will keep to “How we talk here”'); return; }
+  let name=isOwner()?'Nii Okai':((DS.member&&DS.member.name)||'');
+  if(nmEl){ name=nmEl.value.trim().slice(0,40); if(!name){ toast('Add the name to show on your posts'); return; }
+    if(/nii\s*okai/i.test(name)){ toast('Please choose your own name — “Nii Okai” is kept for the journal’s author'); return; } }
+  if(!name) name=_dsDefaultName()||'A reader';
+  DS.busy=true; const btn=document.getElementById('dsSendBtn'); if(btn){ btn.disabled=true; btn.textContent='Sharing…'; }
+  try{
+    if(nmEl&&!isOwner()){ await api.setName(u.uid,name); DS.member=Object.assign({},DS.member||{},{name}); try{ localStorage.setItem('nok_ds_name',name); }catch(e){} }
+    try{ localStorage.setItem('nok_ds_ok','1'); }catch(e){}
+    const d={uid:u.uid,name,kind:DS.kind,text:tx,ref,b,c,v}; if(isOwner()) d.o=true;
+    await api.post(d,DS.trusted);
+    DS.prefill=null;
+    toast(DS.trusted?'Shared — thank you':'Sent — Nii Okai will look at it shortly');
+    await _dsLoad();
+  }catch(e){ toast('Could not share just now — '+((e&&e.code)||'try again')); }
+  DS.busy=false; const b2=document.getElementById('dsSendBtn'); if(b2){ b2.disabled=false; b2.textContent='Share'; } }
+async function dsAmen(id){ const api=_dsApi(), u=fbUser(); if(!u){ toast('Sign in to say Amen'); return; } if(!api) return;
+  const p=_dsPost(id); if(!p) return; p.am=Object.assign({},p.am||{}); const on=!p.am[u.uid];
+  if(on) p.am[u.uid]=true; else delete p.am[u.uid]; _dsPaint();
+  try{ await api.amen(p.id,u.uid,on); }catch(e){ if(on) delete p.am[u.uid]; else p.am[u.uid]=true; _dsPaint(); toast('Could not reach the conversation'); } }
+async function dsReplies(id){ const api=_dsApi(); DS.open[id]=!DS.open[id]; _dsPaint();
+  if(DS.open[id]&&api){ try{ DS.replies[id]=await api.replies(id); }catch(e){ DS.replies[id]=[]; } _dsPaint(); } }
+async function dsReply(pid){ const api=_dsApi(), u=fbUser(); if(!u||!api) return; const ta=document.getElementById('drt-'+pid); const tx=((ta||{}).value||'').trim();
+  if(!tx){ toast('Write your reply first'); return; }
+  if(!_dsAgreed()&&!isOwner()){ toast('Please share once from the box above first — it asks you to agree to “How we talk here”'); document.getElementById('dsComp').scrollIntoView({behavior:'smooth'}); return; }
+  const name=isOwner()?'Nii Okai':((DS.member&&DS.member.name)||_dsDefaultName()||'A reader');
+  const d={uid:u.uid,name,text:tx}; if(isOwner()) d.o=true;
+  try{ await api.reply(pid,d,DS.trusted);
+    if(DS.trusted){ const p=_dsPost(pid); if(p) p.rc=(p.rc||0)+1; DS.replies[pid]=await api.replies(pid); toast('Replied'); }
+    else { DS.mine=await api.myQueue(u.uid); toast('Sent — Nii Okai will look at it shortly'); if(ta) ta.value=''; }
+    _dsPaint(); }catch(e){ toast('Could not reply just now — '+((e&&e.code)||'try again')); } }
+function _dsTwice(btn,label){ if(btn.dataset.sure==='1') return true; const o=btn.textContent; btn.dataset.sure='1'; btn.textContent=label;
+  setTimeout(()=>{ if(btn.isConnected){ btn.dataset.sure=''; btn.textContent=o; } },3500); return false; }
+async function dsRemove(id,btn){ const api=_dsApi(); if(!api) return; if(!_dsTwice(btn,'Tap again to remove')) return;
+  try{ await api.delPost(id); DS.posts=DS.posts.filter(p=>_dsId(p.id)!==id); if(DS.pin&&_dsId(DS.pin.id)===id) DS.pin=null; DS.reports=DS.reports.filter(r=>r.post!==id); _dsPaint(); toast('Removed'); }catch(e){ toast('Could not remove — '+((e&&e.code)||'try again')); } }
+async function dsRemoveReply(pid,rid,btn){ const api=_dsApi(); if(!api) return; if(!_dsTwice(btn,'Tap again to remove')) return;
+  try{ await api.delReply(pid,rid); DS.replies[pid]=(DS.replies[pid]||[]).filter(r=>_dsId(r.id)!==rid); const p=_dsPost(pid); if(p) p.rc=Math.max(0,(p.rc||0)-1); _dsPaint(); toast('Removed'); }catch(e){ toast('Could not remove — '+((e&&e.code)||'try again')); } }
+function dsReport(pid,rid,btn){ const box=btn.closest('.ds-act')||btn.parentNode; if(!box||box.querySelector('.ds-why')) return;
+  const w=document.createElement('div'); w.className='ds-why';
+  w.innerHTML=`<span class="soft ds-small">Why?</span>${['Unkind or mocking','Off-topic or selling','Something else'].map(t=>`<button class="sr2-chip" onclick="dsReportSend('${pid}','${rid}','${t}',this)">${t}</button>`).join('')}`;
+  box.after(w); }
+async function dsReportSend(pid,rid,why,btn){ const api=_dsApi(), u=fbUser(); if(!api||!u) return;
+  try{ await api.report({by:u.uid,post:pid,reply:rid||'',why}); const w=btn.closest('.ds-why'); if(w) w.innerHTML='<span class="soft ds-small">Thank you — Nii Okai will look at it.</span>'; }catch(e){ toast('Could not send the report — '+((e&&e.code)||'try again')); } }
+async function dsWithdraw(qid){ const api=_dsApi(), u=fbUser(); if(!api||!u) return;
+  try{ await api.delQueued(qid); DS.mine=DS.mine.filter(q=>_dsId(q.id)!==qid); _dsPaint(); toast('Withdrawn'); }catch(e){ toast('Could not withdraw — '+((e&&e.code)||'try again')); } }
+async function dsApprove(qid){ const api=_dsApi(); const q=DS.queue.find(x=>_dsId(x.id)===qid); if(!api||!q) return;
+  try{ await api.approve(q); toast('Approved — '+(q.name||'they')+' can now post straight away'); await _dsLoad(); }
+  catch(e){ toast('Could not approve — '+((e&&e.code)||'try again')+(q.kind==='reply'?' (the post it replies to may be gone)':'')); } }
+async function dsReject(qid){ const api=_dsApi(); if(!api) return;
+  try{ await api.delQueued(qid); DS.queue=DS.queue.filter(q=>_dsId(q.id)!==qid); _dsPaint(); toast('Removed'); }catch(e){ toast('Could not remove — '+((e&&e.code)||'try again')); } }
+async function dsBlock(qid,btn){ const api=_dsApi(); const q=DS.queue.find(x=>_dsId(x.id)===qid); if(!api||!q) return; if(!_dsTwice(btn,'Tap again to block')) return;
+  try{ await api.block(q); DS.queue=DS.queue.filter(x=>_dsId(x.id)!==qid); _dsPaint(); toast('Removed, and that account can no longer post'); }catch(e){ toast('Could not block — '+((e&&e.code)||'try again')); } }
+async function dsDismiss(rid){ const api=_dsApi(); if(!api) return;
+  try{ await api.dismissReport(rid); DS.reports=DS.reports.filter(r=>_dsId(r.id)!==rid); _dsPaint(); }catch(e){ toast('Could not dismiss — '+((e&&e.code)||'try again')); } }
+/* "Share to Discourse" on a reader's own note: opens the box above with the note in it, ready to send (nothing goes out until they tap Share) */
+function dsShareNote(name,ch,v,id){ let t='';
+  try{ const arr=((DATA[name]||{})[String(ch)]||{})[String(v)]||[]; const n=arr.find(x=>x.id===id); t=n?n.text:''; }catch(e){}
+  DS.kind='note'; DS.prefill={ref:`${name} ${ch}:${v}`,text:t}; setView('discourse');
+  setTimeout(()=>{ const c=document.getElementById('dsComp'); if(c) c.scrollIntoView({behavior:'smooth',block:'start'}); },120); }
 function menuMHC(){ if(!document.body.classList.contains('legacy')){ setView('read'); setTimeout(openMHSheet,120); return; }
   if(!state.refcomm) toggleRefComm(); setView('read'); }
 /* ---------- One menu for every tab (17 Oct 2026, new UI) ----------
@@ -3080,6 +3406,7 @@ function _appMenuHTML(withChapter,inSheet){
   h+=item('🔄','Check for Updates',`You are on version ${BUILD.v} — tap to look for a newer one`,'checkForUpdates()');
   if(isOwner()){ h+=head('Owner tools');
     h+=`<div class="mitem" id="goLiveItem" onclick="${close}goLive()"><span class="mi">🚀</span><div><div class="mt">Go live</div><div class="md" id="goLiveDesc">Checking whether anything is waiting…</div></div><span class="chev">›</span></div>`;
+    h+=item(ICONS.chat,'Discourse approvals','Approve first posts and look at anything reported',"setView('discourse')");
     h+=item(ICONS.download,'Export My Notes','Save your notes to a file for publishing','exportCommentary()');
     h+=item(ICONS.upload,'Import Notes','Bring notes back in from a file',"document.getElementById('importFile').click()");
     h+=item('👁','Preview as a Reader','See the app exactly as your readers see it','togglePreview()');
@@ -3958,6 +4285,7 @@ function noteHTML(nt,name,ch,v,label){
     <div class="tools">
       <button onclick="event.stopPropagation();editNote('${esc(name)}',${ch},'${v}','${nt.id}')">Edit</button>
       <button onclick="event.stopPropagation();openEditor('${esc(name)}',${ch},${v==='0'?0:v})">+ Add another</button>
+      ${own&&v!=='0'&&!document.body.classList.contains('legacy')?`<button onclick="event.stopPropagation();dsShareNote('${esc(name)}',${ch},'${v}','${nt.id}')">Share to Discourse</button>`:''}
     </div></div>`;
 }
 
@@ -5029,6 +5357,8 @@ function renderCompareVerse(name,ch,v,versions){
   /* A translation that did not load is one quiet line at the foot, not an empty row each. */
   const got=versions.filter(ver=>vs.some(n=>vt(ver,n)));
   const missing=versions.filter(ver=>got.indexOf(ver)<0);
+  /* A–Z by abbreviation, the translation you are reading first (21 Oct 2026, new UI) */
+  if(!document.body.classList.contains('legacy')) got.sort((a,b)=>a===state.version?-1:b===state.version?1:a.localeCompare(b));
   v=v0;
   let rows=got.map(ver=>{ const txt=null;
     return `<div class="cvrow" onclick="cvOpen('${esc(ver)}','${esc(name)}',${ch},${v})">
@@ -6295,6 +6625,7 @@ async function fbSignOutNow(){
 function _fbPosKey(){ return (localStorage.getItem(LS_PREFS)||'')+'|'+(localStorage.getItem(FB_KEYS.anchor)||''); }
 function fbOnAuth(u){
   fbMenuRefresh();
+  if(!u&&state&&state.view==='discourse'&&!document.body.classList.contains('legacy')) try{ renderDiscourse2(); }catch(e){}
   if(!u) return;
   /* remember it, so the owner tools are there even before sign-in finishes next time */
   try{ if(_nsIsOwner(u)) localStorage.setItem('nok_owner','1'); }catch(e){}
@@ -6763,7 +7094,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/fireba
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
          signOut, onAuthStateChanged, setPersistence,
          indexedDBLocalPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs,
+         addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, startAfter,
+         serverTimestamp, writeBatch, increment, deleteField } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDUrX-Z90fK6-8yfuR5Niw9dXN_09QStlA",
   authDomain: "nii-okai-bible-commentary.firebaseapp.com",
@@ -6801,6 +7134,54 @@ try{
     put: (uid, data) => setDoc(doc(db, 'users', uid), data, { merge: true }),
     col: async path => { const q = await getDocs(collection(db, ...path)); const out = []; q.forEach(d => out.push({ id: d.id, data: d.data() })); return out; },
     setPath: (path, data) => setDoc(doc(db, ...path), data, { merge: true })
+  };
+  /* Discourse (21 Oct 2026): readers' shared notes and questions. What may be written is decided by the Firestore
+     rules ("Firestore rules — paste into Firebase.txt"), not by this code. */
+  const dsMap = s => { const out = []; s.forEach(d => out.push(Object.assign({ id: d.id, _snap: d }, d.data()))); return out; };
+  window.FB.disc = {
+    feed: async after => dsMap(await getDocs(after
+      ? query(collection(db, 'disc_posts'), orderBy('t', 'desc'), startAfter(after), limit(20))
+      : query(collection(db, 'disc_posts'), orderBy('t', 'desc'), limit(20)))),
+    replies: async pid => dsMap(await getDocs(query(collection(db, 'disc_posts', pid, 'replies'), orderBy('t', 'asc'), limit(200)))),
+    member: async uid => { const s = await getDoc(doc(db, 'disc_members', uid)); return s.exists() ? s.data() : null; },
+    setName: (uid, name) => setDoc(doc(db, 'disc_members', uid), { name }, { merge: true }),
+    myQueue: async uid => dsMap(await getDocs(query(collection(db, 'disc_queue'), where('uid', '==', uid)))),
+    queue: async () => dsMap(await getDocs(query(collection(db, 'disc_queue'), orderBy('t', 'asc'), limit(100)))),
+    reports: async () => dsMap(await getDocs(query(collection(db, 'disc_reports'), orderBy('t', 'desc'), limit(100)))),
+    post: async (d, trusted) => (await addDoc(collection(db, trusted ? 'disc_posts' : 'disc_queue'),
+      Object.assign({}, d, trusted ? { am: {}, rc: 0 } : {}, { t: serverTimestamp() }))).id,
+    reply: async (pid, d, trusted) => {
+      if (!trusted) return (await addDoc(collection(db, 'disc_queue'),
+        Object.assign({}, d, { kind: 'reply', parent: pid, t: serverTimestamp() }))).id;
+      const b = writeBatch(db), r = doc(collection(db, 'disc_posts', pid, 'replies'));
+      b.set(r, Object.assign({}, d, { t: serverTimestamp() }));
+      b.update(doc(db, 'disc_posts', pid), { rc: increment(1) });
+      await b.commit(); return r.id; },
+    amen: (pid, uid, on) => updateDoc(doc(db, 'disc_posts', pid), { ['am.' + uid]: on ? true : deleteField() }),
+    report: d => addDoc(collection(db, 'disc_reports'), Object.assign({}, d, { t: serverTimestamp() })),
+    delPost: pid => deleteDoc(doc(db, 'disc_posts', pid)),
+    delReply: async (pid, rid) => { const b = writeBatch(db);
+      b.delete(doc(db, 'disc_posts', pid, 'replies', rid)); b.update(doc(db, 'disc_posts', pid), { rc: increment(-1) });
+      await b.commit(); },
+    delQueued: qid => deleteDoc(doc(db, 'disc_queue', qid)),
+    approve: async q => { const b = writeBatch(db);
+      const d = { uid: q.uid, name: q.name, text: q.text, t: serverTimestamp() };
+      b.set(doc(db, 'disc_members', q.uid), { name: q.name, trusted: true }, { merge: true });
+      if (q.kind === 'reply') {
+        b.set(doc(collection(db, 'disc_posts', q.parent, 'replies')), d);
+        b.update(doc(db, 'disc_posts', q.parent), { rc: increment(1) });
+      } else b.set(doc(collection(db, 'disc_posts')), Object.assign(d, { kind: q.kind, ref: q.ref || '', b: q.b || '', c: q.c || 0, v: q.v || 0, am: {}, rc: 0 }));
+      b.delete(doc(db, 'disc_queue', q.id)); await b.commit(); },
+    block: async q => { const b = writeBatch(db);
+      b.set(doc(db, 'disc_members', q.uid), { blocked: true, trusted: false }, { merge: true });
+      b.delete(doc(db, 'disc_queue', q.id)); await b.commit(); },
+    dismissReport: rid => deleteDoc(doc(db, 'disc_reports', rid)),
+    /* conversation starters (22 Oct 2026) */
+    pinned: async () => { const s = await getDocs(query(collection(db, 'disc_posts'), orderBy('pin', 'desc'), limit(1)));
+      let out = null; s.forEach(d => { out = Object.assign({ id: d.id, _snap: d }, d.data()); }); return out; },
+    exists: async id => (await getDoc(doc(db, 'disc_posts', id))).exists(),
+    setPost: (id, d) => setDoc(doc(db, 'disc_posts', id), Object.assign({}, d, { am: {}, rc: 0, t: serverTimestamp() })),
+    setPin: (id, on) => updateDoc(doc(db, 'disc_posts', id), { pin: on ? Date.now() : deleteField() })
   };
   getRedirectResult(auth).catch(() => {});
   onAuthStateChanged(auth, u => { window.FB.user = u; if (window.fbOnAuth) window.fbOnAuth(u); });
