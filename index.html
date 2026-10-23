@@ -300,6 +300,14 @@ body:not(.legacy) .readnav.planmode .rn-listen .rn-s{opacity:.78}
 .vp-nm{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink);line-height:1.25}
 .vp-sub{font-family:var(--sans);font-size:11.5px;color:var(--soft);line-height:1.35;margin-top:2px}
 .vp-ok{flex:0 0 auto;display:inline-flex;color:var(--ink)}
+.vp-divline{height:1px;background:var(--line);margin:6px 10px}
+.vmenu.vpick .vp-row.vp-cont,.vmenu.vpick .vp-row.vp-cont.on{background:transparent}
+.vp-sw{flex:0 0 auto;width:38px;height:22px;border-radius:11px;background:var(--line);position:relative;transition:background .2s}
+.vp-sw::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.vp-sw.on{background:var(--accent)}.vp-sw.on::after{transform:translateX(16px)}
+html[data-theme="dark"] .vp-sw.on::after{background:var(--on-accent)}
+.vp-hint{font-size:11.5px;color:var(--soft);padding:4px 14px 8px;font-family:var(--sans)}
+.tm-cont{display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 2px 2px;font-family:var(--sans);cursor:pointer}
 .vp-ok svg{width:16px;height:16px}
 .audbar .ab-btn:hover{border-color:var(--accent);color:var(--accent)}
 .audbar .ab-mid{display:flex;align-items:center;gap:2px;margin:0 auto}
@@ -1629,7 +1637,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.71', date:'22 Oct 2026'};
+const BUILD={v:'1.2.72', date:'22 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2333,6 +2341,7 @@ function _rdKey(){ return window.BOOKS[state.book].name+'|'+state.chapter; }
 function readChapterAloud(ev){
   if(_rdState){ if(_rdState.paused) resumeReadAloud(); else pauseReadAloud(); return; }
   if(AUD.key){ if(AUD.el&&AUD.el.paused) audResume(); else audPause(); return; }
+  if(_voiceChosen()){ listenStart(ev,_narrPrefFull()); return; }   // the remembered voice — press and hold to change it
   listenMenu(ev); }
 /* Nothing playing yet → let the reader pick a voice (the choice is remembered) */
 function listenMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
@@ -2358,6 +2367,8 @@ function listenMenu(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
     const sub = !V.have ? 'Coming soon' : ready ? `Studio voice · ${V.gender==='female'?'female':'male'} · follows each verse` : 'Studio voice · not recorded for this chapter yet';
     h+=_vpRow(GO,'studio:'+V.key,`<span class="vp-av vp-${V.gender==='female'?'f':'m'}">${escHTML(String(V.name||'?').charAt(0))}</span>`,escHTML(V.name),sub,np==='studio'&&sv===V.key,!ready); });
   h+=_vpRow(GO,'device','<span class="vp-av vp-ic">'+ICONS.device+'</span>','This device’s voice','Built into your phone or computer · works offline',np==='device',false);
+  h+=_contRow();
+  h+='<div class="vp-hint">Tip: press and hold Listen to change the voice</div>';
   m.innerHTML=h; document.body.appendChild(m);
   const b=(ev&&(ev.currentTarget||ev.target))||document.getElementById('readAloudBtn');
   const r=b?b.getBoundingClientRect():{top:window.innerHeight-80,bottom:window.innerHeight-40,left:window.innerWidth/2,width:0};
@@ -2407,7 +2418,7 @@ function _rdVerseText(){ const v=_rdState.vs[_rdState.i];
   return t; }
 function _rdNext(){ if(!_rdState||_rdState.paused) return;
   if(_rdState.i>=_rdState.vs.length){ const k=_rdState.key; stopReadAloud(); _rdClearPos(k);
-    toast('Chapter finished'); return; }
+    const [kb,kc]=String(k||'').split('|'); _listenContinue(kb,+kc); return; }
   const seq=++_rdState.seq;                                // invalidates every earlier utterance's callbacks
   const v=_rdState.vs[_rdState.i];
   document.querySelectorAll('.verse.reading').forEach(e=>e.classList.remove('reading'));
@@ -2481,7 +2492,28 @@ function _rdSyncBtn(){
                 chapter starts are estimated (or speech-aligned when the map has a 3rd element).
    • "device" — speechSynthesis (readChapterTTS), also the fallback when audio can't load.           */
 const AUD={el:null,src:null,key:null,book:null,ch:0,info:null,loading:false,note:null,seekTo:null,timer:null,lastSave:0,here:null,vlast:null,vcache:null,buffering:false};
-function narrPref(){ try{ return localStorage.getItem('nok_narr')||'human'; }catch(e){ return 'human'; } }
+function narrPref(){ try{ return localStorage.getItem('nok_narr')||'studio'; }catch(e){ return 'studio'; } }   // default: Studio voice (George)
+function _voiceChosen(){ try{ return !!localStorage.getItem('nok_narr'); }catch(e){ return false; } }
+function _narrPrefFull(){ const p=narrPref(); return p==='studio'?'studio:'+studioVoicePref():p; }
+/* Keep going to the next chapter when one finishes (to the end of the book; in a plan, through the day's passages) */
+function _autoNext(){ try{ return localStorage.getItem('nok_autonext')!=='0'; }catch(e){ return true; } }
+function setAutoNext(on){ try{ localStorage.setItem('nok_autonext',on?'1':'0'); }catch(e){}
+  toast(on?'Listening carries on to the next chapter, to the end of the book':'Listening stops at the end of each chapter'); }
+function _vpCont(btn){ const on=!_autoNext(); setAutoNext(on);
+  if(btn){ btn.classList.toggle('on',on); const k=btn.querySelector('.vp-sw'); if(k) k.classList.toggle('on',on); }
+  const c=document.getElementById('tmCont'); if(c) c.checked=on; }
+function _contRow(){ const on=_autoNext();
+  return `<div class="vp-divline"></div><button class="vp-row vp-cont${on?' on':''}" onclick="event.stopPropagation();_vpCont(this)"><span class="vp-av vp-ic">${ICONS.chapter||''}</span><span class="vp-tx"><span class="vp-nm">Keep going</span><span class="vp-sub">Play the next chapter, to the end of the book</span></span><span class="vp-sw${on?' on':''}" aria-hidden="true"></span></button>`; }
+function _listenContinue(book,ch){
+  if(state.view!=='read'||!window.BOOKS[state.book]||window.BOOKS[state.book].name!==book||state.chapter!==ch){ toast('Chapter finished'); return; }
+  if(!_autoNext()){ toast('Chapter finished'); return; }
+  const again=()=>setTimeout(()=>{ if(state.view==='read'&&!AUD.key&&!_rdState){ audPlay(window.BOOKS[state.book].name,state.chapter); } },350);
+  if(state.plan){ let chaps=[]; try{ chaps=readingChapters(getPlan()[state.plan.day]); }catch(e){}
+    if(state.plan.ci>=chaps.length-1){ toast('That’s today’s reading — well done'); return; }
+    planNav(1); toast('→ '+window.BOOKS[state.book].name+' '+state.chapter); again(); return; }
+  const nch=window.BOOKS[state.book].chapters.length;
+  if(ch>=nch){ toast('End of '+book); return; }
+  nextChapter(); toast('→ '+book+' '+state.chapter); again(); }
 /* Studio voice choice: 'george' (default, male) | 'emma' (female) — whichever the map actually has */
 function studioVoicePref(){ const K=window.AUDIO_KOKORO; let v='george'; try{ v=localStorage.getItem('nok_studio_voice')||(K&&K.defaultVoice)||'george'; }catch(e){}
   return v; }
@@ -2604,12 +2636,7 @@ function audSwitchVoice(){ if(AUD.src!=='studio'||!AUD.info) return; const other
 /* End of a file: studio → straight on to the next chapter; human → the LibriVox section ended, carry on with the next chapter's file */
 function _audEnded(){ const src=AUD.src, key=AUD.key, book=AUD.book, ch=AUD.ch, voice=AUD.voice;
   audStop(false); _audClearPos(src,key,voice);
-  if(state.view!=='read'||state.plan||window.BOOKS[state.book].name!==book||state.chapter!==ch){ toast('Chapter finished'); return; }
-  const last = state.book===window.BOOKS.length-1 && ch===window.BOOKS[state.book].chapters.length;
-  if(last){ toast('You have reached the end of Revelation'); return; }
-  nextChapter();
-  const nm=window.BOOKS[state.book].name, nc=state.chapter;
-  toast('→ '+nm+' '+nc); setTimeout(()=>{ if(state.view==='read'&&window.BOOKS[state.book].name===nm&&state.chapter===nc&&!AUD.key&&!_rdState) audPlay(nm,nc); },350); }
+  _listenContinue(book,ch); }
 /* 📍 (human narration only) The reader has found the real start of the chapter — remember it (also fixes the previous chapter's end) */
 function audMarkStart(){ const a=AUD.el; if(!a||!AUD.key||!AUD.info||AUD.src!=='human') return;
   const t=Math.round(a.currentTime*10)/10; const key=AUD.book+'|'+AUD.ch;
@@ -3381,7 +3408,8 @@ function _appMenuHTML(withChapter,inSheet){
           ${window.AUDIO_KJV?`<option value="human" ${np==='human'?'selected':''}>Human narrator (LibriVox)</option>`:''}
           ${studioVoices().map(v=>{ const V=window.AUDIO_KOKORO.voices[v]; return `<option value="studio:${v}" ${np==='studio'&&studioVoicePref()===v?'selected':''}>Studio voice: ${escHTML(V.name)}</option>`; }).join('')}
           <option value="device" ${np==='device'?'selected':''}>This device’s voice (offline)</option></select>
-        <div id="tmDev" style="${np==='device'?'':'display:none'}"><select class="btn vsel vm-voice" id="voiceSel" onchange="setVoicePref(this.value)"></select></div></div>`; }
+        <div id="tmDev" style="${np==='device'?'':'display:none'}"><select class="btn vsel vm-voice" id="voiceSel" onchange="setVoicePref(this.value)"></select></div>
+        <label class="tm-cont" onclick="event.stopPropagation()"><input type="checkbox" id="tmCont" ${_autoNext()?'checked':''} onchange="setAutoNext(this.checked)"> Keep going to the next chapter (to the end of the book)</label></div>`; }
     h+=item(ICONS.share,'Share this chapter','Send a link to '+escHTML(here),'shareChapter()');
     if(localStorage.getItem('nok_dates_unlocked')&&isOwner()) h+=item(ICONS.cal,'Note dates','Show or hide when each note was written','toggleDates()'); }
   h+=head('Read');
