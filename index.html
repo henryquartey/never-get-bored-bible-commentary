@@ -1467,6 +1467,29 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 .hcard.tinted::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.11;
   background:linear-gradient(118deg,var(--a1) 0%,var(--a3) 62%,transparent 100%)}
 .hcard.tinted>*{position:relative;z-index:1}
+/* About this chapter + Psalm titles (1.2.75) */
+body:not(.legacy) .about-ch{margin:0 0 6px}
+body:not(.legacy) .ab-sum{display:flex;align-items:center;gap:7px;max-width:100%;background:none;border:0;padding:6px 0;margin:0;color:var(--soft);font:inherit;font-family:inherit;font-size:13.5px;line-height:1.3;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}
+body:not(.legacy) .ab-sum b{font-weight:600;color:var(--ink);opacity:.78}
+body:not(.legacy) .ab-sum .ab-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+body:not(.legacy) .ab-sum svg{flex:none}
+body:not(.legacy) .ab-sum .ab-i{width:16px;height:16px}
+body:not(.legacy) .ab-sum .ab-ch{width:13px;height:13px;transition:transform .2s ease}
+body:not(.legacy) .about-ch.open .ab-ch{transform:rotate(90deg)}
+body:not(.legacy) .ab-card{max-width:760px;margin:4px 0 10px;padding:14px 16px 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel);font-size:14.5px;line-height:1.55;color:var(--ink);animation:abIn .22s ease}
+@keyframes abIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+body:not(.legacy) .ab-k{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--soft);font-weight:700;margin:0 0 5px}
+body:not(.legacy) .ab-s{margin:0 0 6px}
+body:not(.legacy) .ab-by{font-size:13px;color:var(--soft)}
+body:not(.legacy) .ab-by span{font-weight:600}
+body:not(.legacy) .ab-sep{height:1px;background:var(--line);margin:12px 0}
+body:not(.legacy) .ab-dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;margin:6px 0 2px;font-size:13px}
+body:not(.legacy) .ab-dl dt{color:var(--soft);font-weight:600}
+body:not(.legacy) .ab-dl dd{margin:0}
+body:not(.legacy) .ab-foot{display:flex;gap:6px;align-items:center;justify-content:flex-end;margin:10px 0 0;padding-top:8px;border-top:1px solid var(--line);font-size:12.5px;color:var(--soft)}
+body:not(.legacy) .ab-foot button{background:none;border:0;padding:4px 2px;color:var(--soft);font:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+body:not(.legacy) .ptitle{font-family:var(--serif);font-style:italic;color:var(--soft);font-size:.93em;line-height:1.45;margin:0 0 10px}
+body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.16em;font-size:12.5px;margin:22px 0 6px}
 .you-head .acav{background:linear-gradient(145deg,var(--a1),var(--a3));color:#fff;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
 </style>
@@ -1640,6 +1663,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 <script src="data/refined.js" defer onload="_refinedArrived()"></script>
 <script src="data/chronological.js"></script>
 <script src="data/headings.js" onerror="window.HEADINGS=null"></script>
+<script src="data/about.js?v=1" onerror="window.ABOUT=null"></script>
 <script src="data/audio_kjv.js?v=2"></script>
 <script src="data/audio_kokoro.js" onerror="window.AUDIO_KOKORO=null"></script>
 
@@ -1647,7 +1671,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.74', date:'26 Oct 2026'};
+const BUILD={v:'1.2.75', date:'26 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3435,6 +3459,7 @@ function _appMenuHTML(withChapter,inSheet){
   h+=`<div class="mitem mstay mturn"><span class="mi">${ICONS.chapter}</span><div style="flex:1;min-width:0"><div class="mt">Turn chapters by</div>
       <div class="tm-turn">${[['scroll','Scroll'],['swipe','Swipe'],['both','Both']].map(([k,l])=>`<button data-m="${k}" class="${_turnMode()===k?'on':''}" onclick="event.stopPropagation();_tmTurn('${k}')">${l}</button>`).join('')}</div>
       <div class="md" id="tmTurnHint">${_turnHint(_turnMode())}</div></div></div>`;
+  h+=_abMenuRow();
   h+=head('Your notes');
   h+=item('💾','Back up or restore','Save your notes to a file, or bring them back in','backupMenu()');
   h+=head('Account');
@@ -3492,7 +3517,7 @@ function renderMenu(){
     ${item(_themeGlyph(),'Appearance',_themeDesc(),'appearanceMenu()')}
     <div class="mitem mturn"><span class="mi">${ICONS.chapter}</span><div style="flex:1;min-width:0"><div class="mt">Turn chapters by</div>
       <div class="tm-turn">${[['scroll','Scroll'],['swipe','Swipe'],['both','Both']].map(([k,l])=>`<button data-m="${k}" class="${_turnMode()===k?'on':''}" onclick="event.stopPropagation();_tmTurn('${k}')">${l}</button>`).join('')}</div>
-      <div class="md" id="tmTurnHint">${_turnHint(_turnMode())}</div></div></div>`:''}
+      <div class="md" id="tmTurnHint">${_turnHint(_turnMode())}</div></div></div>${_abMenuRow()}`:''}
     ${head('Your notes')}
     ${item('💾','Back up or restore','Save your notes to a file, or bring them back in','backupMenu()')}
     ${head('The app')}
@@ -3761,6 +3786,43 @@ function _ttsWelcome(btn){
   speechSynthesis.cancel(); speechSynthesis.speak(u); if(btn)btn.textContent='❚❚ Stop';
   toast('Playing read-aloud — add audio/welcome.m4a to hear your own voice');
 }
+/* ---- About this chapter + Psalm titles (1.2.75, 26 Oct 2026 — new UI only) ---- */
+function _psTitles(b,c){ if(b!=='Psalms'||document.body.classList.contains('legacy')) return null;
+  const A=window.ABOUT; if(!A||!A.pt) return null; const k=(A.ptmap||{})[state.version]; if(!k) return null;
+  const L=(A.pt[k]||{})[String(c)]; if(!L) return null; const m={}; L.forEach(x=>{ (m[x[0]]=m[x[0]]||[]).push(x[1]); }); return m; }
+function _psTitleHTML(m,v){ if(!m||!m[v]) return '';
+  return m[v].map(t=>/^[A-Z]+\.?$/.test(t)?`<div class="ptitle acr">${escHTML(t.replace(/\.$/,''))}</div>`:`<div class="ptitle">${escHTML(t)}</div>`).join(''); }
+function _abShort(w){ w=String(w||'');
+  if(/^(Not named|["“])/.test(w)){ let m=w.match(/traditionally ([^;(—,]+)/i)||w.match(/ says ([A-Z][a-z]+(?: [A-Z][a-z]+)?)/);
+    return m?'Traditionally '+m[1].trim():'Writer not named'; }
+  return w.split(/\s—\s|\s\(|;|,|:/)[0].trim(); }
+function _abChName(b,c){ return (b==='Psalms'?'Psalm':b)+' '+c; }
+function _abMode(){ let m='all'; try{ m=localStorage.getItem('nok_about')||'all'; }catch(e){} return /^(all|book|off)$/.test(m)?m:'all'; }
+function _abHint(m){ return m==='off'?'Hidden — the Psalm titles still show':m==='book'?'Who wrote the book and what it is about':'Who wrote it and what the chapter and book are about'; }
+function _abSet(m){ try{ localStorage.setItem('nok_about',m); }catch(e){}
+  document.querySelectorAll('.tm-about button').forEach(x=>x.classList.toggle('on',x.dataset.a===m));
+  document.querySelectorAll('.tmAboutHint').forEach(x=>{ x.textContent=_abHint(m); });
+  if(state.view==='read'){ const r=document.getElementById('reader'), y=r?r.scrollTop:0; renderRead(); if(r) r.scrollTop=y; } }
+function _abOff(m){ _abSet(m); toast(m==='off'?'About this chapter is off · turn it back on in Menu → Reading settings':'Chapter summaries off · Menu → Reading settings brings them back'); }
+function _abMenuRow(){ const m=_abMode();
+  return `<div class="mitem mstay mturn"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/></svg></span><div style="flex:1;min-width:0"><div class="mt">About this chapter</div>
+      <div class="tm-turn tm-about">${[['all','Chapter & book'],['book','Book only'],['off','Off']].map(([k,l])=>`<button data-a="${k}" class="${m===k?'on':''}" onclick="event.stopPropagation();_abSet('${k}')">${l}</button>`).join('')}</div>
+      <div class="md tmAboutHint">${_abHint(m)}</div></div></div>`; }
+function _aboutHTML(b,c){ const A=window.ABOUT; if(!A||document.body.classList.contains('legacy')) return '';
+  const mode=_abMode(); if(mode==='off') return '';
+  const B=(A.b||{})[b], C=mode==='book'?null:((A.c||{})[b]||{})[String(c)]; if(!B&&!C) return '';
+  const who=_abShort(C&&C.w?C.w:(B?B.w:''));
+  const ic='<svg class="ab-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/></svg>';
+  const chev='<svg class="ab-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  let card='';
+  if(C) card+=`<div class="ab-k">${escHTML(_abChName(b,c))}</div><p class="ab-s">${escHTML(C.s)}</p>${C.w?`<div class="ab-by"><span>Written by</span> ${escHTML(C.w)}</div>`:''}`;
+  if(B){ if(C) card+='<div class="ab-sep"></div>';
+    card+=`<div class="ab-k">${b==='Psalms'?'The book of Psalms':'About '+escHTML(b)}</div><p class="ab-s">${escHTML(B.p)}</p><dl class="ab-dl">`
+      +`<dt>Who wrote it</dt><dd>${escHTML(B.w)}</dd><dt>When</dt><dd>${escHTML(B.t)}</dd>`
+      +(B.to&&B.to!=='Not stated'?`<dt>Written to</dt><dd>${escHTML(B.to)}</dd>`:'')+`</dl>`; }
+  card+=`<div class="ab-foot">${C?`<button type="button" onclick="_abOff('book')">Hide chapter summaries</button><span>·</span>`:''}<button type="button" onclick="_abOff('off')">Turn off</button></div>`;
+  return `<div class="about-ch"><button type="button" class="ab-sum" onclick="_abToggle(this)" aria-expanded="false">${ic}<span class="ab-t">${C?'About this chapter':'About this book'} · <b>${escHTML(who)}</b></span>${chev}</button><div class="ab-card" hidden>${card}</div></div>`; }
+function _abToggle(btn){ const w=btn.parentNode, c=w.querySelector('.ab-card'), open=c.hidden; c.hidden=!open; w.classList.toggle('open',open); btn.setAttribute('aria-expanded',String(open)); }
 function renderRead(){
   if(state.compare && !(window.BIBLE&&window.BIBLE[state.compare])){ ensureVersion(state.compare, renderRead); }
   if(_rdState&&_rdState.key!==_rdKey()) stopReadAloud();   // moved to another chapter — keep the old place, stop reading
@@ -3876,6 +3938,7 @@ function renderRead(){
         <div class="chips">${noted.map(v=>`<span class="chip" onclick="jumpVerse(${v})">v${v}</span>`).join('')}</div></div>`;
       }
     }
+    html+=_aboutHTML(name,ch); const _ptm=_psTitles(name,ch);
     const chNotes=chData['0']||[];
     /* A chapter note has a refined version too — it used to show the raw original either way. (21 Sep 2026) */
     const chRef = state.journal==='modern' ? refinedFor(name,ch,'0') : null;
@@ -3884,6 +3947,7 @@ function renderRead(){
     for(let v=1;v<=vcount;v++){
       const hs=(((window.HEADINGS||{})[name]||{})[String(ch)]||{})[String(v)];
       if(hs) hs.forEach(h=>{ html+=`<div class="sheading s${h[0]}">${escHTML(h[1])}</div>`; });
+      html+=_psTitleHTML(_ptm,v);
       const txt=verses[String(v)]||'';
       /* a note whose thoughts were placed on other verses (RECAST_IDS) is not shown as-is in Journal
          mode, even where no refined card is left on its verse. Legacy unchanged. (10 Oct 2026) */
@@ -5748,7 +5812,7 @@ function _turnMode(){ try{ const m=localStorage.getItem('nok_turn'); if(m==='bot
 function _contOn(){ return _turnMode()!=='swipe'; }
 function _swipeOn(){ return _turnMode()!=='scroll'; }
 function _tmTurn(m){ try{ localStorage.setItem('nok_turn',m); }catch(e){}
-  document.querySelectorAll('.tm-turn button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  document.querySelectorAll('.tm-turn button[data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
   const h=document.getElementById('tmTurnHint'); if(h) h.textContent=_turnHint(m);
   if(state.view==='read'){ const r=document.getElementById('reader'), y=r?r.scrollTop:0; renderRead(); if(r) r.scrollTop=y; } }
 function _turnHint(m){ return m==='scroll'?'Keep scrolling down into the next chapter':m==='swipe'?'Swipe sideways to turn the chapter':'Scroll down or swipe sideways'; }
@@ -5783,8 +5847,10 @@ function _chapPreviewHTML(b,c,max,withNotes){ const verses=_chapText(b,c); if(!v
   const chData=(DATA[b]&&DATA[b][String(c)])||{}; let h='';
   if(withNotes){ const chRef=state.journal==='modern'?refinedFor(b,c,'0'):null;
     if(chRef) chRef.forEach((e,i)=>{ h+=modernNoteHTML(b,c,'0',e,i); }); else (chData['0']||[]).forEach(nt=>{ h+=noteHTML(nt,b,c,'0','Chapter note'); }); }
+  const _ptm=_psTitles(b,c);
   for(let v=1;v<=vcount;v++){
     (((window.HEADINGS||{})[b]||{})[String(c)]||{})[String(v)]&&(window.HEADINGS[b][String(c)][String(v)]).forEach(x=>{ h+=`<div class="sheading s${x[0]}">${escHTML(x[1])}</div>`; });
+    h+=_psTitleHTML(_ptm,v);
     const notes=(chData[String(v)]||[]).filter(nt=>state.journal!=='modern'||!nt||!(window.RECAST_IDS||[]).includes(nt.id));
     const hasRef=state.journal==='modern'&&refinedFor(b,c,v); const extra=hasRef?_uncoveredNotes(b,c,v,notes,hasRef):[];
     const shown=hasRef?hasRef.length+extra.length:notes.length; const hlc=hlGet(b,c,v);
