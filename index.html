@@ -1671,7 +1671,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.75', date:'26 Oct 2026'};
+const BUILD={v:'1.2.76', date:'26 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -6287,11 +6287,12 @@ function _sr2(q,keep){
   const words=exactOnly?[]:rawWords.map(w=>_isPrefix(w)?w:_srCorrect(w,vocab));
   const corrected=words.join(' ')!==rawWords.join(' ')&&!exactOnly;
   if(corrected&&!ref) html+=`<div class="soft" style="margin:-4px 0 12px">Also searching for <b>${escHTML(words.join(' '))}</b> <span style="opacity:.7">(you typed “${escHTML(qq)}”)</span></div>`;
-  /* 3. topics */
-  if(!ref&&!quoted){ _srTopics(nq).forEach(T=>{ html+=`<div class="hcard" style="margin-bottom:14px"><div class="hk">${ICONS.library} Verses about ${escHTML(T.t)}</div><div class="hrow" style="margin-top:8px">`;
+  /* 3. topics — built here, shown AFTER the results (1.2.76) */
+  let topicH='';
+  if(!ref&&!quoted){ _srTopics(nq).forEach(T=>{ topicH+=`<div class="hcard" style="margin-bottom:14px"><div class="hk">${ICONS.library} Related · verses about ${escHTML(T.t)}</div><div class="hrow" style="margin-top:8px">`;
       T.r.forEach(r=>{ const p=_srRef(r); if(!p) return; const t=_srVerse(ver,p.bk,p.ch,p.v)||_srVerse('KJV',p.bk,p.ch,p.v); const has=!!(DATA[p.bk]&&DATA[p.bk][String(p.ch)]&&DATA[p.bk][String(p.ch)][String(p.v)]);
-        html+=`<div class="sr-item" style="flex:1 1 100%;margin:0 0 6px" onclick="jumpTo('${esc(p.bk)}',${p.ch},${p.v})"><div class="r">${escHTML(r)}${has?'<span class="sr-tag" style="color:var(--accent)">Nii Okai wrote here</span>':''}</div><div class="t">${escHTML(t.length>150?t.slice(0,150).replace(/\s+\S*$/,'')+'…':t)}</div></div>`; });
-      html+=`</div></div>`; }); }
+        topicH+=`<div class="sr-item" style="flex:1 1 100%;margin:0 0 6px" onclick="jumpTo('${esc(p.bk)}',${p.ch},${p.v})"><div class="r">${escHTML(r)}${has?'<span class="sr-tag" style="color:var(--accent)">Nii Okai wrote here</span>':''}</div><div class="t">${escHTML(t.length>150?t.slice(0,150).replace(/\s+\S*$/,'')+'…':t)}</div></div>`; });
+      topicH+=`</div></div>`; }); }
   /* 4. scoring: exact phrase first, then the old word-by-word match */
   const P=' '+nq+' ';
   const phrase=words.join(' ');
@@ -6375,6 +6376,7 @@ function _sr2(q,keep){
     html+=`<div class="book-group" style="padding-left:0">Scripture</div><div id="sr2List">${scrip.slice(0,R.shown).map(_sr2Row).join('')}</div>`;
     if(scrip.length>R.shown) html+=`<button class="sr2-more" id="sr2MoreBtn" onclick="_sr2More()">Show more · ${scrip.length-R.shown} left</button>`; };
   if(scripFirst){ scripBlock(); notesBlock(); } else { notesBlock(); scripBlock(); }
+  if(topicH) html+=`<div style="margin-top:18px">${topicH}</div>`;
   /* 5. when nothing is here, say why — and only offer Google when the app really has no answer */
   const loading=!ref&&nq&&!vers.length&&!ONLINE_VERSIONS[ver];
   const narrowed=(F.t||F.b)&&all.length&&!scrip.length;
