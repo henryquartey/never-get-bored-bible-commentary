@@ -512,6 +512,12 @@ body:not(.legacy)[data-view="read"]:has(textarea.inline-ed) .fabnotes{opacity:0!
   border:1px solid rgba(192,57,43,.35);border-radius:20px;padding:2px 10px;cursor:pointer;
   text-decoration:underline;text-decoration-style:wavy;text-decoration-color:#c0392b}
 .ed-spell .es-chip:hover{background:rgba(192,57,43,.16)}
+/* spelling, new edition (25 Oct 2026) */
+.ed-spell .es-lbl.es-g{color:var(--ink);margin-left:4px}
+.ed-spell .es-chip.es-gch{color:var(--ink);background:transparent;border:1px dashed var(--soft);text-decoration:none}
+.ed-spell .es-chip.es-gch s{color:var(--soft);margin-left:3px;font-size:11.5px}
+.ed-spell .es-chip.es-all{color:var(--bg);background:var(--ink);border-color:var(--ink);font-weight:700;text-decoration:none}
+#spellpop .sp-h{padding:8px 12px 4px;font:700 10.5px var(--sans);letter-spacing:.6px;text-transform:uppercase;color:var(--soft)}
 .chapindex{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 22px}
 .copyline{font-family:var(--sans);font-size:11px;color:var(--soft);line-height:1.45;margin:26px 0 10px;padding-top:10px;border-top:1px solid var(--line)}
 .chapindex.nearby{cursor:pointer;padding:10px 14px}
@@ -852,6 +858,10 @@ body:not(.legacy)[data-view="read"] .readnav.planmode .rn-s{font-size:9.5px;line
 .ds .ds-note{display:block;margin:10px 0 0;background:none;border:0;padding:0;color:var(--ink);font:600 13px var(--sans);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .ds .ds-pinned{border-width:1.5px}
 .ds .ds-flash{outline:2px solid var(--ink);outline-offset:2px}
+/* the middle button: just ▶ (26 Oct 2026) */
+body:not(.legacy)[data-view="read"] .readnav .rn-listen.rn-ico{flex:0 0 58px;padding:0!important;display:flex;align-items:center;justify-content:center}
+body:not(.legacy)[data-view="read"] .readnav .rn-listen.rn-ico svg{width:20px;height:20px;margin:0}
+body:not(.legacy)[data-view="read"] .readnav .rn-listen.rn-ico .rn-dots{font-size:18px;line-height:1}
 .donepill{font-size:11px;background:var(--accent);color:var(--on-accent);border-radius:20px;padding:1px 9px;font-weight:700;vertical-align:middle}
 /* plan context bar in the reader */
 .planctx{background:var(--accent-soft);border:1px solid var(--note-line);border-radius:10px;padding:10px 14px;margin:0 0 16px;font-size:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -1637,7 +1647,7 @@ body[data-view]:not([data-view="read"]):not([data-view="search"]) .rc{display:no
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.72', date:'22 Oct 2026'};
+const BUILD={v:'1.2.74', date:'26 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2475,7 +2485,10 @@ function _rdSyncBtn(){
   const b=document.getElementById('readAloudBtn'), s=document.getElementById('rdStopBtn');
   const tts=!!_rdState, aud=!!AUD.key, on=tts||aud;
   const paused = tts ? _rdState.paused : (aud ? !!(AUD.el&&AUD.el.paused&&!AUD.loading) : false);
-  if(b){ const _lb = !on ? ICONS.play+' Listen' : (paused ? ICONS.play+' Resume' : (aud&&AUD.loading ? '… Loading' : ICONS.pause+' Pause'));
+  if(b&&b.classList.contains('rn-ico')){ const st=!on?'Listen':(paused?'Resume':(aud&&AUD.loading?'Loading':'Pause'));
+    b.innerHTML=st==='Pause'?ICONS.pause:st==='Loading'?'<span class="rn-dots">…</span>':ICONS.play; b.setAttribute('aria-label',st); b.title=st==='Listen'?'Listen — press and hold to choose a voice':st;
+    b.classList.toggle('primary',on&&!paused); b.style.display = aud ? 'none' : ''; }
+  else if(b){ const _lb = !on ? ICONS.play+' Listen' : (paused ? ICONS.play+' Resume' : (aud&&AUD.loading ? '… Loading' : ICONS.pause+' Pause'));
     b.innerHTML = b.dataset.sub ? '<span class="rn-l">'+_lb+'</span><small class="rn-s">'+b.dataset.sub+'</small>' : _lb;
     b.classList.toggle('primary',on&&!paused); b.style.display = aud ? 'none' : ''; }
   if(s){ s.innerHTML=ICONS.stop; s.style.display = (on&&!aud) ? '' : 'none'; }
@@ -3907,14 +3920,14 @@ function renderRead(){
   if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]); const last=state.plan.ci>=chaps.length-1;
     nav=`<div class="readnav planmode">
       <button id="rnPrev" onclick="planNav(-1)" ${state.plan.day===0&&state.plan.ci===0?'disabled':''}>${_nl?`<span class="rn-l">← Prev</span><small class="rn-s">${state.plan.ci>0?state.plan.ci+' of '+chaps.length:(state.plan.day>0?'Day '+state.plan.day:'&nbsp;')}</small>`:'← Prev'}</button>
-      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud(event)" ${_nl?`data-sub="Now · ${state.plan.ci+1} of ${chaps.length}"`:''}>${_nl?`<span class="rn-l">${ICONS.play} Listen</span><small class="rn-s">Now · ${state.plan.ci+1} of ${chaps.length}</small>`:`${ICONS.play} Listen`}</button>
+      ${_nl?`<button class="rn-listen rn-ico" id="readAloudBtn" onclick="readChapterAloud(event)" aria-label="Listen" title="Listen — press and hold to choose a voice">${ICONS.play}</button>`:`<button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud(event)">${ICONS.play} Listen</button>`}
       <button class="rn-listen rn-stop" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">${ICONS.stop}</button>
       <span class="rn-mid">Day ${state.plan.day+1} · ${state.plan.ci+1}/${chaps.length}</span>${_rnComm}
       <button class="rn-next" id="rnNext" onclick="planNav(1)">${_nl?`<span class="rn-l">${last?'Finish ✓':'Next →'}</span><small class="rn-s">${last?'Day '+(state.plan.day+1):(state.plan.ci+2)+' of '+chaps.length}</small>`:(last?'Finish day ✓':'Next →')}</button></div>`;
   } else {
     nav=`<div class="readnav">
       <button onclick="prevChapter()" ${state.book===0&&ch===1?'disabled':''}>${_rnComm?'← Prev':'← Previous'}</button>
-      <button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud(event)">${ICONS.play} Listen</button>
+      ${_nl?`<button class="rn-listen rn-ico" id="readAloudBtn" onclick="readChapterAloud(event)" aria-label="Listen" title="Listen — press and hold to choose a voice">${ICONS.play}</button>`:`<button class="rn-listen" id="readAloudBtn" onclick="readChapterAloud(event)">${ICONS.play} Listen</button>`}
       <button class="rn-listen rn-stop" id="rdStopBtn" style="display:none" onclick="stopReadAloud(true)" title="Stop and start again at verse 1">${ICONS.stop}</button>${_rnComm}
       <button onclick="nextChapter()" ${state.book===window.BOOKS.length-1&&ch===nch?'disabled':''}>Next →</button></div>`;
   }
@@ -4914,7 +4927,7 @@ function _loadUserSpell(){ try{ _USERDICT=new Set(JSON.parse(localStorage.getIte
 function _saveUserDict(){ localStorage.setItem('nok_userdict',JSON.stringify([..._USERDICT])); }
 function _saveLearn(){ localStorage.setItem('nok_learn',JSON.stringify(_LEARN)); }
 function _buildDict(){ _DICT=new Set(); _RANK=new Map(); _loadUserSpell();
-  const w=window.DICT_WORDS||[]; for(let i=0;i<w.length;i++){ _DICT.add(w[i]); _RANK.set(w[i],i); }
+  const w=(_DICT_MODE==='d2'&&window.DICT2)?_d2Words():(window.DICT_WORDS||[]); for(let i=0;i<w.length;i++){ _DICT.add(w[i]); _RANK.set(w[i],i); }
   // your own words (proper nouns, Pidgin, native expressions) count as known so we never mangle them
   try{ for(const bk in DATA)for(const c in DATA[bk])for(const v in DATA[bk][c])DATA[bk][c][v].forEach(nt=>{
     (nt.text.toLowerCase().match(/[a-z']{2,}/g)||[]).forEach(t=>{ if(!_DICT.has(t)){_DICT.add(t); _RANK.set(t,900000);} }); }); }catch(e){}
@@ -4940,7 +4953,7 @@ function _buildProper(){ _PROPER=new Set(window.BIBLE_PROPER||[]);
 function _learnText(text){ try{ const ws=(String(text||'').match(/[A-Za-z][A-Za-z']+/g)||[]);
   if(_DICT) ws.forEach(w=>{ const t=w.toLowerCase(); if(!_DICT.has(t)){ _DICT.add(t); _RANK.set(t,900000); } });
   if(_PM) _pmAdd(_PM,String(text||'')); }catch(e){} }
-function _isKnown(w){ if(!_DICT)_buildDict(); return _DICT.has(w)||_USERDICT.has(w)||_rejected.has(w); }
+function _isKnown(w){ _dictFresh(); return _DICT.has(w)||_USERDICT.has(w)||_rejected.has(w); }
 const _AL="abcdefghijklmnopqrstuvwxyz";
 function _edits1(w){ const res=new Set();
   for(let i=0;i<=w.length;i++){ const a=w.slice(0,i), b=w.slice(i);
@@ -4949,7 +4962,7 @@ function _edits1(w){ const res=new Set();
     for(let j=0;j<26;j++){ const c=_AL[j]; if(b) res.add(a+c+b.slice(1)); res.add(a+c+b); } // replace + insert
   } return res; }
 /* candidate suggestions, best (most common) first — edit distance 1, then 2 */
-function _suggest(word,max){ if(!_DICT)_buildDict(); max=max||5; const lower=word.toLowerCase();
+function _suggest(word,max){ _dictFresh(); max=max||5; const lower=word.toLowerCase();
   const cand=new Map();
   _edits1(lower).forEach(c=>{ if(_RANK.has(c)) cand.set(c,Math.min(cand.get(c)??Infinity,_RANK.get(c))); });
   if(cand.size<max){ let n=0; for(const w1 of _edits1(lower)){ if(n>3000)break;
@@ -4965,7 +4978,7 @@ function _splitWord(lower){ if(!_DICT)_buildDict(); if(lower.length<5) return nu
     if(ra!==undefined&&rb!==undefined&&ra<50000&&rb<50000){ const sc=ra+rb; if(sc<bestScore){bestScore=sc;best=a+' '+b;} } }
   return best; }
 /* confident single-word auto-fix (used while typing) */
-function _correct(word){ if(!_DICT)_buildDict();
+function _correct(word){ _dictFresh();
   const lower=word.toLowerCase();
   if(_LEARN[lower]) return _LEARN[lower];          // something you taught me
   if(lower.length<3) return null;
@@ -5011,8 +5024,10 @@ function noteAutocorrect(e){
   else if(AUTOCORRECT[lower]!==undefined){ fixed=_applyCase(word,AUTOCORRECT[lower]); }
   else if(lower==='i'){ fixed='I'; }
   else if(/^[a-z]+$/.test(word) && (_PROPER||(_buildProper(),_PROPER)).has(word)){ fixed=word.charAt(0).toUpperCase()+word.slice(1); }
+  else if(_spNew() && /^[A-Z][a-z]+$/.test(word) && /(^|[.!?]\s+|\n\s*)$/.test(val.slice(0,start)) && !_isKnown(lower) && !(_PROPER||(_buildProper(),_PROPER)).has(lower)){
+    const c=_sp2Confident(word,null); if(c&&!/ /.test(c)) fixed=_applyCase(word,c); }
   else if(/^[a-z][a-z']*$/.test(word) && !/'/.test(word)){
-    const c=_correct(word); if(c) fixed=_applyCase(word,c);       // capitalised words skipped → names protected
+    const c=_spNew()?(_dictFresh(),_isKnown(lower)?null:_sp2Confident(word,_prevWordAt(val,start))):_correct(word); if(c) fixed=_applyCase(word,c);       // capitalised words skipped → names protected
   }
   const before=val.slice(0,start);
   if(/(^|[.!?]\s+|\n\s*)$/.test(before) && /^[a-z]/.test(fixed)) fixed=fixed.charAt(0).toUpperCase()+fixed.slice(1);
@@ -5104,7 +5119,7 @@ function _punctFinal(text){ try{ const a=document.getElementById('edAuto'); if(!
 let _spellTimer=null;
 function scheduleSpellStrip(ta){ clearTimeout(_spellTimer); _spellTimer=setTimeout(()=>updateSpellStrip(ta),300); }
 function updateSpellStrip(ta){ ta=ta||document.getElementById('edText'); const el=document.getElementById('edSpell');
-  if(!ta||!el) return; if(!_DICT)_buildDict();
+  if(!ta||!el) return; if(_spNew()){ _sp2Strip(ta,el); return; } _dictFresh();
   const seen=new Set(), bad=[]; const re=/[A-Za-z][A-Za-z']*/g; let m;
   while((m=re.exec(ta.value))){ const raw=m[0]; const w=raw.toLowerCase();
     if(w.length<2) continue;
@@ -5117,6 +5132,7 @@ function updateSpellStrip(ta){ ta=ta||document.getElementById('edText'); const e
 function closeSpellPop(){ const p=document.getElementById('spellpop'); if(p) p.remove(); }
 document.addEventListener('click',closeSpellPop);
 function spellChip(ev,word){ ev.stopPropagation(); closeSpellPop();
+  if(_spNew()){ const p2=_sp2Pop(ev,word); document.body.appendChild(p2); _spPlace(p2,ev.currentTarget); return; }
   const sug=_suggest(word,5);
   const pop=document.createElement('div'); pop.className='vmenu'; pop.id='spellpop';
   pop.innerHTML=(sug.length?sug.map(s=>`<button onclick="spellReplace('${esc(word)}','${esc(s)}')"><b>${escHTML(s)}</b></button>`).join('')
@@ -5137,6 +5153,164 @@ function spellReplace(from,to){ closeSpellPop(); const ta=document.getElementByI
 function spellIgnore(word){ closeSpellPop(); _rejected.add(word.toLowerCase()); updateSpellStrip(); }
 function spellAdd(word){ closeSpellPop(); const w=word.toLowerCase(); _USERDICT.add(w); _saveUserDict();
   if(_DICT){_DICT.add(w); _RANK.set(w,850000);} updateSpellStrip(); toast('Added “'+word+'” to your dictionary'); }
+
+/* ---------- Spelling, the new edition (25 Oct 2026, new UI; Legacy keeps the old checker) ----------
+   Henry: "Why is blurted marked out… yet no solution? Make the auto correct far better — the best out there."
+   1. The word list: 120,786 words (SCOWL British + American English to the "large" level, every inflection —
+      blurt, blurts, blurted, blurting) + every word of the KJV (hearkened, travailing, wouldest), ordered by how
+      common each word is in real English (wordfreq). The old list had 39,534 words and no "blurted".
+   2. Suggestions are ranked the way a person types on a phone: a neighbouring key, a doubled or dropped letter,
+      two letters swapped or a wrong vowel cost less than a random change; common words beat rare ones; a word
+      you use in your own notes, or that follows the previous word in your notes, comes first; names, sound-alikes
+      and run-together words ("notstated") are found too.
+   3. Auto-correct while typing only changes a word when one fix clearly wins — otherwise it underlines and asks.
+   4. "Did you mean?" for real words in the wrong place (weather / whether, their / there, then / than, less / lest…)
+      — offered, never changed on its own. */
+function _spNew(){ return !document.body.classList.contains('legacy'); }
+let _DICT_MODE='';
+function _d2Words(){ return window.DICT2?window.DICT2.w.split(' '):null; }
+function _d2Load(){ if(window.DICT2||window._d2Loading) return; window._d2Loading=1;
+  const s=document.createElement('script'); s.src='data/dict2.js'; s.onload=()=>{ _DICT=null; }; document.head.appendChild(s); }
+function _dictFresh(){ const want=_spNew()&&window.DICT2?'d2':'d1'; if(_DICT&&_DICT_MODE===want) return;
+  if(_spNew()&&!window.DICT2) _d2Load(); _DICT=null; _DICT_MODE=want; _buildDict(); }
+/* how common a word is, 0–7 (7 = "the"); words of yours that no dictionary has count as fairly common */
+function _zipf(w){ const r=_RANK&&_RANK.get(w); if(r===undefined) return 0;
+  if(r>=800000) return 2.6;
+  const b=(window.DICT2&&window.DICT2.z)||[100,1000,7000,26000,55000,85000]; const top=[7,6,5,4,3,2,1];
+  for(let i=0;i<b.length;i++){ if(r<b[i]){ const lo=i?b[i-1]:0; return top[i]-(r-lo)/Math.max(1,b[i]-lo); } }
+  return 0.6; }
+/* the cost of turning what was typed into a candidate — cheap for the slips fingers really make */
+const _KB=(()=>{ const rows=['qwertyuiop','asdfghjkl','zxcvbnm'], pos={}; rows.forEach((r,y)=>[...r].forEach((c,x)=>pos[c]=[x+y*0.5,y]));
+  return (a,b)=>{ const p=pos[a], q=pos[b]; if(!p||!q) return false; return Math.abs(p[0]-q[0])<=1.1&&Math.abs(p[1]-q[1])<=1; }; })();
+const _VOW=new Set('aeiouy');
+/* the cheap half of a second edit: delete or swap one more letter, or double one */
+function _edits1d(w){ const res=new Set(); for(let i=0;i<=w.length;i++){ const a=w.slice(0,i), b=w.slice(i);
+  if(b) res.add(a+b.slice(1)); if(b.length>1) res.add(a+b[1]+b[0]+b.slice(2)); if(b) res.add(a+b[0]+b); }
+  for(let i=0;i<=w.length;i++) for(const c of 'aeiouhrsnt') res.add(w.slice(0,i)+c+w.slice(i));   /* the letters people most often leave out */
+  return res; }
+function _wcost(s,t){ const n=s.length, m=t.length; const d=[]; for(let i=0;i<=n;i++){ d.push(new Array(m+1).fill(0)); d[i][0]=i; } for(let j=0;j<=m;j++) d[0][j]=j;
+  for(let i=1;i<=n;i++) for(let j=1;j<=m;j++){ const a=s[i-1], b=t[j-1];
+    let sub=a===b?0:(_VOW.has(a)&&_VOW.has(b)?0.6:_KB(a,b)?0.5:1);
+    const del=(i>1&&s[i-2]===a)||(j>0&&t[j-1]===a)?0.45:(_VOW.has(a)?0.8:1);      // dropped from what was typed
+    const ins=(j>1&&t[j-2]===b)||(i>0&&s[i-1]===b)?0.45:(_VOW.has(b)?0.8:1);      // missing from what was typed
+    let v=Math.min(d[i-1][j]+del, d[i][j-1]+ins, d[i-1][j-1]+sub);
+    if(i>1&&j>1&&a===t[j-2]&&s[i-2]===b) v=Math.min(v,d[i-2][j-2]+0.55);          // two letters swapped
+    d[i][j]=v; }
+  let c=d[n][m]; if(s[0]!==t[0]) c+=0.5;                                          // first letters are rarely wrong
+  return c; }
+/* sound-alike key: first letter + consonant skeleton (knowlege → knowledge, nolej → knowledge) */
+function _skel(w){ w=w.replace(/^kn/,'n').replace(/^wr/,'r').replace(/ph/g,'f').replace(/ck|q/g,'k').replace(/dg/g,'j').replace(/c(?=[eiy])/g,'s').replace(/c/g,'k')
+  .replace(/x/g,'ks').replace(/z/g,'s').replace(/gh/g,'').replace(/(.)\1+/g,'$1'); return w[0]+w.slice(1).replace(/[aeiouyhw]/g,''); }
+let _SKEL=null;
+function _skelIndex(){ if(_SKEL) return _SKEL; _SKEL=new Map(); let i=0;
+  for(const [w,r] of _RANK){ if(r>70000&&r<800000) continue; if(w.length<3||/'/.test(w)) continue; const k=_skel(w); let a=_SKEL.get(k); if(!a){ a=[]; _SKEL.set(k,a); } if(a.length<12) a.push(w); if(++i>140000) break; }
+  return _SKEL; }
+/* the previous word, to rank by what you usually write next */
+function _bigram(prev,c){ try{ if(!prev) return 0; if(!_PM) _PM=_pmBuild(); const b=_PM.b.get(prev); return b&&b.get(c)?Math.min(2,0.8+Math.log(1+b.get(c))):0; }catch(e){ return 0; } }
+let _KJVW=null;
+function _kjvWord(c){ if(!_KJVW){ const K=window.BIBLE&&window.BIBLE.KJV; if(!K) return false; _KJVW=new Set();
+    for(const b in K)for(const ch in K[b])for(const v in K[b][ch]) (K[b][ch][v].toLowerCase().match(/[a-z]+/g)||[]).forEach(t=>_KJVW.add(t)); }
+  return _KJVW.has(c); }
+const _sorted=w=>[...w].sort().join('');
+function _mine(c){ try{ if(!_PM) _PM=_pmBuild(); return (_PM.f.get(c)||0)>0; }catch(e){ return false; } }
+function _sp2Rank(word,prev,max){ _dictFresh(); const lower=word.toLowerCase(); const C=new Map();
+  const add=c=>{ if(C.has(c)||c===lower||!_DICT.has(c)) return; C.set(c,_wcost(lower,c)); };
+  const e1=_edits1(lower); e1.forEach(add);
+  /* distance 2: deletes and swaps of the first step cover most slips cheaply; full replace/insert only for short words */
+  let n=0; const full=lower.length<=7;
+  for(const w1 of e1){ if(n>40000) break; for(const c of (full?_edits1(w1):_edits1d(w1))){ n++; if(_RANK.has(c)) add(c); } }
+  if(lower.length>=4){ const a=_skelIndex().get(_skel(lower)); if(a) a.forEach(c=>{ if(!C.has(c)&&_DICT.has(c)) C.set(c,Math.max(1.6,_wcost(lower,c))); }); }
+  const so=_sorted(lower);
+  const out=[...C.entries()].map(([c,cost])=>{ if(c.length===lower.length&&_sorted(c)===so) cost=Math.max(0.5,cost-0.6);   /* same letters, jumbled */
+      const z=_zipf(c); return {c,cost,z,s:cost*2.2-z*0.55-_bigram(prev,c)-(_mine(c)?0.4:0)-(_kjvWord(c)?0.35:0)}; })
+    .filter(x=>x.cost<=2.6&&(x.z>=1||x.cost<=1)).sort((a,b)=>a.s-b.s);
+  const sp=_splitWord(lower); if(sp){ const [a,b]=sp.split(' '); out.push({c:sp,cost:1,z:Math.min(_zipf(a),_zipf(b)),s:1*2.2-Math.min(_zipf(a),_zipf(b))*0.55+0.2}); out.sort((x,y)=>x.s-y.s); }
+  return out.slice(0,max||6); }
+function _sp2Suggest(word,prev,max){ return _sp2Rank(word,prev,max).map(x=>x.c); }
+/* auto-fix only when one answer clearly wins */
+function _sp2Confident(word,prev){ const r=_sp2Rank(word,prev,3); if(!r.length) return null; const b=r[0], s=r[1];
+  if(b.cost>1.05||b.z<3||/ /.test(b.c)&&b.z<4) return null;
+  if(s&&s.s-b.s<1.1) return null;
+  return b.c; }
+function _prevWordAt(text,idx){ const m=text.slice(0,idx).match(/([A-Za-z][A-Za-z'’]*)[^A-Za-z.!?\n]*$/); return m?m[1].toLowerCase():null; }
+
+/* ---- "Did you mean?" for right words in the wrong place ---- */
+const _G_SUBJ=new Set('i you he she it we they this that there god jesus the his her their our my a an not'.split(' '));
+const _G_CMP=new Set('more less better rather greater other worse higher lower bigger smaller older younger stronger larger easier harder richer wiser longer shorter fewer sooner faster weaker deeper farther further'.split(' '));
+const _G_DBL=new Set('the a an to of and in is it for on with was be his her my he she they we i'.split(' '));
+const _G_THEIRN=new Set('own children hearts lives sins fathers father mothers people land king gods families eyes hands heads houses sons daughters wives husbands minds souls ways god'.split(' '));
+function _gram(text){ const out=[]; const re=/[A-Za-z][A-Za-z'’]*/g; const T=[]; let m;
+  while((m=re.exec(text))) T.push({w:m[0],l:m[0].toLowerCase().replace(/’/g,"'"),i:m.index});
+  const gap=(a,b)=>text.slice(a.i+a.w.length,b.i);                       // what sits between two words
+  const tight=(a,b)=>/^\s+$/.test(gap(a,b));                               // only spaces: same phrase
+  const push=(t,to,why,len)=>out.push({i:t.i,len:len||t.w.length,from:text.substr(t.i,len||t.w.length),to,why});
+  for(let k=0;k<T.length;k++){ const t=T[k], p=T[k-1], n=T[k+1], nl=n&&tight(t,n)?n.l:'', pl=p&&tight(p,t)?p.l:'';
+    if(n&&t.l===n.l&&_G_DBL.has(t.l)&&tight(t,n)){ push(t,t.w,'the same word twice',n.i+n.w.length-t.i); continue; }
+    if(t.l==='weather'&&nl&&/^(or|to|he|she|it|they|we|you|i|this|that|god|his|her|their|our|my|not|anyone|someone)$/.test(nl)&&!/^(the|bad|good|cold|hot|fair|stormy|rainy|foul|nice|this|our|of)$/.test(pl)) push(t,'whether','“whether” means if');
+    else if(t.l==='their'&&/^(is|was|are|were|will|would|has|had|be|seems|lies|came|went)$/.test(nl)) push(t,'there','“there is / there was”');
+    else if(t.l==='there'&&_G_THEIRN.has(nl)&&pl!=='for'&&pl!=='from'&&pl!=='in') push(t,'their','“their” = belonging to them');
+    else if(t.l==='where'&&/^(they|we|you|these|those|there|who)$/.test(pl)&&nl&&!/^(is|are|was|were|do|did|does|can|will|would|shall)$/.test(nl)) push(t,'were','“were” = the past of “are”');
+    else if(t.l==='its'&&/^(a|an|the|not|been|going|so|very|time|true|clear|like|also|only|just|about|all|important|interesting|because)$/.test(nl)) push(t,"it's","“it's” = it is");
+    else if((t.l==="it's"||t.l==='it’s')&&nl==='own') push(t,'its','“its own”');
+    else if(t.l==='your'&&/^(welcome|right|wrong|not|going|being|doing|so|very)$/.test(nl)) push(t,"you're","“you're” = you are");
+    else if(t.l==='then'&&_G_CMP.has(pl)) push(t,'than','comparing: “more than”');
+    else if(t.l==='to'&&nl==='much'&&pl!=='due') push(t,'too','“too much”');
+    else if(t.l==='of'&&/^(could|would|should|must|might)$/.test(pl)) push(t,'have','“could have”');
+    else if(t.l==='off'&&pl==='heard') push(t,'of','“heard of”');
+    else if(t.l==='less'&&/^(you|we|he|she|they|i|it|thou|ye|any|anyone|someone|my|his|her|their|our|the)$/.test(nl)&&!_G_CMP.has(pl)&&!/^(much|far|no|even|any|or|the|a|little|nothing|none|still|yet|and|than)$/.test(pl)) push(t,'lest','“lest” = so that … not');
+  }
+  return out; }
+
+/* ---- the strip under the note box (new UI) ---- */
+function _sp2Strip(ta,el){ _dictFresh();
+  const seen=new Set(), bad=[]; const re=/[A-Za-z][A-Za-z'’]*/g; let m; const v=ta.value;
+  while((m=re.exec(v))){ const raw=m[0].replace(/’/g,"'"); const w=raw.toLowerCase();
+    if(w.length<2) continue;
+    if(_DICT.has(w)||_USERDICT.has(w)||_rejected.has(w)||AUTOCORRECT[w]!==undefined) continue;
+    if(/'s$/.test(w)&&_DICT.has(w.slice(0,-2))) continue;                         // Abraham's, Nineveh's
+    if(/^[A-Z]/.test(raw)&&m.index>0&&!/[.!?\n]\s*$/.test(v.slice(0,m.index))){            // a capitalised word mid-sentence is usually a name:
+      const r=_sp2Rank(raw,null,1); if(!r.length||r[0].cost>1) continue; }                    // flag it only if it is one slip away from a known word
+    if(seen.has(w)) continue; seen.add(w); bad.push({raw,idx:m.index}); if(bad.length>=40) break; }
+  const G=_gram(v).filter(g=>!_rejected.has('g:'+g.from.toLowerCase()+'>'+g.to)); window._GR=G;
+  if(!bad.length&&!G.length){ el.style.display='none'; el.innerHTML=''; return; }
+  const sure=bad.map(b=>({b,c:_sp2Confident(b.raw,_prevWordAt(v,b.idx))})).filter(x=>x.c);
+  el.style.display='';
+  el.innerHTML=(bad.length?'<span class="es-lbl">⚠ Check:</span>'+bad.map(b=>`<button class="es-chip" onclick="spellChip(event,'${esc(b.raw)}')">${escHTML(b.raw)}</button>`).join('')
+      +(sure.length>=2?`<button class="es-chip es-all" onclick="spellFixAll()">Fix ${sure.length} ✓</button>`:''):'')
+    +(G.length?`<span class="es-lbl es-g">Did you mean:</span>`+G.slice(0,8).map((g,i)=>`<button class="es-chip es-gch" title="${escHTML(g.why)}" onclick="gramChip(event,${i})">${escHTML(g.why==='the same word twice'?g.from.split(/\s+/)[0]:_applyCase(g.from,g.to))} <s>${escHTML(g.from)}</s></button>`).join(''):'');
+}
+function _sp2Pop(ev,word){ const ta=document.getElementById('edText'); const v=ta?ta.value:'';
+  const at=v.toLowerCase().indexOf(word.toLowerCase()); const prev=at>=0?_prevWordAt(v,at):null;
+  const sug=_sp2Suggest(word,prev,5).map(s=>_applyCase(word,s));
+  const pop=document.createElement('div'); pop.className='vmenu'; pop.id='spellpop';
+  pop.innerHTML=(sug.length?'<div class="sp-h">Did you mean</div>'+sug.map(s=>`<button onclick="spellReplace('${esc(word)}','${esc(s)}')"><b>${escHTML(s)}</b></button>`).join('')
+      :'<div style="padding:8px 11px;color:var(--soft);font-size:13px">Not in the dictionary — it may be a name or a word of your own</div>')
+    +'<div class="cp-sep"></div>'
+    +`<button onclick="spellAdd('${esc(word)}')">➕ It’s right — add to my dictionary</button>`
+    +`<button onclick="spellIgnore('${esc(word)}')">🚫 Ignore this time</button>`
+    +`<button onclick="closeSpellPop();gSearch('define ${esc(word)}')">📖 What does “${escHTML(word)}” mean?</button>`;
+  return pop; }
+function gramChip(ev,i){ ev.stopPropagation(); closeSpellPop(); const g=(window._GR||[])[i]; if(!g) return;
+  const pop=document.createElement('div'); pop.className='vmenu'; pop.id='spellpop';
+  pop.innerHTML=`<div class="sp-h">${escHTML(g.why)}</div><button onclick="gramApply(${i})">Change “${escHTML(g.from)}” to <b>${escHTML(g.why==='the same word twice'?g.from.split(/\s+/)[0]:_applyCase(g.from,g.to))}</b></button>
+    <div class="cp-sep"></div><button onclick="gramKeep(${i})">Keep “${escHTML(g.from)}” — it’s right here</button>`;
+  document.body.appendChild(pop); _spPlace(pop,ev.currentTarget); }
+function gramApply(i){ closeSpellPop(); const ta=document.getElementById('edText'); const g=(window._GR||[])[i]; if(!ta||!g) return;
+  const v=ta.value; if(v.substr(g.i,g.len)!==g.from){ updateSpellStrip(ta); return; }
+  const to=g.why==='the same word twice'?g.from.split(/\s+/)[0]:_applyCase(g.from,g.to);
+  ta.value=v.slice(0,g.i)+to+v.slice(g.i+g.len); _lastAuto=null; updateSpellStrip(ta); ta.focus();
+  try{ ta.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){} }
+function gramKeep(i){ closeSpellPop(); const g=(window._GR||[])[i]; if(g) _rejected.add('g:'+g.from.toLowerCase()+'>'+g.to); updateSpellStrip(); }
+function spellFixAll(){ const ta=document.getElementById('edText'); if(!ta) return; _dictFresh(); let v=ta.value, n=0;
+  const re=/[A-Za-z][A-Za-z']*/g; let m; const fixes=[];
+  while((m=re.exec(v))){ const w=m[0], lw=w.toLowerCase(); if(_DICT.has(lw)||_USERDICT.has(lw)||_rejected.has(lw)) continue;
+    if(/^[A-Z]/.test(w)&&m.index>0&&!/[.!?\n]\s*$/.test(v.slice(0,m.index))) continue;
+    const c=_sp2Confident(w,_prevWordAt(v,m.index)); if(c) fixes.push([m.index,w,_applyCase(w,c)]); }
+  for(let k=fixes.length-1;k>=0;k--){ const [i,w,c]=fixes[k]; v=v.slice(0,i)+c+v.slice(i+w.length); n++; }
+  ta.value=v; _lastAuto=null; updateSpellStrip(ta); toast(n?('Fixed '+n+(n===1?' word':' words')):'Nothing certain to fix'); try{ ta.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){} }
+function _spPlace(pop,anchor){ const r=anchor.getBoundingClientRect(); const mh=pop.offsetHeight, mw=pop.offsetWidth;
+  let top=r.top-mh-6; if(top<8) top=r.bottom+6; let left=r.left; if(left+mw>window.innerWidth-8) left=window.innerWidth-mw-8;
+  pop.style.top=top+'px'; pop.style.left=Math.max(8,left)+'px'; }
 
 /* ---------- Copy & Share on a note ---------- */
 /* In parallel view the two columns are different translations. Everything the verse sheet does —
@@ -7055,6 +7229,7 @@ window.addEventListener('load',()=>{ setTimeout(()=>{
   ensureVersion(state.version,()=>{ if(state.view==='read'||state.view==='home'||state.view==='explore') render(); });
   const d=document.createElement('script'); d.src='data/dict.js';
   d.onload=()=>{ _DICT=null; }; document.head.appendChild(d);
+  if(!document.body.classList.contains('legacy')) _d2Load();               /* the bigger word list, new UI (25 Oct 2026) */
   const nm=document.createElement('script'); nm.src='data/names.js';       /* Bible names from 11 translations (15 Oct 2026) */
   nm.onload=()=>{ _DICT=null; _PM=null; }; document.head.appendChild(nm);
   const pr=document.createElement('script'); pr.src='data/proper.js';     /* names the KJV always capitalises (15 Oct 2026) */
