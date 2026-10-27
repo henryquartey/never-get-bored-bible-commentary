@@ -66,6 +66,22 @@ def remove(seed, b, ch, v, nid):
         if not seed[b][ch]: del seed[b][ch]
         if not seed[b]: del seed[b]
 
+def drop_removed(path, seed, ix):
+    """Step 3 — remove the ids listed in data/removed_ids.txt. Returns how many were removed."""
+    dropped = 0
+    rid_path = os.path.join(os.path.dirname(os.path.abspath(path)), "removed_ids.txt")
+    if os.path.exists(rid_path):
+        ids = set()
+        for line in io.open(rid_path, encoding="utf-8"):
+            line = line.split("#")[0].strip().strip('",[] ')
+            if line: ids.add(line)
+        for nid in ids:
+            loc = ix.get(nid)
+            if loc:
+                b0, ch0, v0, nt = loc
+                remove(seed, b0, ch0, v0, nid); del ix[nid]; dropped += 1
+    return dropped
+
 def main():
     args = sys.argv[1:]
     if not args: print(__doc__); sys.exit(1)
@@ -77,7 +93,12 @@ def main():
     ix = index(seed)
     added = updated = removed = unioned = 0
 
-    # 1. union with another copy of the file (Mac <-> website), by note id — adds only
+    # 1. union with another copy of the file (Mac <-> website), by note id. Adds what is missing, and
+    #    when both copies hold the same note with different words, the one edited LATER wins — the same
+    #    rule the app and step 2 use. Without this, a publish from a machine that cannot reach the
+    #    account (Claude's side of the Mac) put back an older copy of a note Nii Okai had since edited
+    #    in the app. (27 Oct 2026)
+    newer = 0
     if also and os.path.exists(also):
         try:
             _, other = load_seed(also)
@@ -85,6 +106,10 @@ def main():
                 if nt["id"] not in ix:
                     seed.setdefault(b, {}).setdefault(ch, {}).setdefault(v, []).append(nt)
                     ix[nt["id"]] = (b, ch, v, nt); unioned += 1
+                else:
+                    mine = ix[nt["id"]][3]
+                    if nt.get("text") != mine.get("text") and nt.get("edited") and str(nt["edited"]) > stamp(mine):
+                        mine["text"] = nt["text"]; mine["edited"] = nt["edited"]; newer += 1
         except Exception as e:
             print("warning: could not read %s (%s)" % (also, e))
 
@@ -94,14 +119,14 @@ def main():
     except Exception as e:
         # Keep what step 1 found even when the account cannot be reached - otherwise a publish
         # from a machine without that access would push a copy missing the website's notes.
-        # (28 Sep 2026)
-        if unioned:
+        # (28 Sep 2026) Step 3 (notes deliberately taken out) runs here too, so those do not come
+        # back with every publish from Claude's side (27 Oct 2026).
+        dropped = drop_removed(path, seed, ix)
+        if unioned or newer or dropped:
             tmp = path + ".tmp"
             io.open(tmp, "w", encoding="utf-8").write(head + json.dumps(seed, ensure_ascii=False, separators=(",", ":")) + ";")
             os.replace(tmp, path)
-            print("could not reach Firestore (%s) - kept %d note(s) found in the other copy" % (e, unioned))
-        else:
-            print("could not reach Firestore: %s" % e)
+        print("could not reach Firestore (%s) - from the other copy: %d added, %d newer edits; %d taken-out note(s) dropped" % (e, unioned, newer, dropped))
         sys.exit(2)
 
     for b, doc in pub.items():
@@ -131,25 +156,14 @@ def main():
     #    simply missing from this file — that is the safety net working as designed. This list is
     #    the only way to say "no, this one really is meant to be gone". One note id per line, or a
     #    JSON list; anything after a # is a comment. File: data/removed_ids.txt beside the journal.
-    dropped = 0
-    rid_path = os.path.join(os.path.dirname(os.path.abspath(path)), "removed_ids.txt")
-    if os.path.exists(rid_path):
-        ids = set()
-        for line in io.open(rid_path, encoding="utf-8"):
-            line = line.split("#")[0].strip().strip('",[] ')
-            if line: ids.add(line)
-        for nid in ids:
-            loc = ix.get(nid)
-            if loc:
-                b0, ch0, v0, nt = loc
-                remove(seed, b0, ch0, v0, nid); del ix[nid]; dropped += 1
+    dropped = drop_removed(path, seed, ix)
 
-    if added or updated or removed or unioned or dropped:
+    if added or updated or removed or unioned or newer or dropped:
         tmp = path + ".tmp"
         io.open(tmp, "w", encoding="utf-8").write(head + json.dumps(seed, ensure_ascii=False, separators=(",", ":")) + ";")
         os.replace(tmp, path)
     total = sum(len(a) for chs in seed.values() for vs in chs.values() for a in vs.values())
-    print("notes: added=%d updated=%d removed=%d unioned=%d dropped=%d total=%d" % (added, updated, removed, unioned, dropped, total))
+    print("notes: added=%d updated=%d removed=%d unioned=%d newer=%d dropped=%d total=%d" % (added, updated, removed, unioned, newer, dropped, total))
 
 if __name__ == "__main__":
     main()
