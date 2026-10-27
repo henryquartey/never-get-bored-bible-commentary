@@ -1483,6 +1483,10 @@ body.look-b:not(.legacy) .readnav .rnb-s{display:inline;font-size:14px;font-weig
 body.look-b:not(.legacy) .readnav .rnb-p::before{content:"← "}
 body.look-b:not(.legacy) .readnav .rnb-n::after{content:" →"}
 body.look-b:not(.legacy) .gap-link{display:block;background:none;border:0;padding:6px 0;margin:0 0 6px;color:var(--soft);font:600 13.5px var(--sans);cursor:pointer;-webkit-tap-highlight-color:transparent}
+body.look-b:not(.legacy) .gap-link.gap-prev{transition:color .15s}
+body.look-b:not(.legacy) .gap-link.pull-on{color:var(--ink)}
+body.look-b:not(.legacy) .gap-link.pull-ready{color:var(--ink);font-weight:700}
+body.look-b:not(.legacy) .page{transition:transform .18s ease-out}
 body.look-b:not(.legacy) .gap-link.gap-next{margin:30px auto 6px;text-align:center;font-size:15px;color:var(--ink)}
 body.look-b:not(.legacy) .contnext .cn-head{font:600 14px var(--sans);letter-spacing:.02em;text-transform:none;color:var(--ink)}
 body.look-b:not(.legacy) .contnext .cn-head span::before{content:"↓ "}
@@ -1700,7 +1704,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.79', date:'27 Oct 2026'};
+const BUILD={v:'1.2.80', date:'27 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -5940,6 +5944,9 @@ function _gapLinks(){ try{
   if(P) pg.insertAdjacentHTML('afterbegin',`<button type="button" class="gap-link gap-prev" onclick="_gapGo(-1)">↑ ${escHTML(P.main+(P.sub?' · '+P.sub:''))}</button>`);
   const cs=document.querySelector('#contNext .cn-head span');
   if(cs){ if(state.plan){ const N=_gapInfo(1); cs.textContent=(N&&N.sub)?N.main+' · '+N.sub:'Next · '+cs.textContent; } }
+  if(window._landEnd){ window._landEnd=false; const land=()=>{ const cn=document.getElementById('contNext');
+      r.scrollTop=cn?Math.max(0,cn.offsetTop-r.clientHeight+140):r.scrollHeight; };
+    land(); requestAnimationFrame(land); setTimeout(land,120); }
   else { const N=_gapInfo(1);
     if(N) pg.insertAdjacentHTML('beforeend',`<button type="button" class="gap-link gap-next" onclick="_gapGo(1)">${escHTML(N.main+(N.sub?' · '+N.sub:''))} →</button>`); }
   }catch(e){} }
@@ -5959,6 +5966,29 @@ function _lookToggle(){ let on=false; try{ on=localStorage.getItem('nok_lookb')=
   _lookSync(); if(state.view==='read'){ const r=document.getElementById('reader'), y=r?r.scrollTop:0; renderRead(); if(r) r.scrollTop=y; }
   toast(on?'Old look':'New look'); }
 try{ _lookSync(); }catch(e){} setTimeout(_lookSync,2500); setTimeout(_lookSync,8000);
+function _pullOk(){ return _lookB()&&(typeof _contOn!=='function'||_contOn())&&state.view==='read'&&!state.compare
+  &&!(typeof VSEL!=='undefined'&&VSEL.on)&&!document.querySelector('textarea.inline-ed')&&!!document.querySelector('#reader .gap-prev'); }
+function _pullShow(d,wheel){ const a=document.querySelector('#reader .gap-prev'); if(!a) return;
+  if(!a.dataset.t) a.dataset.t=a.textContent;
+  const ready=d>110; a.classList.toggle('pull-on',d>8); a.classList.toggle('pull-ready',ready);
+  a.textContent=ready?a.dataset.t.replace(/^↑\s*/,'↑ Release for '):a.dataset.t;
+  const pg=a.closest('.page'); if(pg&&wheel) pg.style.transform=d>0?`translateY(${Math.min(d*0.45,70)}px)`:''; }
+function _pullGo(){ try{ const T=_sideTarget(-1); if(!T||T.kind==='end'||!T.go) return; window._landEnd=true; T.go(); }catch(e){ window._landEnd=false; } }
+(function(){ const r=document.getElementById('reader'); if(!r) return;
+  let st=null, pulled=0;
+  r.addEventListener('touchstart',e=>{ pulled=0; st=(e.touches.length===1&&r.scrollTop<=0&&_pullOk())?{y:e.touches[0].clientY}:null; },{passive:true});
+  r.addEventListener('touchmove',e=>{ if(!st) return; const dy=e.touches[0].clientY-st.y;
+    if(r.scrollTop>1||dy<=0){ pulled=0; _pullShow(0); return; } pulled=dy; _pullShow(dy); },{passive:true});
+  const end=()=>{ if(!st) return; const d=pulled; st=null; pulled=0; _pullShow(0); if(d>110) _pullGo(); };
+  document.addEventListener('touchend',end,{passive:true,capture:true}); document.addEventListener('touchcancel',()=>{ st=null; pulled=0; _pullShow(0); },{passive:true,capture:true});
+  /* Mac / PC: only a fresh scroll-up gesture that begins at the very top counts (momentum from reading upward does not) */
+  let acc=0, last=0, fresh=false, lock=0, t=null;
+  r.addEventListener('wheel',e=>{ const now=Date.now(); const gap=now-last; last=now;
+    if(gap>320) fresh=(r.scrollTop<=0&&e.deltaY<0);
+    if(!fresh||now<lock||!_pullOk()||e.deltaY>=0||Math.abs(e.deltaX)>Math.abs(e.deltaY)||r.scrollTop>0){ if(acc){ acc=0; _pullShow(0,true); } return; }
+    acc+=-e.deltaY; _pullShow(Math.min(acc/2.6,150),true); clearTimeout(t); t=setTimeout(()=>{ acc=0; _pullShow(0,true); },300);
+    if(acc>330){ acc=0; fresh=false; lock=now+1200; clearTimeout(t); _pullShow(0,true); _pullGo(); } },{passive:true});
+})();
 function _swGhost(T,dir){ const r=document.getElementById('reader'); const rc=r.getBoundingClientRect();
   let g=document.getElementById('swGhost'); if(g) g.remove();
   g=document.createElement('div'); g.id='swGhost'; g.className='reader swghost';
