@@ -1489,7 +1489,13 @@ body.look-b:not(.legacy) .contnext .cn-head span::before{content:"↓ "}
 @media(max-width:860px){ html body.look-b:not(.legacy)[data-view="read"] .readnav button:not(.rn-listen){background:var(--panel)!important;border:0!important;box-shadow:none!important} }
 .swgap{position:fixed;z-index:31;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none;color:var(--soft);will-change:transform}
 .swgap .sg-arr{font:600 22px var(--sans);color:var(--ink)}
-.swgap .sg-l{writing-mode:vertical-rl;font:700 12px var(--sans);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;max-height:60%;overflow:hidden}
+.swgap{padding:0 8px;box-sizing:border-box;text-align:center}
+.swgap .sg-l{font:700 15px/1.3 var(--sans);color:var(--ink);white-space:normal;overflow-wrap:anywhere}
+.swgap .sg-s{font:500 13px/1.3 var(--sans);color:var(--soft);white-space:normal}
+body.look-b:not(.legacy) .chtitle{display:flex!important;justify-content:center;margin:4px 0 12px}
+body.look-b:not(.legacy) .chtitle .chtbtn{text-align:center}
+body.look-b:not(.legacy) .contnext{margin-top:44px}
+body.look-b:not(.legacy) .contnext .cn-head{font:700 15px var(--sans);margin:0 0 18px;padding:10px 0}
 /* About this chapter + Psalm titles (1.2.75) */
 body:not(.legacy) .about-ch{margin:0 0 6px}
 body:not(.legacy) .ab-sum{display:flex;align-items:center;gap:7px;max-width:100%;background:none;border:0;padding:6px 0;margin:0;color:var(--soft);font:inherit;font-family:inherit;font-size:13.5px;line-height:1.3;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}
@@ -1694,7 +1700,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.77', date:'27 Oct 2026'};
+const BUILD={v:'1.2.78', date:'27 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -5844,7 +5850,9 @@ function _sideTarget(dir){
   if(state.plan){ const C=getPlan(); const chaps=readingChapters(C[state.plan.day]); const ci=state.plan.ci+dir;
     if(ci>=0&&ci<chaps.length) return {b:chaps[ci][0],c:chaps[ci][1],kind:'ch',go:()=>planNav(dir)};
     if(dir>0) return {kind:'finish',label:`Finish Day ${state.plan.day+1} ✓`,go:()=>planNav(1)};
-    return {kind:'end',label:state.plan.day>0?`Start of Day ${state.plan.day+1} · use ← Prev for Day ${state.plan.day}`:'Start of the plan'}; }
+    if(state.plan.day>0){ const pd=state.plan.day-1, pc=readingChapters(C[pd]), lc=pc[pc.length-1];
+      if(lc) return {b:lc[0],c:lc[1],kind:'ch',pday:pd,go:()=>{ planRead(pd,pc.length-1); try{ toast(`Day ${pd+1} · ${dateLabel(pd)}`); }catch(e){} }}; }
+    return {kind:'end',label:'Start of the plan'}; }
   const B=window.BOOKS; let bi=state.book, c=state.chapter+dir;
   if(c<1){ if(bi===0) return {kind:'end',label:'The beginning of the Bible'}; bi--; c=B[bi].chapters.length; }
   else if(c>B[bi].chapters.length){ if(bi===B.length-1) return {kind:'end',label:'The end of the Bible'}; bi++; c=1; }
@@ -5915,14 +5923,24 @@ function _contSwap(){ try{
 /* swipe that follows the finger */
 const SW={s:null};
 function _lookB(){ return document.body.classList.contains('look-b')&&!document.body.classList.contains('legacy'); }
-function _swG(){ return _lookB()?64:12; }
+function _swG(){ return _lookB()?Math.round(Math.min(160,Math.max(112,window.innerWidth*0.3))):12; }
 function _gapLbl(dir){ try{ const T=_sideTarget(dir); return T.kind==='ch'?escHTML(T.b+' '+T.c):''; }catch(e){ return ''; } }
+function _gapInfo(dir,T){ try{ T=T||_sideTarget(dir); if(!T||T.kind==='end') return null; let main='',sub='';
+  if(state.plan){ const n=readingChapters(getPlan()[state.plan.day]).length; const w=dir<0?'Previous':'Next';
+    if(T.pday!=null){ main=w+' · Day '+(T.pday+1); sub=T.b+' '+T.c; }
+    else if(T.kind==='ch'){ main=w+' · '+(state.plan.ci+dir+1)+' of '+n; sub=T.b+' '+T.c; }
+    else if(T.kind==='finish'){ main='Finish Day '+(state.plan.day+1)+' ✓'; } }
+  else if(T.kind==='ch'){ main=T.b+' '+T.c; }
+  return main?{main,sub}:null; }catch(e){ return null; } }
+function _gapGo(dir){ try{ const T=_sideTarget(dir); if(T&&T.go) T.go(); }catch(e){} }
 function _gapLinks(){ try{
   const r=document.getElementById('reader'); const pg=r&&r.querySelector('.page'); if(!pg||!_lookB()||state.view!=='read'||state.compare) return;
-  const P=_sideTarget(-1); const pl=P.kind==='ch'?P.b+' '+P.c:(state.plan&&state.plan.day>0?'Day '+state.plan.day:'');
-  if(pl) pg.insertAdjacentHTML('afterbegin',`<button type="button" class="gap-link gap-prev" onclick="${state.plan?'planNav(-1)':'prevChapter()'}">↑ ${escHTML(pl)}</button>`);
-  if(!document.getElementById('contNext')){ const N=_sideTarget(1); const nl=N.kind==='ch'?N.b+' '+N.c:(N.kind==='finish'?N.label:'');
-    if(nl) pg.insertAdjacentHTML('beforeend',`<button type="button" class="gap-link gap-next" onclick="${state.plan?'planNav(1)':'nextChapter()'}">${escHTML(nl)} →</button>`); }
+  const P=_gapInfo(-1);
+  if(P) pg.insertAdjacentHTML('afterbegin',`<button type="button" class="gap-link gap-prev" onclick="_gapGo(-1)">↑ ${escHTML(P.main+(P.sub?' · '+P.sub:''))}</button>`);
+  const cs=document.querySelector('#contNext .cn-head span');
+  if(cs){ if(state.plan){ const N=_gapInfo(1); cs.textContent=(N&&N.sub)?N.main+' · '+N.sub:'Next · '+cs.textContent; } }
+  else { const N=_gapInfo(1);
+    if(N) pg.insertAdjacentHTML('beforeend',`<button type="button" class="gap-link gap-next" onclick="_gapGo(1)">${escHTML(N.main+(N.sub?' · '+N.sub:''))} →</button>`); }
   }catch(e){} }
 function _lookSync(){ const b=document.body; let on=false, ab=false;
   try{ on=localStorage.getItem('nok_lookb')==='1'; ab=localStorage.getItem('nok_ab')==='1'; }catch(e){}
@@ -5950,8 +5968,8 @@ function _swGhost(T,dir){ const r=document.getElementById('reader'); const rc=r.
   { let gp=document.getElementById('swGap'); if(gp) gp.remove();
     if(_lookB()&&T.kind!=='end'){ gp=document.createElement('div'); gp.id='swGap'; gp.className='swgap';
       gp.style.cssText=`top:${rc.top}px;left:${rc.left}px;width:${_swG()}px;height:${rc.height}px`;
-      const lbl=T.kind==='ch'?T.b+' '+T.c:(T.label||'');
-      gp.innerHTML=`<span class="sg-arr">${dir>0?'→':'←'}</span><span class="sg-l">${escHTML(lbl)}</span>`;
+      const I=_gapInfo(dir,T)||{main:T.label||'',sub:''};
+      gp.innerHTML=`<span class="sg-arr">${dir>0?'→':'←'}</span><span class="sg-l">${escHTML(I.main)}</span>${I.sub?`<span class="sg-s">${escHTML(I.sub)}</span>`:''}`;
       document.body.appendChild(gp); g.gapEl=gp; } }
   return g; }
 function _swPlace(dx){ const S=SW.s; if(!S) return; const r=document.getElementById('reader'); const w=S.w, dir=dx<0?1:-1;
