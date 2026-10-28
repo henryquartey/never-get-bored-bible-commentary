@@ -1499,6 +1499,15 @@ body.look-b:not(.legacy) .gap-link.gap-prev{transition:color .15s}
 body.look-b:not(.legacy) .gap-link.pull-on{color:var(--ink)}
 body.look-b:not(.legacy) .gap-link.pull-ready{color:var(--ink);font-weight:700}
 body.look-b:not(.legacy) .gap-link.gap-rest{cursor:default}
+body.look-b:not(.legacy) .gap-link.gap-mid{display:flex;align-items:center;gap:12px;margin:34px 0 10px;color:var(--ink);font:600 14px var(--sans)}
+body.look-b:not(.legacy) .gap-link.gap-mid::before,body.look-b:not(.legacy) .gap-link.gap-mid::after{content:"";flex:1;height:1px;background:var(--line)}
+body.look-b:not(.legacy) .contnext.dayprev{margin-top:4px}
+body.look-b:not(.legacy) .contnext .cn-head.cn-rest span::before{content:none}
+.day-end{display:flex;flex-direction:column;align-items:center;gap:6px;margin:40px 0 30px}
+.day-end .de-btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:22px;padding:11px 20px;font:700 15px var(--sans);cursor:pointer;transition:background .15s,color .15s}
+.day-end .de-hint{font:12.5px var(--sans);color:var(--soft)}
+.day-end.pull-on .de-btn{border-color:var(--ink)}
+.day-end.pull-ready .de-btn{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 body.look-b:not(.legacy) .contnext .cn-head{transition:color .15s}
 body.look-b:not(.legacy) .contnext .cn-head.push-ready{color:var(--ink);font-weight:800}
 body.look-b:not(.legacy) .page{transition:transform .18s ease-out}
@@ -1722,7 +1731,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.84', date:'28 Oct 2026'};
+const BUILD={v:'1.2.85', date:'28 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -4071,7 +4080,7 @@ function renderRead(){
         if(rd&&!_placeArmed&&Math.abs(rd.scrollTop-want)>4) rd.scrollTop=want;
         _progSync(); _fabSync(); },ms); }); } },80); }
   buildBookList();
-  if(!document.body.classList.contains('legacy')){ _contAppend(); _gapLinks(); }
+  if(!document.body.classList.contains('legacy')){ _contAppend(); _gapLinks(); _dayFlow(); }
 }
 /* Keep the place across a redraw: remember the first verse or note showing at the top of the reader
    and how far down it sat, then put it back at that same spot after the chapter is drawn again. */
@@ -5891,7 +5900,7 @@ function _sideTarget(dir){
   else if(c>B[bi].chapters.length){ if(bi===B.length-1) return {kind:'end',label:'The end of the Bible'}; bi++; c=1; }
   return {b:B[bi].name,c,kind:'ch',go:()=>dir>0?nextChapter():prevChapter()}; }
 /* continuous scrolling goes one step further than Next: at the end of a plan day it carries on into the next day */
-function _contTarget(){ const T=_sideTarget(1); if(T.kind!=='finish'||!state.plan) return T;
+function _contTarget(){ const T=_sideTarget(1); if(T.kind!=='finish'||!state.plan||_lookB()) return T;
   const C=getPlan(); const day=state.plan.day; let nd=day+1;
   while(nd<C.length&&!readingChapters(C[nd]).length) nd++;          /* skip rest / catch-up days */
   if(nd>=C.length) return T;
@@ -5955,8 +5964,9 @@ function _contSwap(){ try{
   if(hid) _chromeOff(true);
 }catch(e){} }
 (function(){ const r=document.getElementById('reader'); if(!r) return; let t=0;
-  r.addEventListener('scroll',()=>{ if(!document.getElementById('contNext')) return; clearTimeout(t); t=setTimeout(_contSwap,160); },{passive:true});
-  r.addEventListener('touchend',()=>{ if(!document.getElementById('contNext')) return; clearTimeout(t); t=setTimeout(_contSwap,260); },{passive:true});
+  const has=()=>document.getElementById('contNext')||document.querySelector('#reader .dayblk');
+  r.addEventListener('scroll',()=>{ if(!has()) return; clearTimeout(t); t=setTimeout(()=>{ if(!_daySwap()) _contSwap(); },160); },{passive:true});
+  r.addEventListener('touchend',()=>{ if(!has()) return; clearTimeout(t); t=setTimeout(()=>{ if(!_daySwap()) _contSwap(); },260); },{passive:true});
 })();
 /* swipe that follows the finger */
 const SW={s:null};
@@ -5983,10 +5993,10 @@ function _gapLinks(){ try{
   else if(P) pg.insertAdjacentHTML('afterbegin',`<button type="button" class="gap-link gap-prev" onclick="_gapGo(-1)">↑ ${escHTML(P.main+(P.sub?' · '+P.sub:''))}</button>`);
   const cs=document.querySelector('#contNext .cn-head span');
   /* the line above the next chapter is written by _contAppend (1.2.83) */
-  if(window._landEnd){ window._landEnd=false; const land=()=>{ const cn=document.getElementById('contNext');
-      r.scrollTop=cn?Math.max(0,cn.offsetTop-r.clientHeight+140):r.scrollHeight; };
+  if(window._landEnd){ window._landEnd=false; const land=()=>{ const cn=document.getElementById('contNext'), de=document.getElementById('dayEnd');
+      r.scrollTop=cn?Math.max(0,cn.offsetTop-r.clientHeight+140):de?Math.max(0,de.offsetTop-r.clientHeight+de.offsetHeight+170):r.scrollHeight; };
     land(); requestAnimationFrame(land); setTimeout(land,120); }
-  else { const N=_gapInfo(1);
+  else if(!cs&&!state.plan){ const N=_gapInfo(1);
     if(N) pg.insertAdjacentHTML('beforeend',`<button type="button" class="gap-link gap-next" onclick="_gapGo(1)">${escHTML(N.main+(N.sub?' · '+N.sub:''))} →</button>`); }
   }catch(e){} }
 function _lookSync(){ const b=document.body; let on=false, ab=false;
@@ -6012,7 +6022,7 @@ function _pullShow(d,wheel){ const a=document.querySelector('#reader .gap-prev')
   const ready=d>110, on=d>8; a.classList.toggle('pull-on',on); a.classList.toggle('pull-ready',ready);
   a.textContent=ready?a.dataset.t.replace(/^↑\s*/,'↑ Release for '):((on||a.dataset.rest==null)?a.dataset.t:a.dataset.rest);
   const pg=a.closest('.page'); if(pg&&wheel) pg.style.transform=d>0?`translateY(${Math.min(d*0.45,70)}px)`:''; }
-function _pullGo(){ try{ const T=_sideTarget(-1); if(!T||T.kind==='end'||!T.go) return; window._landEnd=true; T.go(); }catch(e){ window._landEnd=false; } }
+function _pullGo(){ try{ const T=(window._dayPrevT&&state.plan&&state.plan.ci>0&&document.querySelector('#reader .dayprev'))?window._dayPrevT:_sideTarget(-1); if(!T||T.kind==='end'||!T.go) return; window._landEnd=true; T.go(); }catch(e){ window._landEnd=false; } }
 (function(){ const r=document.getElementById('reader'); if(!r) return;
   let st=null, pulled=0, one=false;
   r.addEventListener('touchstart',e=>{ pulled=0; one=e.touches.length===1; st=(one&&r.scrollTop<=0&&_pullOk())?{y:e.touches[0].clientY}:null; },{passive:true});
@@ -6049,6 +6059,78 @@ function _pushGo(){ try{ const T=(typeof _contTarget==='function')?_contTarget()
   const end=()=>{ if(!st) return; const go=ready; st=null; ready=false; _pushShow(false); if(go) _pushGo(); };
   document.addEventListener('touchend',end,{passive:true,capture:true});
   document.addEventListener('touchcancel',()=>{ if(st){ st=null; ready=false; _pushShow(false); } },{passive:true,capture:true});
+})();
+/* ---------- A plan day as one scroll (1.2.85) ---------- */
+function _dayOn(){ return _lookB()&&!!state.plan&&state.view==='read'&&!state.compare&&(typeof _contOn!=='function'||_contOn()); }
+function _dayLine(k,n){ const td=(typeof todayIdx==='function')&&todayIdx()===state.plan.day; return (td?'Today':'Day '+(state.plan.day+1))+(n>1?' · '+(k+1)+' of '+n:''); }
+function _dayFlow(){ try{ window._dayPrevT=null;
+  const r=document.getElementById('reader'), pg=r&&r.querySelector('.page'); if(!pg||!_dayOn()) return;
+  const C=getPlan(), day=state.plan.day, chaps=readingChapters(C[day]), n=chaps.length, ci=state.plan.ci;
+  /* below: the rest of the day after the next chapter (#contNext) */
+  const cn=document.getElementById('contNext');
+  if(cn){ let after=cn; for(let k=ci+2;k<n;k++){ const [b,c]=chaps[k]; if(!_chapText(b,c)) break;
+      after.insertAdjacentHTML('afterend',`<div class="contnext dayblk" data-ci="${k}" aria-hidden="true"><div class="cn-head"><span>Next · ${k+1} of ${n}</span></div><div class="cn-title">${escHTML(b+' '+c)}</div>${_chapPreviewHTML(b,c,0,true)}</div>`);
+      after=after.nextElementSibling; after.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id')); } }
+  let last=cn?ci+1:ci; pg.querySelectorAll('.dayblk').forEach(b=>{ last=Math.max(last,+b.dataset.ci); });
+  if(last===n-1) pg.insertAdjacentHTML('beforeend',`<div class="day-end" id="dayEnd"><button type="button" class="de-btn" onclick="_dayFinish()"><span>Finish Day ${day+1} ✓</span></button><div class="de-hint">Push up past here, or tap, to finish</div></div>`);
+  /* above: the day's earlier chapters, with the page kept where it was */
+  if(ci>0){ for(let k=0;k<ci;k++){ const [b,c]=chaps[k]; if(!_chapText(b,c)) return; }
+    const mid=pg.querySelector('.gap-rest'), ref=mid||pg.firstElementChild, before=ref.getBoundingClientRect().top;
+    const sv=state.plan.ci; state.plan.ci=0; const P0=_gapInfo(-1), T0=_sideTarget(-1); state.plan.ci=sv;
+    const l0=_dayLine(0,n), prev0=P0?'↑ '+P0.main+(P0.sub?' · '+P0.sub:''):'';
+    let h=`<div class="gap-link gap-rest${P0?' gap-prev':''}" data-rest="${escHTML(l0)}"${P0?` data-t="${escHTML(prev0).replace(/"/g,'&quot;')}"`:''}>${escHTML(l0)}</div>`;
+    for(let k=0;k<ci;k++){ const [b,c]=chaps[k];
+      h+=`<div class="contnext dayblk dayprev" data-ci="${k}" aria-hidden="true">${k>0?`<div class="cn-head cn-rest"><span>${escHTML(_dayLine(k,n))}</span></div>`:''}<div class="cn-title">${escHTML(b+' '+c)}</div>${_chapPreviewHTML(b,c,0,true)}</div>`; }
+    pg.insertAdjacentHTML('afterbegin',h);
+    pg.querySelectorAll('.dayprev [id]').forEach(e=>e.removeAttribute('id'));
+    if(mid){ mid.classList.remove('gap-prev'); mid.classList.add('gap-mid'); delete mid.dataset.t; }
+    window._dayPrevT=P0?T0:null;
+    r.scrollTop+=ref.getBoundingClientRect().top-before;
+    /* this jump is not you reading down: keep the Listen row and tab bar showing */
+    try{ _scLast=r.scrollTop; _scHold=Date.now(); }catch(e){} }
+}catch(e){} }
+/* when you stop scrolling inside another chapter of the day, it becomes the one you are in (the place is kept) */
+function _daySwap(){ if(!_dayOn()) return false; try{
+  const r=document.getElementById('reader');
+  if((typeof VSEL!=='undefined'&&VSEL.on)||document.querySelector('textarea.inline-ed')||_audBusy()) return true;
+  const rTop=r.getBoundingClientRect().top, y=rTop+2; let blk=null;
+  for(const b of r.querySelectorAll('.dayblk,#contNext')){ const rc=b.getBoundingClientRect(); if(rc.top<=y&&rc.bottom>y){ blk=b; break; } }
+  if(!blk) return true;
+  const k=blk.id==='contNext'?state.plan.ci+1:+blk.dataset.ci; if(!(k>=0)||k===state.plan.ci) return true;
+  if(k>state.plan.ci){ const f=blk.querySelector('.cn-v'); if(!f||f.getBoundingClientRect().top>rTop) return true; }
+  let a=null; for(const el of blk.querySelectorAll('.cn-v')){ if(el.getBoundingClientRect().bottom>y){ a=el; break; } }
+  if(!a) a=blk.querySelector('.cn-v:last-of-type'); if(!a) return true;
+  const v=+a.dataset.pv, off=a.getBoundingClientRect().top-rTop, hid=document.body.classList.contains('chrome-off'), day=state.plan.day;
+  if(k>state.plan.ci) for(let j=state.plan.ci;j<k;j++) _markPlanChapterRead(day,j);
+  planRead(day,k);
+  const el=document.getElementById('v'+v); if(el) r.scrollTop+=el.getBoundingClientRect().top-r.getBoundingClientRect().top-off;
+  if(hid) _chromeOff(true);
+}catch(e){} return true; }
+function _dayFinish(){ try{ if(!state.plan) return; const day=state.plan.day, n=readingChapters(getPlan()[day]).length;
+  for(let j=state.plan.ci;j<n;j++) _markPlanChapterRead(day,j); planDayComplete(); }catch(e){} }
+function _finOk(){ return _dayOn()&&!!document.getElementById('dayEnd')&&!(typeof VSEL!=='undefined'&&VSEL.on)&&!document.querySelector('textarea.inline-ed'); }
+function _finShow(d,wheel){ const de=document.getElementById('dayEnd'); if(!de) return; const sp=de.querySelector('.de-btn span'); if(!sp) return;
+  if(!sp.dataset.t) sp.dataset.t=sp.textContent; const ready=d>110;
+  de.classList.toggle('pull-on',d>8); de.classList.toggle('pull-ready',ready);
+  sp.textContent=ready?'↑ Release to finish Day '+(state.plan.day+1)+' ✓':sp.dataset.t;
+  const pg=de.closest('.page'); if(pg&&wheel) pg.style.transform=d>0?`translateY(${-Math.min(d*0.45,70)}px)`:''; }
+(function(){ const r=document.getElementById('reader'); if(!r) return;
+  const atEnd=()=>r.scrollTop+r.clientHeight>=r.scrollHeight-2;
+  let st=null, pulled=0, one=false;
+  r.addEventListener('touchstart',e=>{ pulled=0; one=e.touches.length===1; st=(one&&_finOk()&&atEnd())?{y:e.touches[0].clientY}:null; },{passive:true});
+  r.addEventListener('touchmove',e=>{
+    if(!st){ if(one&&e.touches.length===1&&_finOk()&&atEnd()) st={y:e.touches[0].clientY}; return; }
+    const d=st.y-e.touches[0].clientY; if(!atEnd()||d<=0){ pulled=0; _finShow(0); return; } pulled=d; _finShow(d); },{passive:true});
+  const end=()=>{ if(!st) return; const d=pulled; st=null; pulled=0; _finShow(0); if(d>110) _dayFinish(); };
+  document.addEventListener('touchend',end,{passive:true,capture:true});
+  document.addEventListener('touchcancel',()=>{ st=null; pulled=0; _finShow(0); },{passive:true,capture:true});
+  /* Mac / PC: a fresh scroll-down gesture that begins at the very end of the day */
+  let acc=0, last=0, fresh=false, lock=0, t=null;
+  r.addEventListener('wheel',e=>{ const now=Date.now(); const gap=now-last; last=now;
+    if(gap>320) fresh=(atEnd()&&e.deltaY>0);
+    if(!fresh||now<lock||!_finOk()||e.deltaY<=0||Math.abs(e.deltaX)>Math.abs(e.deltaY)||!atEnd()){ if(acc){ acc=0; _finShow(0,true); } return; }
+    acc+=e.deltaY; _finShow(Math.min(acc/2.6,150),true); clearTimeout(t); t=setTimeout(()=>{ acc=0; _finShow(0,true); },300);
+    if(acc>330){ acc=0; fresh=false; lock=now+1200; clearTimeout(t); _finShow(0,true); _dayFinish(); } },{passive:true});
 })();
 function _swGhost(T,dir){ const r=document.getElementById('reader'); const rc=r.getBoundingClientRect();
   let g=document.getElementById('swGhost'); if(g) g.remove();
