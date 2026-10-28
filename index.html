@@ -1504,6 +1504,9 @@ body.look-b:not(.legacy) .page{transition:transform .18s ease-out}
 body.look-b:not(.legacy) .gap-link.gap-next{margin:30px auto 6px;text-align:center;font-size:15px;color:var(--ink)}
 body.look-b:not(.legacy) .contnext .cn-head{font:600 14px var(--sans);letter-spacing:.02em;text-transform:none;color:var(--ink)}
 body.look-b:not(.legacy) .contnext .cn-head span::before{content:"↓ "}
+.contnext .cn-title{display:none}
+body.look-b:not(.legacy) .contnext .cn-title{display:block;text-align:center;font-family:var(--serif);font-weight:600;font-size:34px;line-height:1.15;font-variant-numeric:lining-nums;color:var(--ink);margin:4px 0 18px}
+@media (max-width:700px){ body.look-b:not(.legacy) .contnext .cn-title{font-size:28px;margin:2px 0 14px} }
 @media(max-width:860px){ html body.look-b:not(.legacy)[data-view="read"] .readnav button:not(.rn-listen){background:var(--panel)!important;border:0!important;box-shadow:none!important} }
 .swgap{position:fixed;z-index:31;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none;color:var(--soft);will-change:transform}
 .swgap .sg-arr{font:600 22px var(--sans);color:var(--ink)}
@@ -1718,7 +1721,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.82', date:'28 Oct 2026'};
+const BUILD={v:'1.2.83', date:'28 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3858,7 +3861,7 @@ function _abMenuRow(){ const m=_abMode();
       <div class="md tmAboutHint">${_abHint(m)}</div></div></div>`; }
 function _aboutHTML(b,c){ const A=window.ABOUT; if(!A||document.body.classList.contains('legacy')) return '';
   const mode=_abMode(); if(mode==='off') return '';
-  const B=(A.b||{})[b], C=mode==='book'?null:((A.c||{})[b]||{})[String(c)]; if(!B&&!C) return '';
+  const B=(+c===1)?(A.b||{})[b]:null, C=mode==='book'?null:((A.c||{})[b]||{})[String(c)]; if(!B&&!C) return '';   /* the book part only before chapter 1 (1.2.83) */
   const who=_abShort(C&&C.w?C.w:(B?B.w:''));
   const ic='<svg class="ab-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/></svg>';
   const chev='<svg class="ab-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
@@ -5920,6 +5923,11 @@ function _chapPreviewHTML(b,c,max,withNotes){ const verses=_chapText(b,c); if(!v
       else notes.forEach(nt=>{ h+=noteHTML(nt,b,c,v); }); h+=`</div>`; } }
   return h; }
 /* continuous: put the next chapter under this one */
+/* New look (1.2.83): the small line above the next chapter; its name is shown big underneath */
+function _cnLine(T){ try{ if(!state.plan) return 'Next chapter';
+  const N=_gapInfo(1); if(N&&N.sub) return N.main;
+  if(T&&T.label) return 'Next · '+String(T.label).split(' · ')[0];
+  return 'Next'; }catch(e){ return 'Next'; } }
 function _contAppend(){ try{
   const r=document.getElementById('reader'); const old=document.getElementById('contNext'); if(old) old.remove();
   if(document.body.classList.contains('legacy')||state.view!=='read'||!_contOn()||state.compare) return;
@@ -5928,7 +5936,7 @@ function _contAppend(){ try{
     ensureChapterOnline(state.version,T.b,T.c,ok=>{ if(ok&&state.view==='read'&&_rdKey()===k) _contAppend(); }); return; }
   if(!_chapText(T.b,T.c)){ if(state.version==='KJV'&&!(window.BIBLE&&window.BIBLE.KJV)) _kjvPart(T.b); return; }
   const pg=r.querySelector('.page'); if(!pg) return;
-  pg.insertAdjacentHTML('beforeend',`<div class="contnext" id="contNext" aria-hidden="true"><div class="cn-head"><span>${escHTML(T.label||(T.b+' '+T.c))}</span></div>${_chapPreviewHTML(T.b,T.c,0,true)}</div>`);
+  pg.insertAdjacentHTML('beforeend',`<div class="contnext" id="contNext" aria-hidden="true"><div class="cn-head"><span>${escHTML(_lookB()?_cnLine(T):(T.label||(T.b+' '+T.c)))}</span></div><div class="cn-title">${escHTML(T.b+' '+T.c)}</div>${_chapPreviewHTML(T.b,T.c,0,true)}</div>`);
   const cn=document.getElementById('contNext'); if(cn) cn.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id'));
 }catch(e){} }
 /* once the next chapter's first verse is above the top and you pause, it becomes the chapter you are in */
@@ -5968,7 +5976,7 @@ function _gapLinks(){ try{
   const P=_gapInfo(-1);
   if(P) pg.insertAdjacentHTML('afterbegin',`<button type="button" class="gap-link gap-prev" onclick="_gapGo(-1)">↑ ${escHTML(P.main+(P.sub?' · '+P.sub:''))}</button>`);
   const cs=document.querySelector('#contNext .cn-head span');
-  if(cs){ if(state.plan){ const N=_gapInfo(1); cs.textContent=(N&&N.sub)?N.main+' · '+N.sub:'Next · '+cs.textContent; } }
+  /* the line above the next chapter is written by _contAppend (1.2.83) */
   if(window._landEnd){ window._landEnd=false; const land=()=>{ const cn=document.getElementById('contNext');
       r.scrollTop=cn?Math.max(0,cn.offsetTop-r.clientHeight+140):r.scrollHeight; };
     land(); requestAnimationFrame(land); setTimeout(land,120); }
@@ -5991,7 +5999,7 @@ function _lookToggle(){ let on=false; try{ on=localStorage.getItem('nok_lookb')=
   _lookSync(); if(state.view==='read'){ const r=document.getElementById('reader'), y=r?r.scrollTop:0; renderRead(); if(r) r.scrollTop=y; }
   toast(on?'Old look':'New look'); }
 try{ _lookSync(); }catch(e){} setTimeout(_lookSync,2500); setTimeout(_lookSync,8000);
-function _pullOk(){ return _lookB()&&(typeof _contOn!=='function'||_contOn())&&state.view==='read'&&!state.compare
+function _pullOk(){ return _lookB()&&!!state.plan&&(typeof _contOn!=='function'||_contOn())&&state.view==='read'&&!state.compare
   &&!(typeof VSEL!=='undefined'&&VSEL.on)&&!document.querySelector('textarea.inline-ed')&&!!document.querySelector('#reader .gap-prev'); }
 function _pullShow(d,wheel){ const a=document.querySelector('#reader .gap-prev'); if(!a) return;
   if(!a.dataset.t) a.dataset.t=a.textContent;
@@ -6000,9 +6008,11 @@ function _pullShow(d,wheel){ const a=document.querySelector('#reader .gap-prev')
   const pg=a.closest('.page'); if(pg&&wheel) pg.style.transform=d>0?`translateY(${Math.min(d*0.45,70)}px)`:''; }
 function _pullGo(){ try{ const T=_sideTarget(-1); if(!T||T.kind==='end'||!T.go) return; window._landEnd=true; T.go(); }catch(e){ window._landEnd=false; } }
 (function(){ const r=document.getElementById('reader'); if(!r) return;
-  let st=null, pulled=0;
-  r.addEventListener('touchstart',e=>{ pulled=0; st=(e.touches.length===1&&r.scrollTop<=0&&_pullOk())?{y:e.touches[0].clientY}:null; },{passive:true});
-  r.addEventListener('touchmove',e=>{ if(!st) return; const dy=e.touches[0].clientY-st.y;
+  let st=null, pulled=0, one=false;
+  r.addEventListener('touchstart',e=>{ pulled=0; one=e.touches.length===1; st=(one&&r.scrollTop<=0&&_pullOk())?{y:e.touches[0].clientY}:null; },{passive:true});
+  r.addEventListener('touchmove',e=>{
+    if(!st){ if(one&&e.touches.length===1&&r.scrollTop<=0&&_pullOk()) st={y:e.touches[0].clientY}; return; }   /* reached the top mid-drag (1.2.83) */
+    const dy=e.touches[0].clientY-st.y;
     if(r.scrollTop>1||dy<=0){ pulled=0; _pullShow(0); return; } pulled=dy; _pullShow(dy); },{passive:true});
   const end=()=>{ if(!st) return; const d=pulled; st=null; pulled=0; _pullShow(0); if(d>110) _pullGo(); };
   document.addEventListener('touchend',end,{passive:true,capture:true}); document.addEventListener('touchcancel',()=>{ st=null; pulled=0; _pullShow(0); },{passive:true,capture:true});
@@ -6014,7 +6024,7 @@ function _pullGo(){ try{ const T=_sideTarget(-1); if(!T||T.kind==='end'||!T.go) 
     acc+=-e.deltaY; _pullShow(Math.min(acc/2.6,150),true); clearTimeout(t); t=setTimeout(()=>{ acc=0; _pullShow(0,true); },300);
     if(acc>330){ acc=0; fresh=false; lock=now+1200; clearTimeout(t); _pullShow(0,true); _pullGo(); } },{passive:true});
 })();
-function _pushOk(){ return _lookB()&&(typeof _contOn!=='function'||_contOn())&&state.view==='read'&&!state.compare
+function _pushOk(){ return _lookB()&&!!state.plan&&(typeof _contOn!=='function'||_contOn())&&state.view==='read'&&!state.compare
   &&!(typeof VSEL!=='undefined'&&VSEL.on)&&!document.querySelector('textarea.inline-ed')&&!!document.getElementById('contNext'); }
 function _pushShow(on){ const h=document.querySelector('#contNext .cn-head'); const sp=h&&h.querySelector('span'); if(!sp) return;
   if(!sp.dataset.t) sp.dataset.t=sp.textContent;
