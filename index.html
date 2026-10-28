@@ -1498,6 +1498,7 @@ body.look-b:not(.legacy) .gap-link{display:block;background:none;border:0;paddin
 body.look-b:not(.legacy) .gap-link.gap-prev{transition:color .15s}
 body.look-b:not(.legacy) .gap-link.pull-on{color:var(--ink)}
 body.look-b:not(.legacy) .gap-link.pull-ready{color:var(--ink);font-weight:700}
+body.look-b:not(.legacy) .gap-link.gap-rest{cursor:default}
 body.look-b:not(.legacy) .contnext .cn-head{transition:color .15s}
 body.look-b:not(.legacy) .contnext .cn-head.push-ready{color:var(--ink);font-weight:800}
 body.look-b:not(.legacy) .page{transition:transform .18s ease-out}
@@ -1721,7 +1722,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.83', date:'28 Oct 2026'};
+const BUILD={v:'1.2.84', date:'28 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -5974,7 +5975,12 @@ function _gapLinks(){ try{
   const r=document.getElementById('reader'); const pg=r&&r.querySelector('.page'); if(!pg||!_lookB()||state.view!=='read'||state.compare) return;
   if(typeof _contOn==='function'&&!_contOn()) return;   /* Swipe mode: the swipe gap says where you go (1.2.79) */
   const P=_gapInfo(-1);
-  if(P) pg.insertAdjacentHTML('afterbegin',`<button type="button" class="gap-link gap-prev" onclick="_gapGo(-1)">↑ ${escHTML(P.main+(P.sub?' · '+P.sub:''))}</button>`);
+  if(state.plan){   /* plans (1.2.84): where you are; "Previous …" only shows while you pull */
+    const n=readingChapters(getPlan()[state.plan.day]).length, td=(typeof todayIdx==='function')&&todayIdx()===state.plan.day;
+    const rest=(td?'Today':'Day '+(state.plan.day+1))+(n>1?' · '+(state.plan.ci+1)+' of '+n:'');
+    const prev=P?'↑ '+P.main+(P.sub?' · '+P.sub:''):'';
+    pg.insertAdjacentHTML('afterbegin',`<div class="gap-link gap-rest${P?' gap-prev':''}" data-rest="${escHTML(rest)}"${P?` data-t="${escHTML(prev).replace(/"/g,'&quot;')}"`:''}>${escHTML(rest)}</div>`); }
+  else if(P) pg.insertAdjacentHTML('afterbegin',`<button type="button" class="gap-link gap-prev" onclick="_gapGo(-1)">↑ ${escHTML(P.main+(P.sub?' · '+P.sub:''))}</button>`);
   const cs=document.querySelector('#contNext .cn-head span');
   /* the line above the next chapter is written by _contAppend (1.2.83) */
   if(window._landEnd){ window._landEnd=false; const land=()=>{ const cn=document.getElementById('contNext');
@@ -6003,8 +6009,8 @@ function _pullOk(){ return _lookB()&&!!state.plan&&(typeof _contOn!=='function'|
   &&!(typeof VSEL!=='undefined'&&VSEL.on)&&!document.querySelector('textarea.inline-ed')&&!!document.querySelector('#reader .gap-prev'); }
 function _pullShow(d,wheel){ const a=document.querySelector('#reader .gap-prev'); if(!a) return;
   if(!a.dataset.t) a.dataset.t=a.textContent;
-  const ready=d>110; a.classList.toggle('pull-on',d>8); a.classList.toggle('pull-ready',ready);
-  a.textContent=ready?a.dataset.t.replace(/^↑\s*/,'↑ Release for '):a.dataset.t;
+  const ready=d>110, on=d>8; a.classList.toggle('pull-on',on); a.classList.toggle('pull-ready',ready);
+  a.textContent=ready?a.dataset.t.replace(/^↑\s*/,'↑ Release for '):((on||a.dataset.rest==null)?a.dataset.t:a.dataset.rest);
   const pg=a.closest('.page'); if(pg&&wheel) pg.style.transform=d>0?`translateY(${Math.min(d*0.45,70)}px)`:''; }
 function _pullGo(){ try{ const T=_sideTarget(-1); if(!T||T.kind==='end'||!T.go) return; window._landEnd=true; T.go(); }catch(e){ window._landEnd=false; } }
 (function(){ const r=document.getElementById('reader'); if(!r) return;
