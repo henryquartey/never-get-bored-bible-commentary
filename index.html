@@ -183,6 +183,18 @@ body.as-public::before{content:"👁 Previewing as a public reader — your owne
 .srback{display:inline-flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--line);
   color:var(--ink);border-radius:20px;padding:8px 15px;font:600 13.5px/1 var(--sans);cursor:pointer;margin-bottom:16px}
 .srback:hover{border-color:var(--accent);color:var(--accent)}
+.srx-lead{font:600 17px/1.35 var(--sans);color:var(--ink);margin:2px 0 12px}
+.srx-h{display:flex;align-items:center;justify-content:space-between;font:700 11.5px/1 var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--soft);margin:18px 0 8px}
+.srx-clear{background:none;border:0;color:var(--soft);font:600 12.5px var(--sans);cursor:pointer;padding:4px 0 4px 10px;text-transform:none;letter-spacing:0}
+.srx-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+.srx-rec{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);color:var(--ink);font:500 15px/1.3 var(--sans);padding:12px 14px;cursor:pointer}
+.srx-rec:first-child{border-top:0}
+.srx-rec .nico{color:var(--soft);display:inline-flex;width:17px;height:17px;flex:none}
+.srx-rec .nico svg{width:17px;height:17px}
+.srx-rec span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srx-try{display:flex;flex-wrap:wrap;gap:8px}
+.srx-tips{font:13px/1.5 var(--sans);color:var(--soft);margin:18px 0 8px}
+body[data-view="search"]:not(.legacy) #lookBtn{display:none!important}
 
 .reader{overflow-y:auto;flex:1;min-height:0;padding:30px 16px 40px}
 .page{max-width:1080px;margin:0 auto}
@@ -1704,7 +1716,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.80', date:'27 Oct 2026'};
+const BUILD={v:'1.2.81', date:'28 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2138,6 +2150,7 @@ function render(){
   if(state.view==='mine') return renderMine();
   if(state.view==='you') return renderYou();
   if(state.view==='explore') return renderExplore();
+  if(state.view==='search'&&!document.body.classList.contains('legacy')){ const sb=document.getElementById('search'); return (sb&&sb.value.trim().length>=2)?_sr2Again():_srEmpty(); }
   ensureVersion(state.version, renderRead);
 }
 /* ---------- Chronological reading plan ---------- */
@@ -4617,6 +4630,9 @@ function showDayComplete(dayNum, nextDay){
 function continueToNext(day){ closeDayComplete(); planRead(day,0); }
 function closeDayComplete(){ const ov=document.getElementById('completeOv'); if(ov) ov.classList.remove('show'); }
 function setViewTabs(){ let v=state.view; if(v==='read'&&state.plan) v='plan';
+  if(state.view!=='search'&&window._srArmed&&!document.body.classList.contains('legacy')){ window._srArmed=false; window._srRet=null;
+    const tb=document.querySelector('.topbar'); if(tb) tb.classList.remove('searching');
+    const sb=document.getElementById('search'); if(sb){ sb.value=''; if(document.activeElement===sb) sb.blur(); } }
   document.body.dataset.view=state.view;
   document.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
   try{ _bnPlace(); }catch(e){} }
@@ -4668,7 +4684,14 @@ function _audBusy(){ try{ return !!((AUD.el&&!AUD.el.paused)||(window.speechSynt
 document.addEventListener('focusin',e=>{ if(e.target&&e.target.classList&&e.target.classList.contains('inline-ed')) document.body.classList.add('il-typing'); });
 document.addEventListener('focusout',e=>{ if(e.target&&e.target.classList&&e.target.classList.contains('inline-ed')) setTimeout(()=>{
   const a=document.activeElement; if(!(a&&a.classList&&a.classList.contains('inline-ed'))) document.body.classList.remove('il-typing'); },150); });
-function tbSearch(){ const tb=document.querySelector('.topbar'); tb.classList.toggle('searching');
+function tbSearch(){ const tb=document.querySelector('.topbar');
+  if(!document.body.classList.contains('legacy')){                 /* New UI (1.2.81): open the search screen itself */
+    if(state.view==='search'){ exitSearch(); return; }
+    const si=document.getElementById('search'); tb.classList.add('searching');
+    try{ si.focus(); }catch(e){}                      /* inside the tap → iPhone shows the keyboard */
+    if(state.view!=='search') _srOpen();
+    setTimeout(()=>{ if(document.activeElement!==si) si.focus(); },60); return; }
+  tb.classList.toggle('searching');
   if(tb.classList.contains('searching')){ const si=document.getElementById('search');
     try{ si.focus(); }catch(e){}                      /* inside the tap → iPhone shows the keyboard */
     setTimeout(()=>{ if(document.activeElement!==si) si.focus(); },60); } }
@@ -6325,7 +6348,9 @@ function exitSearch(){
   if(b){ b.value=''; b.blur(); }
   clearTimeout(searchTimer); window._sr2f=null;
   const tb=document.querySelector('.topbar'); if(tb) tb.classList.remove('searching');
+  window._srArmed=false;
   state.view='read'; setViewTabs(); savePrefs(); render();
+  if(!document.body.classList.contains('legacy')) _srBackToPlace(); else window._srRet=null;
 }
 /* ---------- Search, new UI (17 Oct 2026) ----------
    Henry: "I shall" found nothing — both words were on the filler list and were dropped. Now the words you
@@ -6338,7 +6363,7 @@ function _sr2Index(ver){ if(_sr2Idx[ver]) return _sr2Idx[ver]; const bib=(window
     if(t) a.push({bk,ch,v,o:bi*1e6+(+ch)*1000+(+v),n:' '+_srNorm(t)+' '}); } }
   return _sr2Idx[ver]=a; }
 function _sr2Locals(){ return _verOrder().filter(c=>!ONLINE_VERSIONS[c]); }
-function _sr2Again(){ if(state.view!=='search') return; const b=document.getElementById('search'); _sr2((b&&b.value)||window._srLastQ||'',true); }
+function _sr2Again(){ if(state.view!=='search') return; const b=document.getElementById('search'); _sr2(b?b.value:(window._srLastQ||''),true); }
 /* fetch the next translation that is not on the phone yet; one at a time, quietly */
 function _sr2LoadNext(){ if(_sr2Loading||_sr2Scope!=='all'||state.view!=='search') return;
   const need=_sr2Locals().filter(c=>!(window.BIBLE||{})[c]&&!_sr2Failed[c]); if(!need.length) return;
@@ -6362,9 +6387,47 @@ function _sr2NotesAll(){ const R=window._sr2ctx; const L=document.getElementById
   L.insertAdjacentHTML('beforeend',R.comm.slice(5).map(R.noteRow).join('')); const b=document.getElementById('sr2NotesBtn'); if(b) b.remove(); }
 function _sr2Ol(v,btn){ const q=window._srLastQ||''; if(btn) btn.remove(); const o=document.getElementById('sr2olOut'); if(!o) return;
   o.insertAdjacentHTML('beforeend',`<div class="sr2-stat" id="olsrState_${v}">Asking ${escHTML(v)}…</div><div id="olsrOut_${v}"></div>`); _olSearch(v,q,'_'+v); }
+/* ---------- Search screen (1.2.81) ---------- */
+function _srRecentList(){ try{ const a=JSON.parse(localStorage.getItem('nok_sr_recent')||'[]'); return Array.isArray(a)?a.filter(x=>typeof x==='string'):[]; }catch(e){ return []; } }
+function _srRecent(q){ q=String(q||'').trim(); if(q.length<2) return;
+  const a=_srRecentList().filter(x=>x.toLowerCase()!==q.toLowerCase()); a.unshift(q);
+  try{ localStorage.setItem('nok_sr_recent',JSON.stringify(a.slice(0,8))); }catch(e){} }
+function _srRecentClear(){ try{ localStorage.removeItem('nok_sr_recent'); }catch(e){} _srEmpty(); }
+function _srPick(q){ const b=document.getElementById('search'); if(b){ b.value=q; b.blur(); } _srRecent(q); clearTimeout(searchTimer); _sr2(q); }
+function _srOpen(){
+  if(document.body.classList.contains('legacy')) return;
+  if(state.view!=='search'){ const rd=document.getElementById('reader');
+    window._srRet={b:state.book,c:state.chapter,y:rd?rd.scrollTop:0,w:window.scrollY,plan:!!state.plan}; }
+  window._srArmed=true;
+  const b=document.getElementById('search'); const q=b?b.value.trim():'';
+  if(q.length>=2) _sr2(q); else _srEmpty(); }
+function _srEmpty(){
+  if(document.body.classList.contains('legacy')) return;
+  state.view='search'; setViewTabs();
+  const tb=document.querySelector('.topbar'); if(tb) tb.classList.add('searching');
+  document.getElementById('crumb').textContent='Search';
+  document.getElementById('chapselWrap').style.display='none';
+  document.getElementById('readfoot').style.display='none';
+  const ver=state.version, _bk=(window.BOOKS[state.book]||{}).name||'the Bible';
+  const R=_srRecentList(), ex=['John 3:16','Psalm 23','fear not','grace','prayer','"the Lord is my shepherd"'];
+  const clock=_I('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>');
+  let h=`<div class="page srx"><button class="srback" onclick="exitSearch()">\u2190 Back to ${escHTML(_bk+' '+state.chapter)}</button>`;
+  h+=`<div class="srx-lead">Search the Bible and Nii Okai’s notes</div>`;
+  h+=`<div class="sr2-chips"><button class="sr2-chip${_sr2Scope==='all'?' on':''}" onclick="_sr2SetScope('all')">All translations</button><button class="sr2-chip${_sr2Scope!=='all'?' on':''}" onclick="_sr2SetScope('this')">${escHTML(ver)} only</button></div>`;
+  if(R.length){ h+=`<div class="srx-h"><span>Recent</span><button class="srx-clear" onclick="_srRecentClear()">Clear</button></div><div class="srx-list">`;
+    R.forEach(q=>{ h+=`<button class="srx-rec" data-q="${escHTML(q).replace(/"/g,'&quot;')}" onclick="_srPick(this.dataset.q)">${clock}<span>${escHTML(q)}</span></button>`; });
+    h+=`</div>`; }
+  h+=`<div class="srx-h"><span>Try</span></div><div class="srx-try">`;
+  ex.forEach(q=>{ h+=`<button class="sr2-chip" data-q="${escHTML(q).replace(/"/g,'&quot;')}" onclick="_srPick(this.dataset.q)">${escHTML(q)}</button>`; });
+  h+=`</div><div class="srx-tips">A reference opens the verse (<b>John 3:16</b>, <b>Ps 23</b>). Words find every verse and note that uses them. Put words in “quotes” for the exact wording.</div></div>`;
+  const rd=document.getElementById('reader'); rd.innerHTML=h; rd.scrollTop=0; }
+function _srBackToPlace(){ const R=window._srRet; window._srRet=null; if(!R) return;
+  if(R.b!==state.book||R.c!==state.chapter||R.plan!==!!state.plan) return;
+  const go=()=>{ const rd=document.getElementById('reader'); if(rd&&state.view==='read'){ rd.scrollTop=R.y; window.scrollTo(0,R.w); } };
+  requestAnimationFrame(go); setTimeout(go,120); setTimeout(go,350); }
 function _sr2(q,keep){
   q=String(q||'').trim();
-  if(q.length<2){ if(state.view==='search'){ state.view='read'; setViewTabs(); render(); } return; }
+  if(q.length<2){ if(state.view==='search'||window._srArmed) _srEmpty(); return; }
   const rd=document.getElementById('reader'); const sy=keep?{r:rd.scrollTop,w:window.scrollY}:null;
   const prevShown=keep&&window._sr2ctx&&window._sr2ctx.q===q?window._sr2ctx.shown:0;
   state.view='search'; setViewTabs();
@@ -6512,7 +6575,12 @@ function _sr2(q,keep){
 /* the keyboard's Search key closes the keyboard so the results can be seen */
 document.addEventListener('focusin',e=>{ if(e.target&&e.target.id==='search'&&!document.body.classList.contains('legacy')) e.target.setAttribute('enterkeyhint','search'); });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target&&e.target.id==='search'&&!document.body.classList.contains('legacy')){
-  e.preventDefault(); clearTimeout(searchTimer); doSearch(e.target.value); e.target.blur(); } });
+  e.preventDefault(); clearTimeout(searchTimer); _srRecent(e.target.value); doSearch(e.target.value); e.target.blur(); } });
+document.addEventListener('click',e=>{ if(state.view!=='search'||document.body.classList.contains('legacy')) return;
+  const t=e.target&&e.target.closest&&e.target.closest('#reader .sr-item,#reader .hcard[onclick]'); if(!t) return;
+  const sb=document.getElementById('search'); if(sb) _srRecent(sb.value); },true);
+/* Mac / PC: the box is always on show there — clicking into it opens the search screen too */
+document.addEventListener('focusin',e=>{ if(e.target&&e.target.id==='search'&&!document.body.classList.contains('legacy')&&state.view!=='search') _srOpen(); });
 function doSearch(q){
   if(!document.body.classList.contains('legacy')) return _sr2(q);
   q=q.trim();
