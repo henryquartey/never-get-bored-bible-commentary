@@ -1731,7 +1731,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.85', date:'28 Oct 2026'};
+const BUILD={v:'1.2.86', date:'28 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2036,7 +2036,8 @@ function _kjvPart(book){ try{
   if((window.KJV_PART||{})[book]||_kjvPartLoading[book]) return; _kjvPartLoading[book]=1;
   const sc=document.createElement('script'); sc.src='data/kjv/'+book.replace(/[^A-Za-z0-9]+/g,'_')+'.js';
   sc.onload=()=>{ delete _kjvPartLoading[book];
-    if(!(window.BIBLE&&window.BIBLE.KJV)&&state.view==='read'&&state.version==='KJV'&&(window.BOOKS[state.book]||{}).name===book) renderRead(); };
+    if(!(window.BIBLE&&window.BIBLE.KJV)&&state.view==='read'&&state.version==='KJV'&&(window.BOOKS[state.book]||{}).name===book) renderRead();
+    else if(state.view==='read'){ try{ _bibleFlow(true); }catch(e){} } };
   sc.onerror=()=>{ delete _kjvPartLoading[book]; sc.remove(); };
   document.head.appendChild(sc); }catch(e){} }
 function ensureVersion(v,cb,book,ch){
@@ -4080,7 +4081,7 @@ function renderRead(){
         if(rd&&!_placeArmed&&Math.abs(rd.scrollTop-want)>4) rd.scrollTop=want;
         _progSync(); _fabSync(); },ms); }); } },80); }
   buildBookList();
-  if(!document.body.classList.contains('legacy')){ _contAppend(); _gapLinks(); _dayFlow(); }
+  if(!document.body.classList.contains('legacy')){ _contAppend(); _gapLinks(); _dayFlow(); _bibleFlow(); }
 }
 /* Keep the place across a redraw: remember the first verse or note showing at the top of the reader
    and how far down it sat, then put it back at that same spot after the chapter is drawn again. */
@@ -6090,11 +6091,12 @@ function _dayFlow(){ try{ window._dayPrevT=null;
     try{ _scLast=r.scrollTop; _scHold=Date.now(); }catch(e){} }
 }catch(e){} }
 /* when you stop scrolling inside another chapter of the day, it becomes the one you are in (the place is kept) */
-function _daySwap(){ if(!_dayOn()) return false; try{
+function _daySwap(){ if(!_dayOn()) return _bibleSwap(); if(!_flowUser()) return true; try{
   const r=document.getElementById('reader');
   if((typeof VSEL!=='undefined'&&VSEL.on)||document.querySelector('textarea.inline-ed')||_audBusy()) return true;
   const rTop=r.getBoundingClientRect().top, y=rTop+2; let blk=null;
   for(const b of r.querySelectorAll('.dayblk,#contNext')){ const rc=b.getBoundingClientRect(); if(rc.top<=y&&rc.bottom>y){ blk=b; break; } }
+  if(!blk){ const f=r.querySelector('.dayprev'); if(f&&f.getBoundingClientRect().top>y) blk=f; }
   if(!blk) return true;
   const k=blk.id==='contNext'?state.plan.ci+1:+blk.dataset.ci; if(!(k>=0)||k===state.plan.ci) return true;
   if(k>state.plan.ci){ const f=blk.querySelector('.cn-v'); if(!f||f.getBoundingClientRect().top>rTop) return true; }
@@ -6103,6 +6105,60 @@ function _daySwap(){ if(!_dayOn()) return false; try{
   const v=+a.dataset.pv, off=a.getBoundingClientRect().top-rTop, hid=document.body.classList.contains('chrome-off'), day=state.plan.day;
   if(k>state.plan.ci) for(let j=state.plan.ci;j<k;j++) _markPlanChapterRead(day,j);
   planRead(day,k);
+  const el=document.getElementById('v'+v); if(el) r.scrollTop+=el.getBoundingClientRect().top-r.getBoundingClientRect().top-off;
+  if(hid) _chromeOff(true);
+}catch(e){} return true; }
+/* only YOUR scrolling moves you into another chapter — never the page settling while it is drawn (1.2.86) */
+let _flowUserT=0, _flowTouch=false;
+function _flowUser(){ return !_flowTouch&&Date.now()-_flowUserT<6000; }   /* never while a finger is still on the screen */
+(function(){ const r=document.getElementById('reader'); if(!r) return; const mark=()=>{ _flowUserT=Date.now(); };
+  ['touchstart','wheel','mousedown'].forEach(ev=>r.addEventListener(ev,mark,{passive:true}));
+  r.addEventListener('touchstart',()=>{ _flowTouch=true; },{passive:true});
+  ['touchend','touchcancel'].forEach(ev=>document.addEventListener(ev,e=>{ if(!e.touches||!e.touches.length) _flowTouch=false; _flowUserT=Date.now(); },{passive:true,capture:true}));
+  window.addEventListener('keydown',e=>{ if(/^(Arrow|Page|Home|End| )/.test(e.key)||e.key===' ') mark(); }); })();
+/* ---------- Bible tab: the chapter above and the two below are ready (1.2.86) ---------- */
+function _bibleOn(){ return _lookB()&&!state.plan&&state.view==='read'&&!state.compare&&!ONLINE_VERSIONS[state.version]&&(typeof _contOn!=='function'||_contOn()); }
+function _bibleNb(b,c,d){ const B=window.BOOKS; let bi=B.findIndex(x=>x.name===b); if(bi<0) return null; c+=d;
+  if(c<1){ if(bi===0) return null; bi--; c=B[bi].chapters.length; } else if(c>B[bi].chapters.length){ if(bi===B.length-1) return null; bi++; c=1; }
+  return {b:B[bi].name,c}; }
+function _bibleBlk(nb,cls,line){ return `<div class="contnext dayblk ${cls}" data-b="${escHTML(nb.b)}" data-c="${nb.c}" aria-hidden="true">${line?`<div class="cn-head"><span>${escHTML(line)}</span></div>`:''}<div class="cn-title">${escHTML(nb.b+' '+nb.c)}</div>${_chapPreviewHTML(nb.b,nb.c,0,true)}</div>`; }
+function _bibleFlow(refill){ try{
+  const r=document.getElementById('reader'), pg=r&&r.querySelector('.page'); if(!pg||!_bibleOn()) return;
+  const cur={b:window.BOOKS[state.book].name,c:state.chapter};
+  const need=nb=>{ if(nb&&!_chapText(nb.b,nb.c)&&state.version==='KJV'&&!(window.BIBLE&&window.BIBLE.KJV)) _kjvPart(nb.b); return nb&&_chapText(nb.b,nb.c); };
+  /* below: the next chapter (#contNext), then the one after it */
+  let cn=document.getElementById('contNext');
+  if(!cn&&refill){ _contAppend(); cn=document.getElementById('contNext'); if(cn) pg.querySelectorAll('.gap-next').forEach(e=>e.remove()); }
+  const n1=_bibleNb(cur.b,cur.c,1); if(!cn) need(n1);
+  const n2=n1&&_bibleNb(n1.b,n1.c,1);
+  if(cn&&n2&&!pg.querySelector('.dayblk:not(.dayprev)')&&need(n2)){ cn.insertAdjacentHTML('afterend',_bibleBlk(n2,'','Next chapter'));
+    const a=cn.nextElementSibling; if(a) a.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id')); }
+  /* above: the chapter before, with the page kept where it was */
+  const p1=_bibleNb(cur.b,cur.c,-1);
+  if(p1&&!pg.querySelector('.dayprev')&&need(p1)){
+    const gp=pg.querySelector('button.gap-prev'); if(gp) gp.outerHTML='<div class="gap-link gap-mid">↓ Next chapter</div>';
+    const ref=pg.querySelector('.gap-mid')||pg.querySelector('.chtitle')||pg.firstElementChild, before=ref.getBoundingClientRect().top;
+    pg.insertAdjacentHTML('afterbegin',_bibleBlk(p1,'dayprev',''));
+    pg.querySelectorAll('.dayprev [id]').forEach(e=>e.removeAttribute('id'));
+    r.scrollTop+=ref.getBoundingClientRect().top-before;
+    try{ _scLast=r.scrollTop; _scHold=Date.now(); }catch(e){} }
+}catch(e){} }
+/* when you stop scrolling inside the chapter above or below, it becomes the one you are in (the place is kept) */
+function _bibleSwap(){ if(!_bibleOn()) return false; if(!_flowUser()) return true; try{
+  const r=document.getElementById('reader');
+  if((typeof VSEL!=='undefined'&&VSEL.on)||document.querySelector('textarea.inline-ed')||_audBusy()) return true;
+  const rTop=r.getBoundingClientRect().top, y=rTop+2; let blk=null;
+  for(const b of r.querySelectorAll('.dayblk,#contNext')){ const rc=b.getBoundingClientRect(); if(rc.top<=y&&rc.bottom>y){ blk=b; break; } }
+  if(!blk){ const f=r.querySelector('.dayprev'); if(f&&f.getBoundingClientRect().top>y) blk=f; }   /* right at the top of the page */
+  if(!blk) return true;
+  let to=null; if(blk.id==='contNext'){ const T=_sideTarget(1); if(T&&T.kind==='ch') to={b:T.b,c:T.c}; } else to={b:blk.dataset.b,c:+blk.dataset.c};
+  if(!to) return true;
+  if(!blk.classList.contains('dayprev')){ const f=blk.querySelector('.cn-v'); if(!f||f.getBoundingClientRect().top>rTop) return true; }
+  let a=null; for(const el of blk.querySelectorAll('.cn-v')){ if(el.getBoundingClientRect().bottom>y){ a=el; break; } }
+  if(!a) a=blk.querySelector('.cn-v:last-of-type'); if(!a) return true;
+  const v=+a.dataset.pv, off=a.getBoundingClientRect().top-rTop, hid=document.body.classList.contains('chrome-off');
+  const bi=window.BOOKS.findIndex(x=>x.name===to.b); if(bi<0) return true;
+  state.book=bi; state.chapter=to.c; savePrefs(); renderRead();
   const el=document.getElementById('v'+v); if(el) r.scrollTop+=el.getBoundingClientRect().top-r.getBoundingClientRect().top-off;
   if(hid) _chromeOff(true);
 }catch(e){} return true; }
