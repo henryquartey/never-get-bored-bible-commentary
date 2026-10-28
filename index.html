@@ -1498,6 +1498,8 @@ body.look-b:not(.legacy) .gap-link{display:block;background:none;border:0;paddin
 body.look-b:not(.legacy) .gap-link.gap-prev{transition:color .15s}
 body.look-b:not(.legacy) .gap-link.pull-on{color:var(--ink)}
 body.look-b:not(.legacy) .gap-link.pull-ready{color:var(--ink);font-weight:700}
+body.look-b:not(.legacy) .contnext .cn-head{transition:color .15s}
+body.look-b:not(.legacy) .contnext .cn-head.push-ready{color:var(--ink);font-weight:800}
 body.look-b:not(.legacy) .page{transition:transform .18s ease-out}
 body.look-b:not(.legacy) .gap-link.gap-next{margin:30px auto 6px;text-align:center;font-size:15px;color:var(--ink)}
 body.look-b:not(.legacy) .contnext .cn-head{font:600 14px var(--sans);letter-spacing:.02em;text-transform:none;color:var(--ink)}
@@ -1716,7 +1718,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.81', date:'28 Oct 2026'};
+const BUILD={v:'1.2.82', date:'28 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -6011,6 +6013,26 @@ function _pullGo(){ try{ const T=_sideTarget(-1); if(!T||T.kind==='end'||!T.go) 
     if(!fresh||now<lock||!_pullOk()||e.deltaY>=0||Math.abs(e.deltaX)>Math.abs(e.deltaY)||r.scrollTop>0){ if(acc){ acc=0; _pullShow(0,true); } return; }
     acc+=-e.deltaY; _pullShow(Math.min(acc/2.6,150),true); clearTimeout(t); t=setTimeout(()=>{ acc=0; _pullShow(0,true); },300);
     if(acc>330){ acc=0; fresh=false; lock=now+1200; clearTimeout(t); _pullShow(0,true); _pullGo(); } },{passive:true});
+})();
+function _pushOk(){ return _lookB()&&(typeof _contOn!=='function'||_contOn())&&state.view==='read'&&!state.compare
+  &&!(typeof VSEL!=='undefined'&&VSEL.on)&&!document.querySelector('textarea.inline-ed')&&!!document.getElementById('contNext'); }
+function _pushShow(on){ const h=document.querySelector('#contNext .cn-head'); const sp=h&&h.querySelector('span'); if(!sp) return;
+  if(!sp.dataset.t) sp.dataset.t=sp.textContent;
+  h.classList.toggle('push-ready',on); sp.textContent=on?'Release for '+sp.dataset.t.replace(/^↓\s*/,''):sp.dataset.t; }
+function _pushGo(){ try{ const T=(typeof _contTarget==='function')?_contTarget():_sideTarget(1); if(!T||T.kind!=='ch'||!T.go) return;
+  T.go(); const top=()=>{ const r=document.getElementById('reader'); if(r&&state.view==='read') r.scrollTop=0; };
+  top(); requestAnimationFrame(top); setTimeout(top,120); setTimeout(top,350); }catch(e){} }
+(function(){ const r=document.getElementById('reader'); if(!r) return;
+  let st=null, ready=false;
+  const headTop=()=>{ const h=document.querySelector('#contNext .cn-head'); return h?h.getBoundingClientRect().top-r.getBoundingClientRect().top:null; };
+  r.addEventListener('touchstart',e=>{ ready=false; st=null; if(e.touches.length!==1||!_pushOk()) return;
+    const t=headTop(); if(t===null) return; st={h:t}; },{passive:true});
+  r.addEventListener('touchmove',e=>{ if(!st) return; const t=headTop(); if(t===null){ st=null; return; }
+    const H=r.clientHeight, want=(st.h-t)>=110&&t<=H*0.25&&t>=-H*0.3;
+    if(want!==ready){ ready=want; _pushShow(ready); } },{passive:true});
+  const end=()=>{ if(!st) return; const go=ready; st=null; ready=false; _pushShow(false); if(go) _pushGo(); };
+  document.addEventListener('touchend',end,{passive:true,capture:true});
+  document.addEventListener('touchcancel',()=>{ if(st){ st=null; ready=false; _pushShow(false); } },{passive:true,capture:true});
 })();
 function _swGhost(T,dir){ const r=document.getElementById('reader'); const rc=r.getBoundingClientRect();
   let g=document.getElementById('swGhost'); if(g) g.remove();
