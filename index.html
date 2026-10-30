@@ -1499,7 +1499,8 @@ body.look-b:not(.legacy) .gap-link.gap-prev{transition:color .15s}
 body.look-b:not(.legacy) .gap-link.pull-on{color:var(--ink)}
 body.look-b:not(.legacy) .gap-link.pull-ready{color:var(--ink);font-weight:700}
 body.look-b:not(.legacy) .gap-link.gap-rest{cursor:default}
-body.look-b:not(.legacy) .gap-link.gap-mid{display:flex;align-items:center;gap:12px;margin:34px 0 10px;color:var(--ink);font:600 14px var(--sans)}
+body.look-b:not(.legacy) .gap-link.gap-mid{display:flex;align-items:center;gap:12px;margin:28px 0 14px;font:700 12px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+body.look-b:not(.legacy) .chtitle.cht-flow{display:none!important}
 body.look-b:not(.legacy) .gap-link.gap-mid::before,body.look-b:not(.legacy) .gap-link.gap-mid::after{content:"";flex:1;height:1px;background:var(--line)}
 body.look-b:not(.legacy) .contnext.dayprev{margin-top:4px}
 body.look-b:not(.legacy) .contnext .cn-head.cn-rest span::before{content:none}
@@ -1510,13 +1511,14 @@ body.look-b:not(.legacy) .contnext .cn-head.cn-rest span::before{content:none}
 .day-end.pull-ready .de-btn{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 body.look-b:not(.legacy) .contnext .cn-head{transition:color .15s}
 body.look-b:not(.legacy) .contnext .cn-head.push-ready{color:var(--ink);font-weight:800}
+body.look-b:not(.legacy) .contnext.cn-top{margin-top:4px}
 body.look-b:not(.legacy) .page{transition:transform .18s ease-out}
 body.look-b:not(.legacy) .gap-link.gap-next{margin:30px auto 6px;text-align:center;font-size:15px;color:var(--ink)}
-body.look-b:not(.legacy) .contnext .cn-head{font:600 14px var(--sans);letter-spacing:.02em;text-transform:none;color:var(--ink)}
-body.look-b:not(.legacy) .contnext .cn-head span::before{content:"↓ "}
+body.look-b:not(.legacy) .contnext .cn-head{font:700 12px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+body.look-b:not(.legacy) .contnext .cn-head span::before{content:none}
 .contnext .cn-title{display:none}
-body.look-b:not(.legacy) .contnext .cn-title{display:block;text-align:center;font-family:var(--serif);font-weight:600;font-size:34px;line-height:1.15;font-variant-numeric:lining-nums;color:var(--ink);margin:4px 0 18px}
-@media (max-width:700px){ body.look-b:not(.legacy) .contnext .cn-title{font-size:28px;margin:2px 0 14px} }
+body.look-b:not(.legacy) .contnext .cn-title{display:none}
+
 @media(max-width:860px){ html body.look-b:not(.legacy)[data-view="read"] .readnav button:not(.rn-listen){background:var(--panel)!important;border:0!important;box-shadow:none!important} }
 .swgap{position:fixed;z-index:31;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none;color:var(--soft);will-change:transform}
 .swgap .sg-arr{font:600 22px var(--sans);color:var(--ink)}
@@ -1731,7 +1733,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.86', date:'28 Oct 2026'};
+const BUILD={v:'1.2.87', date:'30 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -5935,10 +5937,10 @@ function _chapPreviewHTML(b,c,max,withNotes){ const verses=_chapText(b,c); if(!v
   return h; }
 /* continuous: put the next chapter under this one */
 /* New look (1.2.83): the small line above the next chapter; its name is shown big underneath */
-function _cnLine(T){ try{ if(!state.plan) return 'Next chapter';
-  const N=_gapInfo(1); if(N&&N.sub) return N.main;
-  if(T&&T.label) return 'Next · '+String(T.label).split(' · ')[0];
-  return 'Next'; }catch(e){ return 'Next'; } }
+function _cnLine(T){ try{ const nm=T&&T.b?T.b+' '+T.c:''; if(!state.plan) return nm||'Next chapter';
+  const N=_gapInfo(1); if(N&&N.sub) return N.main+' · '+N.sub;
+  if(T&&T.label) return 'Next · '+T.label;
+  return 'Next'+(nm?' · '+nm:''); }catch(e){ return 'Next'; } }
 function _contAppend(){ try{
   const r=document.getElementById('reader'); const old=document.getElementById('contNext'); if(old) old.remove();
   if(document.body.classList.contains('legacy')||state.view!=='read'||!_contOn()||state.compare) return;
@@ -6070,7 +6072,7 @@ function _dayFlow(){ try{ window._dayPrevT=null;
   /* below: the rest of the day after the next chapter (#contNext) */
   const cn=document.getElementById('contNext');
   if(cn){ let after=cn; for(let k=ci+2;k<n;k++){ const [b,c]=chaps[k]; if(!_chapText(b,c)) break;
-      after.insertAdjacentHTML('afterend',`<div class="contnext dayblk" data-ci="${k}" aria-hidden="true"><div class="cn-head"><span>Next · ${k+1} of ${n}</span></div><div class="cn-title">${escHTML(b+' '+c)}</div>${_chapPreviewHTML(b,c,0,true)}</div>`);
+      after.insertAdjacentHTML('afterend',`<div class="contnext dayblk" data-ci="${k}" aria-hidden="true"><div class="cn-head"><span>Next · ${k+1} of ${n} · ${escHTML(b+' '+c)}</span></div><div class="cn-title">${escHTML(b+' '+c)}</div>${_chapPreviewHTML(b,c,0,true)}</div>`);
       after=after.nextElementSibling; after.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id')); } }
   let last=cn?ci+1:ci; pg.querySelectorAll('.dayblk').forEach(b=>{ last=Math.max(last,+b.dataset.ci); });
   if(last===n-1) pg.insertAdjacentHTML('beforeend',`<div class="day-end" id="dayEnd"><button type="button" class="de-btn" onclick="_dayFinish()"><span>Finish Day ${day+1} ✓</span></button><div class="de-hint">Push up past here, or tap, to finish</div></div>`);
@@ -6081,10 +6083,11 @@ function _dayFlow(){ try{ window._dayPrevT=null;
     const l0=_dayLine(0,n), prev0=P0?'↑ '+P0.main+(P0.sub?' · '+P0.sub:''):'';
     let h=`<div class="gap-link gap-rest${P0?' gap-prev':''}" data-rest="${escHTML(l0)}"${P0?` data-t="${escHTML(prev0).replace(/"/g,'&quot;')}"`:''}>${escHTML(l0)}</div>`;
     for(let k=0;k<ci;k++){ const [b,c]=chaps[k];
-      h+=`<div class="contnext dayblk dayprev" data-ci="${k}" aria-hidden="true">${k>0?`<div class="cn-head cn-rest"><span>${escHTML(_dayLine(k,n))}</span></div>`:''}<div class="cn-title">${escHTML(b+' '+c)}</div>${_chapPreviewHTML(b,c,0,true)}</div>`; }
+      h+=`<div class="contnext dayblk dayprev" data-ci="${k}" aria-hidden="true"><div class="cn-head cn-rest"><span>${escHTML(k>0?_dayLine(k,n)+' · '+b+' '+c:b+' '+c)}</span></div><div class="cn-title">${escHTML(b+' '+c)}</div>${_chapPreviewHTML(b,c,0,true)}</div>`; }
     pg.insertAdjacentHTML('afterbegin',h);
     pg.querySelectorAll('.dayprev [id]').forEach(e=>e.removeAttribute('id'));
-    if(mid){ mid.classList.remove('gap-prev'); mid.classList.add('gap-mid'); delete mid.dataset.t; }
+    if(mid){ mid.classList.remove('gap-prev'); mid.classList.add('gap-mid'); delete mid.dataset.t;
+      mid.textContent=_dayLine(ci,n)+' · '+chaps[ci][0]+' '+chaps[ci][1]; const ct=pg.querySelector('.chtitle'); if(ct) ct.classList.add('cht-flow'); }
     window._dayPrevT=P0?T0:null;
     r.scrollTop+=ref.getBoundingClientRect().top-before;
     /* this jump is not you reading down: keep the Listen row and tab bar showing */
@@ -6131,14 +6134,15 @@ function _bibleFlow(refill){ try{
   if(!cn&&refill){ _contAppend(); cn=document.getElementById('contNext'); if(cn) pg.querySelectorAll('.gap-next').forEach(e=>e.remove()); }
   const n1=_bibleNb(cur.b,cur.c,1); if(!cn) need(n1);
   const n2=n1&&_bibleNb(n1.b,n1.c,1);
-  if(cn&&n2&&!pg.querySelector('.dayblk:not(.dayprev)')&&need(n2)){ cn.insertAdjacentHTML('afterend',_bibleBlk(n2,'','Next chapter'));
+  if(cn&&n2&&!pg.querySelector('.dayblk:not(.dayprev)')&&need(n2)){ cn.insertAdjacentHTML('afterend',_bibleBlk(n2,'',n2.b+' '+n2.c));
     const a=cn.nextElementSibling; if(a) a.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id')); }
   /* above: the chapter before, with the page kept where it was */
   const p1=_bibleNb(cur.b,cur.c,-1);
   if(p1&&!pg.querySelector('.dayprev')&&need(p1)){
-    const gp=pg.querySelector('button.gap-prev'); if(gp) gp.outerHTML='<div class="gap-link gap-mid">↓ Next chapter</div>';
+    const gp=pg.querySelector('button.gap-prev'); if(gp) gp.outerHTML=`<div class="gap-link gap-mid">${escHTML(cur.b+' '+cur.c)}</div>`;
+    const ct=pg.querySelector('.chtitle'); if(ct) ct.classList.add('cht-flow');
     const ref=pg.querySelector('.gap-mid')||pg.querySelector('.chtitle')||pg.firstElementChild, before=ref.getBoundingClientRect().top;
-    pg.insertAdjacentHTML('afterbegin',_bibleBlk(p1,'dayprev',''));
+    pg.insertAdjacentHTML('afterbegin',_bibleBlk(p1,'dayprev cn-top',p1.b+' '+p1.c));
     pg.querySelectorAll('.dayprev [id]').forEach(e=>e.removeAttribute('id'));
     r.scrollTop+=ref.getBoundingClientRect().top-before;
     try{ _scLast=r.scrollTop; _scHold=Date.now(); }catch(e){} }
