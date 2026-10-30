@@ -1501,6 +1501,7 @@ body.look-b:not(.legacy) .gap-link.pull-ready{color:var(--ink);font-weight:700}
 body.look-b:not(.legacy) .gap-link.gap-rest{cursor:default}
 body.look-b:not(.legacy) .gap-link.gap-mid{display:flex;align-items:center;gap:12px;margin:28px 0 14px;font:700 12px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
 body.look-b:not(.legacy) .chtitle.cht-flow{display:none!important}
+body:not(.legacy) .contnext .about-ch{pointer-events:auto;-webkit-user-select:text;user-select:text;margin-top:2px}
 html body.look-b:not(.legacy) .chtitle{display:none!important}
 body.look-b:not(.legacy) .gap-link.gap-mid::before,body.look-b:not(.legacy) .gap-link.gap-mid::after{content:"";flex:1;height:1px;background:var(--line)}
 body.look-b:not(.legacy) .contnext.dayprev{margin-top:4px}
@@ -1734,7 +1735,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.88', date:'30 Oct 2026'};
+const BUILD={v:'1.2.89', date:'30 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -5950,7 +5951,7 @@ function _contAppend(){ try{
     ensureChapterOnline(state.version,T.b,T.c,ok=>{ if(ok&&state.view==='read'&&_rdKey()===k) _contAppend(); }); return; }
   if(!_chapText(T.b,T.c)){ if(state.version==='KJV'&&!(window.BIBLE&&window.BIBLE.KJV)) _kjvPart(T.b); return; }
   const pg=r.querySelector('.page'); if(!pg) return;
-  pg.insertAdjacentHTML('beforeend',`<div class="contnext" id="contNext" aria-hidden="true"><div class="cn-head"><span>${escHTML(_lookB()?_cnLine(T):(T.label||(T.b+' '+T.c)))}</span></div><div class="cn-title">${escHTML(T.b+' '+T.c)}</div>${_chapPreviewHTML(T.b,T.c,0,true)}</div>`);
+  pg.insertAdjacentHTML('beforeend',`<div class="contnext" id="contNext" aria-hidden="true"><div class="cn-head"><span>${escHTML(_lookB()?_cnLine(T):(T.label||(T.b+' '+T.c)))}</span></div><div class="cn-title">${escHTML(T.b+' '+T.c)}</div>${_aboutHTML(T.b,T.c)}${_chapPreviewHTML(T.b,T.c,0,true)}</div>`);
   const cn=document.getElementById('contNext'); if(cn) cn.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id'));
 }catch(e){} }
 /* once the next chapter's first verse is above the top and you pause, it becomes the chapter you are in */
@@ -6073,7 +6074,7 @@ function _dayFlow(){ try{ window._dayPrevT=null;
   /* below: the rest of the day after the next chapter (#contNext) */
   const cn=document.getElementById('contNext');
   if(cn){ let after=cn; for(let k=ci+2;k<n;k++){ const [b,c]=chaps[k]; if(!_chapText(b,c)) break;
-      after.insertAdjacentHTML('afterend',`<div class="contnext dayblk" data-ci="${k}" aria-hidden="true"><div class="cn-head"><span>Next · ${k+1} of ${n} · ${escHTML(b+' '+c)}</span></div><div class="cn-title">${escHTML(b+' '+c)}</div>${_chapPreviewHTML(b,c,0,true)}</div>`);
+      after.insertAdjacentHTML('afterend',`<div class="contnext dayblk" data-ci="${k}" aria-hidden="true"><div class="cn-head"><span>Next · ${k+1} of ${n} · ${escHTML(b+' '+c)}</span></div><div class="cn-title">${escHTML(b+' '+c)}</div>${_aboutHTML(b,c)}${_chapPreviewHTML(b,c,0,true)}</div>`);
       after=after.nextElementSibling; after.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id')); } }
   let last=cn?ci+1:ci; pg.querySelectorAll('.dayblk').forEach(b=>{ last=Math.max(last,+b.dataset.ci); });
   if(last===n-1) pg.insertAdjacentHTML('beforeend',`<div class="day-end" id="dayEnd"><button type="button" class="de-btn" onclick="_dayFinish()"><span>Finish Day ${day+1} ✓</span></button><div class="de-hint">Push up past here, or tap, to finish</div></div>`);
@@ -6084,7 +6085,7 @@ function _dayFlow(){ try{ window._dayPrevT=null;
     const l0=_dayLine(0,n), prev0=P0?'↑ '+P0.main+(P0.sub?' · '+P0.sub:''):'';
     let h=`<div class="gap-link gap-rest${P0?' gap-prev':''}" data-rest="${escHTML(l0)}"${P0?` data-t="${escHTML(prev0).replace(/"/g,'&quot;')}"`:''}>${escHTML(l0)}</div>`;
     for(let k=0;k<ci;k++){ const [b,c]=chaps[k];
-      h+=`<div class="contnext dayblk dayprev" data-ci="${k}" aria-hidden="true"><div class="cn-head cn-rest"><span>${escHTML(k>0?_dayLine(k,n)+' · '+b+' '+c:b+' '+c)}</span></div><div class="cn-title">${escHTML(b+' '+c)}</div>${_chapPreviewHTML(b,c,0,true)}</div>`; }
+      h+=`<div class="contnext dayblk dayprev" data-ci="${k}" aria-hidden="true"><div class="cn-head cn-rest"><span>${escHTML(k>0?_dayLine(k,n)+' · '+b+' '+c:b+' '+c)}</span></div><div class="cn-title">${escHTML(b+' '+c)}</div>${_aboutHTML(b,c)}${_chapPreviewHTML(b,c,0,true)}</div>`; }
     pg.insertAdjacentHTML('afterbegin',h);
     pg.querySelectorAll('.dayprev [id]').forEach(e=>e.removeAttribute('id'));
     if(mid){ mid.classList.remove('gap-prev'); mid.classList.add('gap-mid'); delete mid.dataset.t;
@@ -6125,7 +6126,7 @@ function _bibleOn(){ return _lookB()&&!state.plan&&state.view==='read'&&!state.c
 function _bibleNb(b,c,d){ const B=window.BOOKS; let bi=B.findIndex(x=>x.name===b); if(bi<0) return null; c+=d;
   if(c<1){ if(bi===0) return null; bi--; c=B[bi].chapters.length; } else if(c>B[bi].chapters.length){ if(bi===B.length-1) return null; bi++; c=1; }
   return {b:B[bi].name,c}; }
-function _bibleBlk(nb,cls,line){ return `<div class="contnext dayblk ${cls}" data-b="${escHTML(nb.b)}" data-c="${nb.c}" aria-hidden="true">${line?`<div class="cn-head"><span>${escHTML(line)}</span></div>`:''}<div class="cn-title">${escHTML(nb.b+' '+nb.c)}</div>${_chapPreviewHTML(nb.b,nb.c,0,true)}</div>`; }
+function _bibleBlk(nb,cls,line){ return `<div class="contnext dayblk ${cls}" data-b="${escHTML(nb.b)}" data-c="${nb.c}" aria-hidden="true">${line?`<div class="cn-head"><span>${escHTML(line)}</span></div>`:''}<div class="cn-title">${escHTML(nb.b+' '+nb.c)}</div>${_aboutHTML(nb.b,nb.c)}${_chapPreviewHTML(nb.b,nb.c,0,true)}</div>`; }
 function _bibleFlow(refill){ try{
   const r=document.getElementById('reader'), pg=r&&r.querySelector('.page'); if(!pg||!_bibleOn()) return;
   const cur={b:window.BOOKS[state.book].name,c:state.chapter};
