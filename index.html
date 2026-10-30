@@ -1501,6 +1501,7 @@ body.look-b:not(.legacy) .gap-link.pull-ready{color:var(--ink);font-weight:700}
 body.look-b:not(.legacy) .gap-link.gap-rest{cursor:default}
 body.look-b:not(.legacy) .gap-link.gap-mid{display:flex;align-items:center;gap:12px;margin:28px 0 14px;font:700 12px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
 body.look-b:not(.legacy) .chtitle.cht-flow{display:none!important}
+body.turn-flow:not(.legacy)[data-view="read"] .readnav>button:not(.rn-listen):not(.rn-comm){visibility:hidden;pointer-events:none}
 body:not(.legacy) .contnext .about-ch{pointer-events:auto;-webkit-user-select:text;user-select:text;margin-top:2px}
 html body.look-b:not(.legacy) .chtitle{display:none!important}
 body.look-b:not(.legacy) .gap-link.gap-mid::before,body.look-b:not(.legacy) .gap-link.gap-mid::after{content:"";flex:1;height:1px;background:var(--line)}
@@ -1735,7 +1736,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.89', date:'30 Oct 2026'};
+const BUILD={v:'1.2.90', date:'30 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -5883,7 +5884,8 @@ document.addEventListener('mousedown',e=>{ window._vPoint={x:e.clientX,y:e.clien
 })();
 /* ---------- Reading that flows: swipe follows the finger, continuous scrolling (17 Oct 2026, new UI) ---------- */
 /* how chapters turn: 'both' (default) · 'scroll' (keep scrolling down) · 'swipe' (sideways) — 17 Oct 2026 */
-function _turnMode(){ try{ const m=localStorage.getItem('nok_turn'); if(m==='both'||m==='scroll'||m==='swipe') return m;
+function _turnMode(){ const m=_turnMode0(); try{ document.body.classList.toggle('turn-flow',m!=='swipe'); }catch(e){} return m; }
+function _turnMode0(){ try{ const m=localStorage.getItem('nok_turn'); if(m==='both'||m==='scroll'||m==='swipe') return m;
   return localStorage.getItem('nok_cont')==='0'?'swipe':'both'; }catch(e){ return 'both'; } }
 function _contOn(){ return _turnMode()!=='swipe'; }
 function _swipeOn(){ return _turnMode()!=='scroll'; }
