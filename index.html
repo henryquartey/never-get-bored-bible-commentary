@@ -1501,6 +1501,7 @@ body.look-b:not(.legacy) .gap-link.pull-ready{color:var(--ink);font-weight:700}
 body.look-b:not(.legacy) .gap-link.gap-rest{cursor:default}
 body.look-b:not(.legacy) .gap-link.gap-mid{display:flex;align-items:center;gap:12px;margin:28px 0 14px;font:700 12px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
 body.look-b:not(.legacy) .chtitle.cht-flow{display:none!important}
+html body.look-b:not(.legacy) .chtitle{display:none!important}
 body.look-b:not(.legacy) .gap-link.gap-mid::before,body.look-b:not(.legacy) .gap-link.gap-mid::after{content:"";flex:1;height:1px;background:var(--line)}
 body.look-b:not(.legacy) .contnext.dayprev{margin-top:4px}
 body.look-b:not(.legacy) .contnext .cn-head.cn-rest span::before{content:none}
@@ -1733,7 +1734,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.87', date:'30 Oct 2026'};
+const BUILD={v:'1.2.88', date:'30 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -6002,11 +6003,11 @@ function _gapLinks(){ try{
   else if(!cs&&!state.plan){ const N=_gapInfo(1);
     if(N) pg.insertAdjacentHTML('beforeend',`<button type="button" class="gap-link gap-next" onclick="_gapGo(1)">${escHTML(N.main+(N.sub?' · '+N.sub:''))} →</button>`); }
   }catch(e){} }
-function _lookSync(){ const b=document.body; let on=false, ab=false;
-  try{ on=localStorage.getItem('nok_lookb')==='1'; ab=localStorage.getItem('nok_ab')==='1'; }catch(e){}
-  try{ if(/[?&]ab=1\b/.test(location.search)){ ab=true; localStorage.setItem('nok_ab','1'); } }catch(e){}
-  try{ if(typeof isOwner==='function'&&isOwner()) ab=true; }catch(e){}
-  b.classList.toggle('look-b',on); b.classList.toggle('ab-on',ab);
+function _lookSync(){ const b=document.body;
+  /* 1.2.88: Henry settled on the new look — it is the app for everyone, and the Old/New switch is gone */
+  b.classList.add('look-b'); b.classList.remove('ab-on');
+  const old=document.getElementById('lookBtn'); if(old) old.remove(); return;
+  let on=true, ab=false;
   let btn=document.getElementById('lookBtn');
   if(!btn){ const tb=document.querySelector('.topbar'), sw=tb&&tb.querySelector('.searchwrap');
     if(sw){ btn=document.createElement('button'); btn.type='button'; btn.id='lookBtn'; btn.className='look-btn';
@@ -6141,7 +6142,7 @@ function _bibleFlow(refill){ try{
   if(p1&&!pg.querySelector('.dayprev')&&need(p1)){
     const gp=pg.querySelector('button.gap-prev'); if(gp) gp.outerHTML=`<div class="gap-link gap-mid">${escHTML(cur.b+' '+cur.c)}</div>`;
     const ct=pg.querySelector('.chtitle'); if(ct) ct.classList.add('cht-flow');
-    const ref=pg.querySelector('.gap-mid')||pg.querySelector('.chtitle')||pg.firstElementChild, before=ref.getBoundingClientRect().top;
+    const ref=pg.querySelector('.gap-mid')||pg.querySelector('.about-ch,.verse')||pg.firstElementChild, before=ref.getBoundingClientRect().top;
     pg.insertAdjacentHTML('afterbegin',_bibleBlk(p1,'dayprev cn-top',p1.b+' '+p1.c));
     pg.querySelectorAll('.dayprev [id]').forEach(e=>e.removeAttribute('id'));
     r.scrollTop+=ref.getBoundingClientRect().top-before;
