@@ -1736,7 +1736,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.90', date:'30 Oct 2026'};
+const BUILD={v:'1.2.91', date:'31 Oct 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -6053,7 +6053,11 @@ function _pushShow(on){ const h=document.querySelector('#contNext .cn-head'); co
   if(!sp.dataset.t) sp.dataset.t=sp.textContent;
   h.classList.toggle('push-ready',on); sp.textContent=on?'Release for '+sp.dataset.t.replace(/^↓\s*/,''):sp.dataset.t; }
 function _pushGo(){ try{ const T=(typeof _contTarget==='function')?_contTarget():_sideTarget(1); if(!T||T.kind!=='ch'||!T.go) return;
-  T.go(); const top=()=>{ const r=document.getElementById('reader'); if(r&&state.view==='read') r.scrollTop=0; };
+  T.go(); const top=()=>{ const r=document.getElementById('reader'); if(!r||state.view!=='read') return;
+    /* 1.2.91: a plan day is one scroll — land at the start of the new chapter, not the top of the day (chapter 1) */
+    const m=(typeof _dayOn==='function'&&_dayOn())?r.querySelector('.page .gap-mid'):null;
+    if(m) r.scrollTop+=m.getBoundingClientRect().top-r.getBoundingClientRect().top; else r.scrollTop=0;
+    try{ _scLast=r.scrollTop; _scHold=Date.now(); }catch(e){} };
   top(); requestAnimationFrame(top); setTimeout(top,120); setTimeout(top,350); }catch(e){} }
 (function(){ const r=document.getElementById('reader'); if(!r) return;
   let st=null, ready=false;
