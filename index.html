@@ -1736,7 +1736,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.92', date:'31 Oct 2026'};
+const BUILD={v:'1.2.93', date:'2 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -6616,7 +6616,7 @@ function _srBackToPlace(){ const R=window._srRet; window._srRet=null; if(!R) ret
   const go=()=>{ const rd=document.getElementById('reader'); if(rd&&state.view==='read'){ rd.scrollTop=R.y; window.scrollTo(0,R.w); } };
   requestAnimationFrame(go); setTimeout(go,120); setTimeout(go,350); }
 function _sr2(q,keep){
-  q=String(q||'').trim();
+  const _qraw=String(q||''); q=_qraw.trim();
   if(q.length<2){ if(state.view==='search'||window._srArmed) _srEmpty(); return; }
   const rd=document.getElementById('reader'); const sy=keep?{r:rd.scrollTop,w:window.scrollY}:null;
   const prevShown=keep&&window._sr2ctx&&window._sr2ctx.q===q?window._sr2ctx.shown:0;
@@ -6631,6 +6631,8 @@ function _sr2(q,keep){
   const quoted=/^["“”]/.test(q);
   const qq=q.replace(/^["“”]+|["“”]+$/g,'').trim();
   const nq=_srNorm(qq);
+  /* 1.2.93: the last word may be half typed ("for whom i have suff") — a space after it, or quotes, end it */
+  const _lw=nq.split(' ').pop()||'', pre=!quoted&&!/\s$/.test(_qraw)&&/[a-z0-9]$/i.test(qq)&&(_lw.length>=3||(nq.indexOf(' ')>0&&_lw.length>=1));
   const _bk=(window.BOOKS[state.book]||{}).name||'the Bible';
   let html=`<div class="page"><button class="srback" onclick="exitSearch()">\u2190 Back to ${escHTML(_bk+' '+state.chapter)}</button>`;
   /* 1. a reference, in any shape */
@@ -6653,7 +6655,8 @@ function _sr2(q,keep){
   const rawWords=ref?[]:nq.split(' ').filter(w=>w&&!SR_STOP.has(w));
   const exactOnly=!ref&&(quoted||!rawWords.length);
   const _isPrefix=w=>{ try{ if(w.length<5||!vocab) return false; for(const x of vocab.keys()){ if(x!==w&&x.startsWith(w)) return true; } return false; }catch(e){ return false; } };
-  const words=exactOnly?[]:rawWords.map(w=>_isPrefix(w)?w:_srCorrect(w,vocab));
+  const _isPre2=w=>{ try{ if(!vocab) return false; for(const x of vocab.keys()){ if(x!==w&&x.startsWith(w)) return true; } return false; }catch(e){ return false; } };
+  const words=exactOnly?[]:rawWords.map((w,i)=>(_isPrefix(w)||(pre&&i===rawWords.length-1&&w===_lw&&_isPre2(w)))?w:_srCorrect(w,vocab));
   const corrected=words.join(' ')!==rawWords.join(' ')&&!exactOnly;
   if(corrected&&!ref) html+=`<div class="soft" style="margin:-4px 0 12px">Also searching for <b>${escHTML(words.join(' '))}</b> <span style="opacity:.7">(you typed “${escHTML(qq)}”)</span></div>`;
   /* 3. topics — built here, shown AFTER the results (1.2.76) */
@@ -6669,11 +6672,12 @@ function _sr2(q,keep){
   const joinedA=rawWords.join(''), joinedB=words.join('');
   const scoreW=n=>{ if(!words.length) return 0; if(phrase&&n.indexOf(' '+phrase+' ')>=0) return 100+words.length+40/(1+n.length/120);
     if(words.length>1&&joinedA.length>5&&(n.indexOf(joinedA)>=0||n.indexOf(joinedB)>=0)) return 95+words.length+40/(1+n.length/120);
-    let sc=0,last=-1,inorder=true; alts.forEach(g=>{ let i=-1,part=false; for(const w of g){ i=n.indexOf(' '+w+' '); if(i>=0) break; if(w.length>4&&(i=n.indexOf(' '+w))>=0) break; if(w.length>3&&(i=n.indexOf(w))>=0){ part=true; break; } }
+    let sc=0,last=-1,inorder=true; alts.forEach((g,gi)=>{ let i=-1,part=false; const pl=(pre&&gi===alts.length-1)?0:4; for(const w of g){ i=n.indexOf(' '+w+' '); if(i>=0) break; if(w.length>pl&&(i=n.indexOf(' '+w))>=0) break; if(w.length>3&&(i=n.indexOf(w))>=0){ part=true; break; } }
       if(i>=0){ sc+=part?1:2; if(i<last) inorder=false; last=i; } });
     if(sc<Math.max(1,Math.ceil(words.length*0.6)*2)) return 0;
     if(inorder&&words.length>1) sc+=2; return sc+words.length*2/(1+n.length/120); };
-  const scoreN=n=>{ if(ref||!nq) return 0; if(n.indexOf(P)>=0) return 1000; return exactOnly?0:scoreW(n); };
+  const P1=' '+nq;   /* the phrase with its last word half typed (1.2.93) */
+  const scoreN=n=>{ if(ref||!nq) return 0; if(n.indexOf(P)>=0) return 1000; if(pre&&n.indexOf(P1)>=0) return 999; return exactOnly?0:scoreW(n); };
   const bi=bk=>window.BOOKS.findIndex(b=>b.name===bk);
   const inF=(bk)=>{ const i=bi(bk); return (!F.t||(F.t==='ot'?i<39:i>=39))&&(!F.b||bk===F.b); };
   /* notes */
@@ -6689,14 +6693,14 @@ function _sr2(q,keep){
   const loose=new Set([ver,'KJV']);
   const hits=new Map();
   if(!ref&&nq) vers.forEach(vv=>{ const idx=_sr2Index(vv)||[]; const L=loose.has(vv)&&!exactOnly;
-    for(const e of idx){ const sc=e.n.indexOf(P)>=0?1000:(L?scoreW(e.n):0); if(!sc) continue;
-    const k=e.bk+'|'+e.ch+'|'+e.v; let h=hits.get(k); if(!h){ h={bk:e.bk,ch:e.ch,v:e.v,o:e.o,sc,vs:[],ex:[]}; hits.set(k,h); } if(sc>h.sc) h.sc=sc; h.vs.push(vv); if(sc>=1000) h.ex.push(vv); } });
+    for(const e of idx){ const sc=e.n.indexOf(P)>=0?1000:(pre&&e.n.indexOf(P1)>=0)?999:(L?scoreW(e.n):0); if(!sc) continue;
+    const k=e.bk+'|'+e.ch+'|'+e.v; let h=hits.get(k); if(!h){ h={bk:e.bk,ch:e.ch,v:e.v,o:e.o,sc,vs:[],ex:[]}; hits.set(k,h); } if(sc>h.sc) h.sc=sc; h.vs.push(vv); if(sc>=999) h.ex.push(vv); } });
   const all=[...hits.values()].sort((a,b)=>{ const ta=a.sc>=1000, tb=b.sc>=1000; if(ta!==tb) return ta?-1:1; if(ta) return a.o-b.o; return (b.sc-a.sc)||(a.o-b.o); });
   const byT=all.filter(h=>!F.t||(F.t==='ot'?Math.floor(h.o/1e6)<39:Math.floor(h.o/1e6)>=39));
   const scrip=byT.filter(h=>!F.b||h.bk===F.b);
   const commF=comm.filter(r=>inF(r.bk));
   /* highlight the whole phrase where it appears, otherwise the words */
-  const pRx=nq?new RegExp('\\b'+nq.split(' ').join('[^A-Za-z0-9]+')+'\\b','i'):null;
+  const pRx=nq?new RegExp('\\b'+nq.split(' ').join('[^A-Za-z0-9]+')+(pre?'[A-Za-z0-9]*':'')+'\\b','i'):null;
   const wl=[].concat(...alts).filter(w=>w.length>1);
   const hlw=(t,max)=>{ t=String(t||''); let m=pRx&&t.match(pRx); let i=m?m.index:-1;
     if(i<0&&wl.length){ const lt=t.toLowerCase(); for(const w of wl){ const j=lt.indexOf(w); if(j>=0&&(i<0||j<i)) i=j; } }
