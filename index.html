@@ -1752,7 +1752,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.97', date:'3 Nov 2026'};
+const BUILD={v:'1.2.98', date:'3 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -4289,7 +4289,7 @@ function editRefined(name,ch,v,i,btn){
   _lastAuto=null; updateSpellStrip(document.getElementById('edText'));
   _edLoadColour();
   document.getElementById('overlay').classList.add('show'); _edFoot();
-  setTimeout(()=>document.getElementById('edText').focus(),50); }
+  _edFocus(); }
 function _saveRefEdit(text){
   const {book,ch,v,ref,base}=editing;
   const all=_refEdits();
@@ -4848,6 +4848,11 @@ function nextChapter(){ const nch=window.BOOKS[state.book].chapters.length;
   savePrefs(); renderRead(); }
 
 /* ---------- Editor ---------- */
+/* 1.2.98: focus the box inside the tap itself — the iPhone only raises the keyboard then; cursor at the end of your words */
+function _edFocus(){ const f=()=>{ try{ const t=document.getElementById('edText'); if(!t||!document.getElementById('overlay').classList.contains('show')) return;
+    if(document.activeElement!==t){ t.focus({preventScroll:true}); const n=t.value.length; t.setSelectionRange(n,n); } }catch(e){} };
+  if(document.body.classList.contains('legacy')){ setTimeout(()=>document.getElementById('edText').focus(),50); return; }
+  f(); setTimeout(f,50); }
 function openEditor(name,ch,v){
   _ilRetire(null);
   closeSelMenu&&closeSelMenu(); closeVerseMenu&&closeVerseMenu();
@@ -4860,7 +4865,7 @@ function openEditor(name,ch,v){
   _lastAuto=null; updateSpellStrip(document.getElementById('edText'));
   _edLoadColour();
   document.getElementById('overlay').classList.add('show'); _edFoot();
-  setTimeout(()=>document.getElementById('edText').focus(),50);
+  _edFocus();
 }
 /* Opening the big editor: an in-place editor that is still open is put away first — its words are saved
    (or carried into the big box when it is the same note) and it is closed, so a later redraw cannot
@@ -4881,7 +4886,7 @@ function editNote(name,ch,v,id,liveText){
   _lastAuto=null; updateSpellStrip(document.getElementById('edText'));
   _edLoadColour();
   document.getElementById('overlay').classList.add('show'); _edFoot();
-  setTimeout(()=>document.getElementById('edText').focus(),50);
+  _edFocus();
 }
 function showVerseInEditor(name,ch,v){
   const el=document.getElementById('edVerse');
