@@ -1736,7 +1736,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.94', date:'3 Nov 2026'};
+const BUILD={v:'1.2.95', date:'3 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -4147,6 +4147,31 @@ function _tripleNew(name,ch,v){
   try{ const s=window.getSelection(); if(s&&s.removeAllRanges) s.removeAllRanges(); }catch(e){}
   toggleVerse(v);                                            // undo what the double-click just did
   openEditor(name,ch,v); }
+/* 1.2.95: a verse tapped in the chapter above/below — that chapter becomes the one you are in (the page does not move) */
+function _adopt(row){ try{ if(!row||!row.classList.contains('cn-v')) return row; const blk=row.closest('.contnext'); if(!blk||state.view!=='read') return null;
+  const r=document.getElementById('reader'), v=+row.dataset.pv, off=row.getBoundingClientRect().top-r.getBoundingClientRect().top, hid=document.body.classList.contains('chrome-off');
+  if(state.plan){ const k=blk.id==='contNext'?state.plan.ci+1:+blk.dataset.ci; if(!(k>=0)||k===state.plan.ci) return null; const day=state.plan.day;
+    if(k>state.plan.ci) for(let j=state.plan.ci;j<k;j++) _markPlanChapterRead(day,j);
+    planRead(day,k); }
+  else { let to=null; if(blk.id==='contNext'){ const T=_sideTarget(1); if(T&&T.kind==='ch') to={b:T.b,c:T.c}; } else if(blk.dataset.b) to={b:blk.dataset.b,c:+blk.dataset.c};
+    if(!to) return null; const bi=window.BOOKS.findIndex(x=>x.name===to.b); if(bi<0) return null;
+    state.book=bi; state.chapter=to.c; savePrefs(); renderRead(); }
+  const el=document.getElementById('v'+v); if(!el) return null;
+  r.scrollTop+=el.getBoundingClientRect().top-r.getBoundingClientRect().top-off;
+  if(hid) _chromeOff(true); try{ _scLast=r.scrollTop; _scHold=Date.now(); }catch(e){}
+  window._adoptHold=true;   /* a tap is not scrolling: the chapter at the top must not take you back until you scroll again */
+  return el; }catch(e){ return null; } }
+/* the verse of the chapter above/below under a finger or pointer (that copy ignores touches, so it is found by position) */
+function _cnAt(x,y){ try{ if(document.body.classList.contains('legacy')||state.view!=='read') return null;
+  for(const v of document.querySelectorAll('#reader .contnext .cn-v')){ const r=v.getBoundingClientRect(); if(y>=r.top&&y<r.bottom&&x>=r.left&&x<r.right) return v; } }catch(e){} return null; }
+(function(){ const rd=document.getElementById('reader'); if(!rd) return;   /* Mac / PC: a click on such a verse */
+  rd.addEventListener('click',e=>{ if(IS_TOUCH||document.body.classList.contains('legacy')) return; const t=e.target;
+    if(t.closest&&t.closest('.verse,.note,.notewrap,.about-ch,a,button,select,input,textarea,.vmenu,.selbar')) return;
+    const row=_cnAt(e.clientX,e.clientY); if(!row||VSEL.on) return;
+    try{ const sel=window.getSelection(); if(sel&&String(sel).length) return; }catch(err){}
+    if(document.getElementById('vmenu')||document.getElementById('selmenu')){ closeVerseMenu(); if(typeof closeSelMenu==='function') closeSelMenu(); return; }
+    const el=_adopt(row); if(el) vTap({target:el,currentTarget:el,shiftKey:false},window.BOOKS[state.book].name,state.chapter,+el.dataset.v); });
+  const go=()=>{ window._adoptHold=false; }; rd.addEventListener('touchmove',go,{passive:true}); rd.addEventListener('wheel',go,{passive:true}); window.addEventListener('keydown',go); })();
 function vTap(ev,name,ch,v){
   if(IS_TOUCH) return;                                     // touch has its own tap controller
   window._tapVer=_colVer(ev.target);
@@ -5827,11 +5852,12 @@ document.addEventListener('mousedown',e=>{ window._vPoint={x:e.clientX,y:e.clien
     window._lpFired=false; clearTimeout(window._lpT);
     const tg=e.target;
     if(tg.closest&&tg.closest('.vn,.cmark,.vmenu-btn,.corrlink,a,button,select,input,textarea,.note,.notewrap,.vmenu,.copypop,.selbar')) return;
-    const row=tg.closest&&tg.closest('.verse'); if(!row||!row.dataset.v) return;
+    const row=(tg.closest&&tg.closest('.verse'))||(t&&!(tg.closest&&tg.closest('.about-ch'))?_cnAt(t.clientX,t.clientY):null); if(!row||!(row.dataset.v||row.classList.contains('cn-v'))) return;
     if(state.view!=='read') return;
-    const lv=+row.dataset.v;
+    let lv=+row.dataset.v;
     window._lpT=setTimeout(()=>{
       if(window._tMoved) return;
+      if(!lv){ if(VSEL.on||window._menuWasOpen) return; const el=_adopt(row); if(!el) return; lv=+el.dataset.v; }   /* 1.2.95 */
       window._lpFired=true;
       try{ const sl=window.getSelection(); if(sl) sl.removeAllRanges(); }catch(err){}
       window._noSelUntil=Date.now()+1500;
@@ -5855,7 +5881,12 @@ document.addEventListener('mousedown',e=>{ window._vPoint={x:e.clientX,y:e.clien
         if(dt.has&&!VSEL.on&&document.body.classList.contains('legacy')) _tripleNew(dt.name,dt.ch,dt.v); return; } }
     const t=e.target;
     if(t.closest&&t.closest('.vn,.cmark,.vmenu-btn,.corrlink,a,button,select,input,textarea,.note,.notewrap,.vmenu,.copypop')) return;
-    const row=t.closest&&t.closest('.verse,.cmprow'); if(!row||!row.dataset.v) return;
+    let row=(t.closest&&t.closest('.verse,.cmprow'))||(ct&&!(t.closest&&t.closest('.about-ch'))?_cnAt(ct.clientX,ct.clientY):null);
+    if(row&&!row.dataset.v&&row.classList.contains('cn-v')&&state.view==='read'&&!VSEL.on){   /* 1.2.95: the chapter above/below */
+      if(window._menuWasOpen){ closeVerseMenu(); if(typeof closeSelMenu==='function') closeSelMenu(); return; }
+      if(String(window.getSelection&&window.getSelection()||'').length) return;
+      row=_adopt(row); }
+    if(!row||!row.dataset.v) return;
     if(state.view!=='read') return;
     window._tapVer=_colVer(t);
     const name=window.BOOKS[state.book].name, ch=state.chapter, v=+row.dataset.v;
@@ -6136,7 +6167,7 @@ function _daySwap(){ if(!_dayOn()) return _bibleSwap(); if(!_flowUser()) return 
 }catch(e){} return true; }
 /* only YOUR scrolling moves you into another chapter — never the page settling while it is drawn (1.2.86) */
 let _flowUserT=0, _flowTouch=false;
-function _flowUser(){ return !_flowTouch&&Date.now()-_flowUserT<6000; }   /* never while a finger is still on the screen */
+function _flowUser(){ return !window._adoptHold&&!_flowTouch&&Date.now()-_flowUserT<6000; }   /* never while a finger is still on the screen */
 (function(){ const r=document.getElementById('reader'); if(!r) return; const mark=()=>{ _flowUserT=Date.now(); };
   ['touchstart','wheel','mousedown'].forEach(ev=>r.addEventListener(ev,mark,{passive:true}));
   r.addEventListener('touchstart',()=>{ _flowTouch=true; },{passive:true});
