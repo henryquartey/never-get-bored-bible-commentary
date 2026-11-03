@@ -1736,7 +1736,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.93', date:'2 Nov 2026'};
+const BUILD={v:'1.2.94', date:'3 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2042,9 +2042,13 @@ function _kjvPart(book){ try{
   const sc=document.createElement('script'); sc.src='data/kjv/'+book.replace(/[^A-Za-z0-9]+/g,'_')+'.js';
   sc.onload=()=>{ delete _kjvPartLoading[book];
     if(!(window.BIBLE&&window.BIBLE.KJV)&&state.view==='read'&&state.version==='KJV'&&(window.BOOKS[state.book]||{}).name===book) renderRead();
-    else if(state.view==='read'){ try{ _bibleFlow(true); }catch(e){} } };
+    else if(state.view==='read'){ try{ if(_dayOn()) _dayFlow(); else _bibleFlow(true); }catch(e){} } };
   sc.onerror=()=>{ delete _kjvPartLoading[book]; sc.remove(); };
   document.head.appendChild(sc); }catch(e){} }
+/* 1.2.94: the chapter's own KJV book is enough to draw it now; the whole Bible keeps arriving in the background */
+function _ensureRead(){ try{ if(state.version==='KJV'&&!(window.BIBLE&&window.BIBLE.KJV)&&!document.body.classList.contains('legacy')&&!state.compare){
+    const nm=(window.BOOKS[state.book]||{}).name; if(nm&&window.KJV_PART&&window.KJV_PART[nm]){ ensureVersion('KJV',()=>{}); return renderRead(); } } }catch(e){}
+  ensureVersion(state.version, renderRead); }
 function ensureVersion(v,cb,book,ch){
   if(v==='KJV'&&!(window.BIBLE&&window.BIBLE.KJV)&&state.view==='read') _kjvPart(book||(window.BOOKS[state.book]||{}).name);
   if(ONLINE_VERSIONS[v]){ window.BIBLE[v]=window.BIBLE[v]||{}; const b=book||(window.BOOKS[state.book]||{}).name, c=ch||state.chapter; if(!b) return cb();
@@ -2172,7 +2176,7 @@ function render(){
   if(state.view==='you') return renderYou();
   if(state.view==='explore') return renderExplore();
   if(state.view==='search'&&!document.body.classList.contains('legacy')){ const sb=document.getElementById('search'); return (sb&&sb.value.trim().length>=2)?_sr2Again():_srEmpty(); }
-  ensureVersion(state.version, renderRead);
+  _ensureRead();
 }
 /* ---------- Chronological reading plan ---------- */
 function isLeap(y){ return (y%4===0&&y%100!==0)||y%400===0; }
@@ -2337,7 +2341,7 @@ function renderPlan(){
 /* open a chapter as a normal (whole-Bible) read */
 function openChapter(book,ch){ const bi=window.BOOKS.findIndex(b=>b.name===book); if(bi<0)return;
   state.plan=null; state.book=bi; state.chapter=ch; state.view='read'; setViewTabs(); savePrefs();
-  ensureVersion(state.version, renderRead); toggleSidebar(false); }
+  _ensureRead(); toggleSidebar(false); }
 /* read a chapter WITHIN the plan — scoped to the day, stays in the plan.
    NOTE: opening a chapter does NOT mark it read. It's ticked only when you move on (Next) or tick the circle. */
 function planRead(day,ci){ const C=getPlan(); const rd=C[day]; if(!rd)return; const chaps=readingChapters(rd);
@@ -2345,7 +2349,7 @@ function planRead(day,ci){ const C=getPlan(); const rd=C[day]; if(!rd)return; co
   ci=Math.max(0,Math.min(chaps.length-1,ci));
   const [b,c]=chaps[ci]; const bi=window.BOOKS.findIndex(x=>x.name===b); if(bi<0)return;
   state.plan={day:day,ci:ci}; planResume={day:day,ci:ci}; planSel=day; _planPicked=true; state.book=bi; state.chapter=c; state.view='read'; setViewTabs(); savePrefs();
-  ensureVersion(state.version, renderRead); toggleSidebar(false);
+  _ensureRead(); toggleSidebar(false);
 }
 function _markPlanChapterRead(day,ci){ const C=getPlan(); const chaps=readingChapters(C[day]); const cc=chaps[ci];
   if(cc){ const d=chDone(); d[cc[0]+' '+cc[1]]=true; saveChDone(d); } }
@@ -6049,7 +6053,8 @@ function _pullGo(){ try{ const T=(window._dayPrevT&&state.plan&&state.plan.ci>0&
     acc+=-e.deltaY; _pullShow(Math.min(acc/2.6,150),true); clearTimeout(t); t=setTimeout(()=>{ acc=0; _pullShow(0,true); },300);
     if(acc>330){ acc=0; fresh=false; lock=now+1200; clearTimeout(t); _pullShow(0,true); _pullGo(); } },{passive:true});
 })();
-function _pushOk(){ return _lookB()&&!!state.plan&&(typeof _contOn!=='function'||_contOn())&&state.view==='read'&&!state.compare
+const _PUSH_NEXT=false;   /* 1.2.94: Release for Next is off — set true to have it back */
+function _pushOk(){ return _PUSH_NEXT&&_lookB()&&!!state.plan&&(typeof _contOn!=='function'||_contOn())&&state.view==='read'&&!state.compare
   &&!(typeof VSEL!=='undefined'&&VSEL.on)&&!document.querySelector('textarea.inline-ed')&&!!document.getElementById('contNext'); }
 function _pushShow(on){ const h=document.querySelector('#contNext .cn-head'); const sp=h&&h.querySelector('span'); if(!sp) return;
   if(!sp.dataset.t) sp.dataset.t=sp.textContent;
@@ -6075,19 +6080,27 @@ function _pushGo(){ try{ const T=(typeof _contTarget==='function')?_contTarget()
 })();
 /* ---------- A plan day as one scroll (1.2.85) ---------- */
 function _dayOn(){ return _lookB()&&!!state.plan&&state.view==='read'&&!state.compare&&(typeof _contOn!=='function'||_contOn()); }
+/* 1.2.94: the page already shows the chapter from its own book — just add anything that was still missing */
+function _quietFill(){ try{ if(document.body.classList.contains('legacy')||state.view!=='read'||state.version!=='KJV'||state.compare) return false;
+  const r=document.getElementById('reader'); if(!r||!r.querySelector('.page .verse')) return false;
+  if(_dayOn()){ _dayFlow(); return true; } if(_bibleOn()){ _bibleFlow(true); return true; } }catch(e){} return false; }
 function _dayLine(k,n){ const td=(typeof todayIdx==='function')&&todayIdx()===state.plan.day; return (td?'Today':'Day '+(state.plan.day+1))+(n>1?' · '+(k+1)+' of '+n:''); }
-function _dayFlow(){ try{ window._dayPrevT=null;
-  const r=document.getElementById('reader'), pg=r&&r.querySelector('.page'); if(!pg||!_dayOn()) return;
+function _dayFlow(){ try{
+  const r=document.getElementById('reader'), pg=r&&r.querySelector('.page'); if(!pg||!pg.querySelector('.dayprev')) window._dayPrevT=null; if(!pg||!_dayOn()) return;
   const C=getPlan(), day=state.plan.day, chaps=readingChapters(C[day]), n=chaps.length, ci=state.plan.ci;
-  /* below: the rest of the day after the next chapter (#contNext) */
-  const cn=document.getElementById('contNext');
-  if(cn){ let after=cn; for(let k=ci+2;k<n;k++){ const [b,c]=chaps[k]; if(!_chapText(b,c)) break;
+  /* 1.2.94: every book the day needs is fetched now, so a chapter from another book (Psalms → John) is ready before you reach it */
+  if(state.version==='KJV'&&!(window.BIBLE&&window.BIBLE.KJV)) chaps.forEach(x=>_kjvPart(x[0]));
+  /* below: the rest of the day after the next chapter (#contNext) — run again, it only adds what is missing (1.2.94) */
+  let cn=document.getElementById('contNext');
+  if(!cn&&ci+1<n&&_chapText(chaps[ci+1][0],chaps[ci+1][1])){ _contAppend(); cn=document.getElementById('contNext'); }
+  if(cn){ let after=cn; for(let k=ci+2;k<n;k++){ const have=pg.querySelector('.dayblk:not(.dayprev)[data-ci="'+k+'"]'); if(have){ after=have; continue; }
+      const [b,c]=chaps[k]; if(!_chapText(b,c)) break;
       after.insertAdjacentHTML('afterend',`<div class="contnext dayblk" data-ci="${k}" aria-hidden="true"><div class="cn-head"><span>Next · ${k+1} of ${n} · ${escHTML(b+' '+c)}</span></div><div class="cn-title">${escHTML(b+' '+c)}</div>${_aboutHTML(b,c)}${_chapPreviewHTML(b,c,0,true)}</div>`);
       after=after.nextElementSibling; after.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id')); } }
   let last=cn?ci+1:ci; pg.querySelectorAll('.dayblk').forEach(b=>{ last=Math.max(last,+b.dataset.ci); });
-  if(last===n-1) pg.insertAdjacentHTML('beforeend',`<div class="day-end" id="dayEnd"><button type="button" class="de-btn" onclick="_dayFinish()"><span>Finish Day ${day+1} ✓</span></button><div class="de-hint">Push up past here, or tap, to finish</div></div>`);
+  if(last===n-1&&!document.getElementById('dayEnd')) pg.insertAdjacentHTML('beforeend',`<div class="day-end" id="dayEnd"><button type="button" class="de-btn" onclick="_dayFinish()"><span>Finish Day ${day+1} ✓</span></button><div class="de-hint">Push up past here, or tap, to finish</div></div>`);
   /* above: the day's earlier chapters, with the page kept where it was */
-  if(ci>0){ for(let k=0;k<ci;k++){ const [b,c]=chaps[k]; if(!_chapText(b,c)) return; }
+  if(ci>0&&!pg.querySelector('.dayprev')){ for(let k=0;k<ci;k++){ const [b,c]=chaps[k]; if(!_chapText(b,c)) return; }
     const mid=pg.querySelector('.gap-rest'), ref=mid||pg.firstElementChild, before=ref.getBoundingClientRect().top;
     const sv=state.plan.ci; state.plan.ci=0; const P0=_gapInfo(-1), T0=_sideTarget(-1); state.plan.ci=sv;
     const l0=_dayLine(0,n), prev0=P0?'↑ '+P0.main+(P0.sub?' · '+P0.sub:''):'';
@@ -7672,7 +7685,7 @@ try{ init(); } finally { window._bootDone&&window._bootDone(); }
 _syncThemeColor();
 try{ if(state.version==='KJV'&&state.view==='read') _kjvPart((window.BOOKS[state.book]||{}).name); }catch(e){}
 window.addEventListener('load',()=>{ setTimeout(()=>{
-  ensureVersion(state.version,()=>{ if(state.view==='read'||state.view==='home'||state.view==='explore') render(); });
+  ensureVersion(state.version,()=>{ if(_quietFill()) return; if(state.view==='read'||state.view==='home'||state.view==='explore') render(); });
   const d=document.createElement('script'); d.src='data/dict.js';
   d.onload=()=>{ _DICT=null; }; document.head.appendChild(d);
   if(!document.body.classList.contains('legacy')) _d2Load();               /* the bigger word list, new UI (25 Oct 2026) */
