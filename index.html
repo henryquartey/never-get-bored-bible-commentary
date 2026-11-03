@@ -449,6 +449,24 @@ body:not(.legacy) .overlay.kb .modal .mh{padding:12px 18px 6px}
 body:not(.legacy) .overlay.kb .modal .mh .vtext{max-height:62px}
 body:not(.legacy) .overlay.kb .modal textarea{min-height:96px}
 body:not(.legacy) .overlay.kb .modal .mf{padding:10px 18px;margin-top:8px}
+/* 1.2.99: on a phone the note is its own full screen — nothing behind it shows or moves */
+@media (max-width:640px){
+ html body:not(.legacy) #overlay{padding:0;align-items:stretch;justify-content:stretch;background:var(--bg);overscroll-behavior:contain;z-index:400}
+ body:not(.legacy) #overlay .modal{max-width:none;width:100%;height:100%;max-height:none;border-radius:0;box-shadow:none;background:var(--bg)}
+ body:not(.legacy) #overlay .modal .mf{order:-1;margin-top:0;border-top:0;border-bottom:1px solid var(--line);padding:calc(env(safe-area-inset-top,0px) + 8px) 14px 8px;gap:6px}
+ body:not(.legacy) #overlay.kb .modal .mf{padding:8px 14px}
+ body:not(.legacy) #overlay .modal .mh{padding:12px 16px 4px}
+ body:not(.legacy) #overlay .modal h3{font-size:18px}
+ body:not(.legacy) #overlay .modal .mh .vtext{max-height:84px;background:var(--panel);margin-top:6px}
+ body:not(.legacy) #overlay.kb .modal .mh{padding:8px 16px 2px}
+ body:not(.legacy) #overlay.kb .modal .mh .vtext{max-height:52px}
+ body:not(.legacy) #overlay .modal .mb{display:flex;flex-direction:column;padding:6px 16px calc(env(safe-area-inset-bottom,0px) + 10px);overscroll-behavior:contain}
+ body:not(.legacy) #overlay.kb .modal .mb{padding-bottom:6px}
+ body:not(.legacy) #overlay .modal textarea{flex:1 1 auto;min-height:120px;resize:none;background:var(--panel)}
+ body:not(.legacy) #overlay.kb .modal textarea{min-height:72px}
+ body:not(.legacy) #overlay.kb .ed-opts .ed-hint{display:none}
+ body:not(.legacy):has(#overlay.show) #reader{overflow:hidden}
+}
 body:not(.legacy) #overlay .mf #edDelete{order:1}
 body:not(.legacy) #overlay .mf #edCancel{order:2;padding-left:4px}
 body:not(.legacy) #overlay .mf #edStatus{order:3;margin-left:auto!important;margin-right:6px!important;padding-left:0!important}
@@ -1752,7 +1770,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.98', date:'3 Nov 2026'};
+const BUILD={v:'1.2.99', date:'3 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -5311,6 +5329,13 @@ function _predPick(btn){ const bar=btn.parentElement, ta=bar&&bar._ta; if(!ta) r
   const w=btn.textContent, v=ta.value; const after=v.slice(ctx.caret); const sp=/^\s/.test(after)?'':' ';
   ta.value=v.slice(0,ctx.start)+w+sp+after; const pos=ctx.start+w.length+sp.length; ta.focus(); ta.setSelectionRange(pos,pos);
   ta.dispatchEvent(new Event('input',{bubbles:true})); _predUpdate(ta); }
+/* 1.2.99: in the full-screen note, a drag only moves what can really scroll (your words, the strip) — never the screen itself */
+(function(){ const ov=document.getElementById('overlay'); if(!ov) return;
+  ov.addEventListener('touchmove',e=>{ try{ if(document.body.classList.contains('legacy')||!window.matchMedia('(max-width:640px)').matches) return;
+    for(let el=e.target; el&&el!==ov; el=el.parentElement){ const cs=getComputedStyle(el);
+      if(/(auto|scroll)/.test(cs.overflowY)&&el.scrollHeight>el.clientHeight+1) return;
+      if(/(auto|scroll)/.test(cs.overflowX)&&el.scrollWidth>el.clientWidth+1) return; }
+    e.preventDefault(); }catch(x){} },{passive:false}); })();
 function _kbFit(){ try{ const ov=document.getElementById('overlay'), vv=window.visualViewport; if(!ov||!vv) return;
   const clear=()=>{ if(ov.classList.contains('kb')){ ov.classList.remove('kb'); ov.style.top=ov.style.height=ov.style.bottom=''; } };
   const legacy=document.body.classList.contains('legacy'), kb=window.innerHeight-vv.height>120, a=document.activeElement;
