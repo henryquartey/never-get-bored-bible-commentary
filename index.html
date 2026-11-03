@@ -442,6 +442,17 @@ body:not(.legacy) .il-row2 .inline-hint{display:block;line-height:34px;padding-l
 body:not(.legacy) .il-row2 .predbar.on + .inline-hint{visibility:hidden}
 body:not(.legacy) .modal .mf .btn.ed-quiet{white-space:nowrap;background:transparent;border-color:transparent;color:var(--soft);padding-left:10px;padding-right:10px}
 body:not(.legacy) .modal .mf .btn.ed-quiet:hover{color:var(--ink)}
+body:not(.legacy) #overlay .mf{align-items:center}
+body:not(.legacy) .overlay.kb{align-items:flex-start;padding:8px 10px}
+body:not(.legacy) .overlay.kb .modal{max-height:100%}
+body:not(.legacy) .overlay.kb .modal .mh{padding:12px 18px 6px}
+body:not(.legacy) .overlay.kb .modal .mh .vtext{max-height:62px}
+body:not(.legacy) .overlay.kb .modal textarea{min-height:96px}
+body:not(.legacy) .overlay.kb .modal .mf{padding:10px 18px;margin-top:8px}
+body:not(.legacy) #overlay .mf #edDelete{order:1}
+body:not(.legacy) #overlay .mf #edCancel{order:2;padding-left:4px}
+body:not(.legacy) #overlay .mf #edStatus{order:3;margin-left:auto!important;margin-right:6px!important;padding-left:0!important}
+body:not(.legacy) #overlay .mf #edSave{order:4}
 body:not(.legacy) .inline-bar .btn.il-undo{white-space:nowrap;background:transparent;border-color:transparent;color:var(--soft)}
 body:not(.legacy) .inline-bar.il-tidy{flex-wrap:nowrap;margin-top:2px;gap:8px}
 body:not(.legacy) .inline-bar.il-tidy .il-sp{flex:1}
@@ -1741,7 +1752,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.96', date:'3 Nov 2026'};
+const BUILD={v:'1.2.97', date:'3 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -4995,6 +5006,7 @@ function inlineEditNote(el,name,ch,v,id){
     const done=bar.querySelector('.btn.primary'), cancel=bar.querySelector('.btn:not(.primary)');
     const sp=document.createElement('span'); sp.className='il-sp'; bar.appendChild(sp); bar.appendChild(cancel); bar.appendChild(done);
     cancel.classList.add('il-undo'); cancel.textContent='Undo'; cancel.style.display='none';   /* 1.2.96 */
+    sp.before(cancel);   /* 1.2.97: Undo on the left, away from Done */
     if(cols) bar.prepend(cols); bar.classList.add('il-tidy');
     /* the note body keeps line breaks (pre-wrap), so the blank lines between these parts showed as an empty band */
     [...el.childNodes].forEach(n=>{ if(n.nodeType===3&&!n.textContent.trim()) n.remove(); }); }catch(e){} }
@@ -5256,6 +5268,7 @@ function _pmContext(ta){ const v=ta.value, c=ta.selectionStart; if(c!==ta.select
 /* ---- emoji ideas (1.2.96): for the word just typed — the ones YOU have used after it first, then a hand-picked list. Never put in for you. ---- */
 const _EMO={'god':'🙏 ✨','lord':'🙏 👑','jesus':'✝️ ❤️','christ':'✝️','cross':'✝️','spirit':'🕊️ 🔥','holy':'🕊️ ✨','dove':'🕊️','pray':'🙏','prayer':'🙏','prayed':'🙏','praying':'🙏','praise':'🙌 🎶','worship':'🙌','thank':'🙏','thanks':'🙏','thankful':'🙏','grateful':'🙏','amen':'🙏','hallelujah':'🙌','glory':'✨ 🙌','blessed':'🙌','bless':'🙌','blessing':'🎁 🙌','faith':'🙏 ✨','believe':'🙏','trust':'🤝','hope':'🌅','grace':'🤍 ✨','mercy':'🤍','forgive':'🤍','forgiven':'🤍','forgiveness':'🤍','salvation':'✝️','saved':'🙌','save':'🛟','saviour':'✝️','savior':'✝️','redeemed':'🙌','gospel':'📖','heaven':'☁️ ✨','heavens':'🌌','angel':'👼','angels':'👼','devil':'😈','satan':'😈','evil':'😈','demon':'😈','hell':'🔥','sin':'😔','sins':'😔','repent':'😔','church':'⛪','temple':'🏛️','altar':'🔥','sacrifice':'🩸','blood':'🩸','covenant':'🤝','promise':'🤝','miracle':'✨','resurrection':'🌅','risen':'🌅','rise':'🌅','eternal':'♾️','eternity':'♾️','forever':'♾️','light':'💡 ☀️','darkness':'🌑','dark':'🌑','death':'☠️','dead':'☠️','die':'☠️','died':'☠️','life':'🌱 ❤️','live':'🌱','living':'🌱','alive':'🌱','born':'👶','birth':'👶','grave':'⚰️','tomb':'🪨','love':'❤️','loved':'❤️','loves':'❤️','heart':'❤️','joy':'😊 🎉','happy':'😊','glad':'😊','smile':'😊','laugh':'😂','funny':'😂','peace':'🕊️','fear':'😨','afraid':'😨','scared':'😨','worry':'😟','anxious':'😟','sad':'😢','sorrow':'😢','cry':'😢','tears':'😢','weep':'😢','wept':'😢','grief':'💔','broken':'💔','pain':'💔','angry':'😠','anger':'😠','wrath':'🔥','jealous':'😒','proud':'😤','pride':'😤','humble':'🙇','shame':'😳','wow':'😮','amazing':'🤩','beautiful':'😍','wonderful':'🤩','awesome':'🤩','surprise':'😮','tired':'😴','sleep':'😴','rest':'😌','calm':'😌','lonely':'🥺','think':'🤔','why':'🤔','question':'❓','wonder':'🤔','idea':'💡','mind':'🧠','know':'🧠','knowledge':'🧠','wisdom':'🦉 💡','wise':'🦉','fool':'🤡','foolish':'🤡','truth':'✅','true':'✅','lie':'🤥','lies':'🤥','liar':'🤥','good':'👍','bad':'👎','right':'✅','wrong':'❌','yes':'✅','no':'❌','celebrate':'🎉','party':'🎉','feast':'🍽️','world':'🌍','earth':'🌍','universe':'🌌','creation':'🌍 ✨','created':'✨','create':'✨','sun':'☀️','moon':'🌙','star':'⭐','stars':'✨','sky':'🌤️','cloud':'☁️','clouds':'☁️','rain':'🌧️','storm':'⛈️','thunder':'⛈️','lightning':'⚡','wind':'🌬️','fire':'🔥','water':'💧','waters':'🌊','sea':'🌊','ocean':'🌊','river':'🌊','flood':'🌊','rock':'🪨','stone':'🪨','mountain':'⛰️','mountains':'⛰️','hill':'⛰️','desert':'🏜️','wilderness':'🏜️','garden':'🌿','tree':'🌳','trees':'🌳','seed':'🌱','grow':'🌱','growth':'🌱','fruit':'🍇','vine':'🍇','harvest':'🌾','field':'🌾','flower':'🌸','morning':'🌅','evening':'🌇','night':'🌙','day':'☀️','time':'⏳','wait':'⏳','waiting':'⏳','season':'🍂','sheep':'🐑','lamb':'🐑','shepherd':'🐑','lion':'🦁','serpent':'🐍','snake':'🐍','eagle':'🦅','fish':'🐟','fishes':'🐟','bird':'🐦','birds':'🐦','donkey':'🫏','ass':'🫏','horse':'🐎','ox':'🐂','goat':'🐐','dog':'🐕','dogs':'🐕','wolf':'🐺','bread':'🍞','wine':'🍷','food':'🍞','eat':'🍽️','drink':'🥤','milk':'🥛','honey':'🍯','oil':'🫒','salt':'🧂','meat':'🍖','hungry':'😋','hunger':'🍞','thirst':'💧','thirsty':'💧','man':'👨','men':'👥','woman':'👩','women':'👥','people':'👥','mankind':'👥','humanity':'👥','child':'👶','children':'👧 👦','baby':'👶','son':'👦','daughter':'👧','mother':'👩','father':'👨','family':'👨‍👩‍👧','brother':'🤝','sister':'🤝','friend':'🤝','friends':'🤝','wife':'💍','husband':'💍','marriage':'💍','married':'💍','king':'👑','queen':'👑','kingdom':'👑','crown':'👑','prophet':'📜','priest':'🙏','teacher':'🧑‍🏫','disciples':'👥','apostle':'📜','servant':'🤲','eye':'👀','eyes':'👀','see':'👀','saw':'👀','look':'👀','ear':'👂','hear':'👂','heard':'👂','listen':'👂','mouth':'👄','speak':'🗣️','spoke':'🗣️','spoken':'🗣️','voice':'🗣️','say':'🗣️','said':'🗣️','hand':'✋','hands':'🙌','feet':'👣','walk':'🚶','run':'🏃','strength':'💪','strong':'💪','mighty':'💪','power':'⚡','powerful':'⚡','weak':'🥀','word':'📖','words':'📖','scripture':'📖','bible':'📖','book':'📖','law':'📜','write':'✍️','wrote':'✍️','written':'✍️','sword':'⚔️','war':'⚔️','battle':'⚔️','fight':'⚔️','enemy':'⚔️','shield':'🛡️','armour':'🛡️','armor':'🛡️','victory':'🏆','win':'🏆','gold':'🪙','silver':'🪙','money':'💰','rich':'💰','riches':'💰','wealth':'💰','poor':'🤲','gift':'🎁','house':'🏠','home':'🏠','door':'🚪','key':'🔑','gate':'🚪','city':'🏙️','road':'🛤️','way':'🛤️','journey':'🛤️','path':'🛤️','ship':'⛵','boat':'⛵','music':'🎶','song':'🎶','sing':'🎶','singing':'🎶','dance':'💃','trumpet':'🎺','harp':'🎶','build':'🏗️','foundation':'🧱','work':'💼','job':'💼','school':'🎓','learn':'📚','study':'📚','phone':'📱'};
 let _EMOL=null;
+const _EMOSTOP=new Set("a an the and or but if so of to in on at by for from with into onto upon as is am are was were be been being it its it's this that these those there here then than i me my mine we us our you your yours he him his she her they them their who whom which what when where how just also very really too not no nor do does did done have has had will would shall should can could may might must let get got all any some each every one ones such own same other more most much many few only even still yet again ever never always now".split(' '));
 const _EMORX=/\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic}|\p{Emoji_Modifier})*/gu;
 function _emoLearn(){ const L=new Map(); try{ for(const bk in DATA)for(const c in DATA[bk])for(const v in DATA[bk][c])(DATA[bk][c][v]||[]).forEach(nt=>{ const t=nt&&nt.text; if(!t||!/\p{Extended_Pictographic}/u.test(t)) return;
     let m; _EMORX.lastIndex=0; while((m=_EMORX.exec(t))){ const w=t.slice(Math.max(0,m.index-30),m.index).match(/([A-Za-z][A-Za-z'’]*)[^A-Za-z.!?\n]{0,3}$/); if(!w) continue;
@@ -5264,8 +5277,9 @@ function _emoForms(w){ const f=[w]; const add=x=>{ if(x&&x.length>2&&!f.includes
   add(w.replace(/'s$/,'')); add(w.replace(/s$/,'')); add(w.replace(/es$/,'')); add(w.replace(/ed$/,'')); add(w.replace(/d$/,'')); add(w.replace(/ing$/,'')); add(w.replace(/ing$/,'e')); add(w.replace(/ies$/,'y')); return f; }
 function _emoSuggest(ta,ctx){ try{ if(document.body.classList.contains('legacy')) return [];
   const v=ta.value; let w=ctx.pre;
+  if(w&&_EMOSTOP.has(w.toLowerCase())) return [];
   if(!w){ const m=v.slice(0,ctx.start).match(/([A-Za-z][A-Za-z'’]*)([^A-Za-z.!?\n]*)$/); if(!m||/\p{Extended_Pictographic}/u.test(m[2])||m[2].length>2) return []; w=m[1]; }
-  w=w.toLowerCase().replace(/’/g,"'"); if(w.length<2) return [];
+  w=w.toLowerCase().replace(/’/g,"'"); if(w.length<2||_EMOSTOP.has(w)) return [];
   if(!_EMOL) _EMOL=_emoLearn(); const out=[], seen=new Set();
   const put=e=>{ const k=e.replace(/\uFE0F/g,''); if(!e||seen.has(k)) return; seen.add(k); out.push(/[\uFE0F\u200D]/.test(e)||/\p{Emoji_Presentation}/u.test(e)?e:e+'\uFE0F'); };   /* ☠ and ☠️ are one — always shown in colour */
   for(const f of _emoForms(w)){ const mm=_EMOL.get(f); if(mm) [...mm.entries()].sort((a,b)=>b[1]-a[1]).forEach(([e])=>put(e)); }
@@ -5287,11 +5301,23 @@ function _predUpdate(ta){ try{ const bar=_predBarFor(ta); if(!bar) return;
   if(emo.length&&sug.length>2) sug=sug.slice(0,2);   /* room for the emojis on a phone */
   bar.innerHTML=sug.map(w=>`<button type="button" onmousedown="event.preventDefault()" onclick="event.stopPropagation();_predPick(this)">${escHTML(w)}</button>`).join('')
     +(emo.length?(sug.length?'<span class="pb-sep"></span>':'')+emo.map(x=>`<button type="button" class="emo" title="Add ${x}" onmousedown="event.preventDefault()" onclick="event.stopPropagation();_emoPick(this)">${x}</button>`).join(''):'');
-  bar._ta=ta; bar.classList.add('on'); }catch(e){} }
+  bar._ta=ta; bar.classList.add('on'); _kbFit(); }catch(e){} }
 function _predPick(btn){ const bar=btn.parentElement, ta=bar&&bar._ta; if(!ta) return; const ctx=_pmContext(ta); if(!ctx) return;
   const w=btn.textContent, v=ta.value; const after=v.slice(ctx.caret); const sp=/^\s/.test(after)?'':' ';
   ta.value=v.slice(0,ctx.start)+w+sp+after; const pos=ctx.start+w.length+sp.length; ta.focus(); ta.setSelectionRange(pos,pos);
   ta.dispatchEvent(new Event('input',{bubbles:true})); _predUpdate(ta); }
+function _kbFit(){ try{ const ov=document.getElementById('overlay'), vv=window.visualViewport; if(!ov||!vv) return;
+  const clear=()=>{ if(ov.classList.contains('kb')){ ov.classList.remove('kb'); ov.style.top=ov.style.height=ov.style.bottom=''; } };
+  const legacy=document.body.classList.contains('legacy'), kb=window.innerHeight-vv.height>120, a=document.activeElement;
+  if(legacy||!kb){ clear(); return; }
+  const bottom=vv.offsetTop+vv.height;
+  if(ov.classList.contains('show')){ ov.classList.add('kb'); ov.style.top=vv.offsetTop+'px'; ov.style.bottom='auto'; ov.style.height=vv.height+'px';
+    const ta=document.getElementById('edText'), bar=document.getElementById('edPred'), mb=ta&&ta.closest('.mb');
+    if(mb&&bar&&a===ta){ const mr=mb.getBoundingClientRect(), br=bar.getBoundingClientRect(); if(br.bottom>mr.bottom-4) mb.scrollTop+=br.bottom-mr.bottom+6; } return; }
+  clear();
+  if(a&&a.classList&&a.classList.contains('inline-ed')){ const bar=_predBarFor(a), r=document.getElementById('reader'); if(bar&&r){ const br=bar.getBoundingClientRect(); if(br.bottom>bottom-6) r.scrollTop+=br.bottom-bottom+10; } } }catch(e){} }
+(function(){ const vv=window.visualViewport; if(vv){ vv.addEventListener('resize',_kbFit); vv.addEventListener('scroll',_kbFit); }
+  document.addEventListener('focusin',()=>setTimeout(_kbFit,60)); document.addEventListener('focusout',()=>setTimeout(_kbFit,60)); })();
 document.addEventListener('selectionchange',()=>{ const a=document.activeElement; if(a&&(a.id==='edText'||(a.classList&&a.classList.contains('inline-ed')))) _predUpdate(a); });
 /* ---- light punctuation (only while Auto-correct is ticked) ---- */
 /* does this sentence clearly ask something? ("What had he…", "Why did…", "Did he…", "Was it…") */
