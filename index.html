@@ -440,6 +440,9 @@ body:not(.legacy) .il-row2{position:relative;min-height:34px;margin-top:4px}
 body:not(.legacy) .il-row2 .predbar{position:absolute;left:0;right:0;top:0;min-height:34px;padding:2px 0;margin:0}
 body:not(.legacy) .il-row2 .inline-hint{display:block;line-height:34px;padding-left:2px}
 body:not(.legacy) .il-row2 .predbar.on + .inline-hint{visibility:hidden}
+body:not(.legacy) .modal .mf .btn.ed-quiet{white-space:nowrap;background:transparent;border-color:transparent;color:var(--soft);padding-left:10px;padding-right:10px}
+body:not(.legacy) .modal .mf .btn.ed-quiet:hover{color:var(--ink)}
+body:not(.legacy) .inline-bar .btn.il-undo{white-space:nowrap;background:transparent;border-color:transparent;color:var(--soft)}
 body:not(.legacy) .inline-bar.il-tidy{flex-wrap:nowrap;margin-top:2px;gap:8px}
 body:not(.legacy) .inline-bar.il-tidy .il-sp{flex:1}
 body:not(.legacy) .inline-bar.il-tidy .inline-colours{margin:0;display:flex;align-items:center;gap:8px}
@@ -1279,6 +1282,8 @@ body.chrome-off:not(.legacy)[data-view="read"] .fabnotes{bottom:calc(18px + env(
   font-family:var(--sans);font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
 .predbar button:first-child{background:var(--line);border-color:var(--line)}
 .predbar button:hover{border-color:var(--ink)}
+.predbar button.emo{font-size:19px;line-height:1;padding:3px 9px;background:var(--panel);border-color:var(--line)}
+.predbar .pb-sep{flex:0 0 1px;align-self:stretch;margin:4px 2px;background:var(--line)}
 /* ===== Reading screen tidy-up (15 Oct 2026) — new UI only ===== */
 /* top bar: translation pill on the left, plain round icons on the right */
 body:not(.legacy)[data-view="read"] #planBackBtn{order:-3}
@@ -1709,8 +1714,8 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
     <div class="mf">
       <button class="btn danger" id="edDelete" onclick="deleteCurrent()" style="display:none">Delete</button>
       <span id="edStatus" class="ed-hint" style="margin-right:auto;padding-left:6px;white-space:nowrap">Saves as you type</span>
-      <button class="btn" onclick="cancelEditor()">Cancel</button>
-      <button class="btn primary" onclick="saveEditor()">Save</button>
+      <button class="btn" id="edCancel" onclick="cancelEditor()">Cancel</button>
+      <button class="btn primary" id="edSave" onclick="saveEditor()">Save</button>
     </div>
   </div>
 </div>
@@ -1736,7 +1741,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.95', date:'3 Nov 2026'};
+const BUILD={v:'1.2.96', date:'3 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -4272,7 +4277,7 @@ function editRefined(name,ch,v,i,btn){
   del.style.display=mine?'':'none'; del.textContent=mine?'Undo my edit':'Delete';
   _lastAuto=null; updateSpellStrip(document.getElementById('edText'));
   _edLoadColour();
-  document.getElementById('overlay').classList.add('show');
+  document.getElementById('overlay').classList.add('show'); _edFoot();
   setTimeout(()=>document.getElementById('edText').focus(),50); }
 function _saveRefEdit(text){
   const {book,ch,v,ref,base}=editing;
@@ -4843,7 +4848,7 @@ function openEditor(name,ch,v){
   document.getElementById('edDelete').style.display='none';
   _lastAuto=null; updateSpellStrip(document.getElementById('edText'));
   _edLoadColour();
-  document.getElementById('overlay').classList.add('show');
+  document.getElementById('overlay').classList.add('show'); _edFoot();
   setTimeout(()=>document.getElementById('edText').focus(),50);
 }
 /* Opening the big editor: an in-place editor that is still open is put away first — its words are saved
@@ -4864,7 +4869,7 @@ function editNote(name,ch,v,id,liveText){
   document.getElementById('edDelete').style.display='';
   _lastAuto=null; updateSpellStrip(document.getElementById('edText'));
   _edLoadColour();
-  document.getElementById('overlay').classList.add('show');
+  document.getElementById('overlay').classList.add('show'); _edFoot();
   setTimeout(()=>document.getElementById('edText').focus(),50);
 }
 function showVerseInEditor(name,ch,v){
@@ -4899,7 +4904,7 @@ function saveEditor(){
   { const et=document.getElementById('edText'); et.value=_punctFinal(et.value); }
   const text=sacredCase(document.getElementById('edText').value.trim()); _learnText(text);
   if(editing&&editing.ref){ _saveRefEdit(text); return; }
-  if(!text){ toast('Nothing to save'); return; }
+  if(!text){ if(!editing.id&&!document.body.classList.contains('legacy')){ closeEditor(); return; } toast('Nothing to save'); return; }   /* 1.2.96: Done on an empty new note just closes */
   const {book,ch,v,id}=editing;
   DATA[book]=DATA[book]||{}; DATA[book][String(ch)]=DATA[book][String(ch)]||{};
   DATA[book][String(ch)][String(v)]=DATA[book][String(ch)][String(v)]||[];
@@ -4989,6 +4994,7 @@ function inlineEditNote(el,name,ch,v,id){
     const cols=bar.querySelector('.inline-colours'); if(cols){ const l=cols.querySelector('.lbl'); if(l) l.remove(); cols.title='Colour this note — it also highlights the verse'; }
     const done=bar.querySelector('.btn.primary'), cancel=bar.querySelector('.btn:not(.primary)');
     const sp=document.createElement('span'); sp.className='il-sp'; bar.appendChild(sp); bar.appendChild(cancel); bar.appendChild(done);
+    cancel.classList.add('il-undo'); cancel.textContent='Undo'; cancel.style.display='none';   /* 1.2.96 */
     if(cols) bar.prepend(cols); bar.classList.add('il-tidy');
     /* the note body keeps line breaks (pre-wrap), so the blank lines between these parts showed as an empty band */
     [...el.childNodes].forEach(n=>{ if(n.nodeType===3&&!n.textContent.trim()) n.remove(); }); }catch(e){} }
@@ -5034,7 +5040,7 @@ function saveInline(btn,name,ch,v,id){ const ta=btn.closest('.body').querySelect
 
 /* ---------- Autosave (12 Oct 2026): notes save themselves as you type, so nothing is lost if the page redraws ---------- */
 let _ilTimer=null;
-function _ilAuto(e){ const ta=e.target; _ilHint(ta,'Saving…'); clearTimeout(_ilTimer); _ilTimer=setTimeout(()=>_ilFlush(ta),700); }
+function _ilAuto(e){ const ta=e.target; try{ const u=ta.parentElement.querySelector('.il-undo'); if(u) u.style.display=(ta.value.trim()!==String(ta.dataset.orig||'').trim())?'':'none'; }catch(x){} _ilHint(ta,'Saving…'); clearTimeout(_ilTimer); _ilTimer=setTimeout(()=>_ilFlush(ta),700); }
 function _ilHint(ta,msg){ try{ const h=ta.parentElement.querySelector('.inline-hint'); if(h) h.textContent=msg+' · Enter closes'; }catch(e){} }
 /* write the in-place editor's words into the note now (quietly — no redraw, no toast) */
 function _ilFlush(ta,force){ try{ if(!ta||!ta.isConnected||!ta.classList.contains('inline-ed')||ta.dataset.retired) return false;
@@ -5059,7 +5065,14 @@ function _ilRestore(c){ if(!c) return; try{
   if(c.focus) ta.focus({preventScroll:true}); else ta.blur(); }catch(e){} }
 /* full editor (the dialog): saves as you type too — a new note is created on the first words, then updated */
 let _edTimer=null;
-function _edInput(e){ noteAutocorrect(e); if(!editing||editing.ref) return; _edStatus('Saving…'); clearTimeout(_edTimer); _edTimer=setTimeout(_edFlush,900); }
+function _edInput(e){ noteAutocorrect(e); _edFoot(); if(!editing||editing.ref) return; _edStatus('Saving…'); clearTimeout(_edTimer); _edTimer=setTimeout(_edFlush,900); }
+/* 1.2.96: Done closes (your words are already kept); the way back only appears once there is something to undo */
+function _edFoot(){ try{ const c=document.getElementById('edCancel'), s=document.getElementById('edSave'), et=document.getElementById('edText'); if(!c||!s||!et) return;
+  if(document.body.classList.contains('legacy')||!editing||editing.ref){ c.textContent='Cancel'; s.textContent='Save'; c.style.display=''; c.classList.remove('ed-quiet'); return; }
+  s.textContent='Done'; c.classList.add('ed-quiet');
+  const ch=et.value.trim()!==String(editing.orig||'').trim();
+  c.textContent=(editing.id&&!editing.auto)?'Undo':'Discard'; c.style.display=ch?'':'none';
+  if(editing.auto){ const d=document.getElementById('edDelete'); if(d) d.style.display='none'; } }catch(e){} }   /* a new note: Discard already does what Delete would */
 function _edStatus(m){ try{ document.getElementById('edStatus').textContent=m||''; }catch(e){} }
 function _edFlush(){ try{ clearTimeout(_edTimer); _edTimer=null; if(!editing||editing.ref) return false;
   const text=sacredCase(document.getElementById('edText').value.trim()); if(!text) return false;
@@ -5072,7 +5085,7 @@ function _edFlush(){ try{ clearTimeout(_edTimer); _edTimer=null; if(!editing||ed
   else{ nt={id:Math.random().toString(36).slice(2,12),text:text,date:new Date().toISOString(),src:'user'}; arr.push(nt);
     editing.id=nt.id; editing.auto=true; try{ document.getElementById('edDelete').style.display=''; }catch(e){} }
   editing.changed=true; persist(); markDirty();
-  _edStatus('Saved ✓'); return true; }catch(e){ return false; } }
+  _edStatus(document.body.classList.contains('legacy')?'Saved ✓':'✓ Saved'); _edFoot(); return true; }catch(e){ return false; } }
 /* if the page is being hidden or closed, save whatever is still being typed */
 function _autoFlushAll(){ try{ const ta=document.querySelector('textarea.inline-ed'); if(ta) _ilFlush(ta); }catch(e){}
   try{ if(editing&&!editing.ref) _edFlush(); }catch(e){} }
@@ -5240,15 +5253,40 @@ function _pmContext(ta){ const v=ta.value, c=ta.selectionStart; if(c!==ta.select
   if(c<v.length&&/[A-Za-z]/.test(v[c])) return null;                   // in the middle of a word — stay quiet
   const m=v.slice(0,s).match(/([A-Za-z][A-Za-z'’]*)[^A-Za-z.!?\n]*$/); const prev=m?m[1].toLowerCase().replace(/’/g,"'"):null;
   return {start:s,caret:c,pre,prev}; }
+/* ---- emoji ideas (1.2.96): for the word just typed — the ones YOU have used after it first, then a hand-picked list. Never put in for you. ---- */
+const _EMO={'god':'🙏 ✨','lord':'🙏 👑','jesus':'✝️ ❤️','christ':'✝️','cross':'✝️','spirit':'🕊️ 🔥','holy':'🕊️ ✨','dove':'🕊️','pray':'🙏','prayer':'🙏','prayed':'🙏','praying':'🙏','praise':'🙌 🎶','worship':'🙌','thank':'🙏','thanks':'🙏','thankful':'🙏','grateful':'🙏','amen':'🙏','hallelujah':'🙌','glory':'✨ 🙌','blessed':'🙌','bless':'🙌','blessing':'🎁 🙌','faith':'🙏 ✨','believe':'🙏','trust':'🤝','hope':'🌅','grace':'🤍 ✨','mercy':'🤍','forgive':'🤍','forgiven':'🤍','forgiveness':'🤍','salvation':'✝️','saved':'🙌','save':'🛟','saviour':'✝️','savior':'✝️','redeemed':'🙌','gospel':'📖','heaven':'☁️ ✨','heavens':'🌌','angel':'👼','angels':'👼','devil':'😈','satan':'😈','evil':'😈','demon':'😈','hell':'🔥','sin':'😔','sins':'😔','repent':'😔','church':'⛪','temple':'🏛️','altar':'🔥','sacrifice':'🩸','blood':'🩸','covenant':'🤝','promise':'🤝','miracle':'✨','resurrection':'🌅','risen':'🌅','rise':'🌅','eternal':'♾️','eternity':'♾️','forever':'♾️','light':'💡 ☀️','darkness':'🌑','dark':'🌑','death':'☠️','dead':'☠️','die':'☠️','died':'☠️','life':'🌱 ❤️','live':'🌱','living':'🌱','alive':'🌱','born':'👶','birth':'👶','grave':'⚰️','tomb':'🪨','love':'❤️','loved':'❤️','loves':'❤️','heart':'❤️','joy':'😊 🎉','happy':'😊','glad':'😊','smile':'😊','laugh':'😂','funny':'😂','peace':'🕊️','fear':'😨','afraid':'😨','scared':'😨','worry':'😟','anxious':'😟','sad':'😢','sorrow':'😢','cry':'😢','tears':'😢','weep':'😢','wept':'😢','grief':'💔','broken':'💔','pain':'💔','angry':'😠','anger':'😠','wrath':'🔥','jealous':'😒','proud':'😤','pride':'😤','humble':'🙇','shame':'😳','wow':'😮','amazing':'🤩','beautiful':'😍','wonderful':'🤩','awesome':'🤩','surprise':'😮','tired':'😴','sleep':'😴','rest':'😌','calm':'😌','lonely':'🥺','think':'🤔','why':'🤔','question':'❓','wonder':'🤔','idea':'💡','mind':'🧠','know':'🧠','knowledge':'🧠','wisdom':'🦉 💡','wise':'🦉','fool':'🤡','foolish':'🤡','truth':'✅','true':'✅','lie':'🤥','lies':'🤥','liar':'🤥','good':'👍','bad':'👎','right':'✅','wrong':'❌','yes':'✅','no':'❌','celebrate':'🎉','party':'🎉','feast':'🍽️','world':'🌍','earth':'🌍','universe':'🌌','creation':'🌍 ✨','created':'✨','create':'✨','sun':'☀️','moon':'🌙','star':'⭐','stars':'✨','sky':'🌤️','cloud':'☁️','clouds':'☁️','rain':'🌧️','storm':'⛈️','thunder':'⛈️','lightning':'⚡','wind':'🌬️','fire':'🔥','water':'💧','waters':'🌊','sea':'🌊','ocean':'🌊','river':'🌊','flood':'🌊','rock':'🪨','stone':'🪨','mountain':'⛰️','mountains':'⛰️','hill':'⛰️','desert':'🏜️','wilderness':'🏜️','garden':'🌿','tree':'🌳','trees':'🌳','seed':'🌱','grow':'🌱','growth':'🌱','fruit':'🍇','vine':'🍇','harvest':'🌾','field':'🌾','flower':'🌸','morning':'🌅','evening':'🌇','night':'🌙','day':'☀️','time':'⏳','wait':'⏳','waiting':'⏳','season':'🍂','sheep':'🐑','lamb':'🐑','shepherd':'🐑','lion':'🦁','serpent':'🐍','snake':'🐍','eagle':'🦅','fish':'🐟','fishes':'🐟','bird':'🐦','birds':'🐦','donkey':'🫏','ass':'🫏','horse':'🐎','ox':'🐂','goat':'🐐','dog':'🐕','dogs':'🐕','wolf':'🐺','bread':'🍞','wine':'🍷','food':'🍞','eat':'🍽️','drink':'🥤','milk':'🥛','honey':'🍯','oil':'🫒','salt':'🧂','meat':'🍖','hungry':'😋','hunger':'🍞','thirst':'💧','thirsty':'💧','man':'👨','men':'👥','woman':'👩','women':'👥','people':'👥','mankind':'👥','humanity':'👥','child':'👶','children':'👧 👦','baby':'👶','son':'👦','daughter':'👧','mother':'👩','father':'👨','family':'👨‍👩‍👧','brother':'🤝','sister':'🤝','friend':'🤝','friends':'🤝','wife':'💍','husband':'💍','marriage':'💍','married':'💍','king':'👑','queen':'👑','kingdom':'👑','crown':'👑','prophet':'📜','priest':'🙏','teacher':'🧑‍🏫','disciples':'👥','apostle':'📜','servant':'🤲','eye':'👀','eyes':'👀','see':'👀','saw':'👀','look':'👀','ear':'👂','hear':'👂','heard':'👂','listen':'👂','mouth':'👄','speak':'🗣️','spoke':'🗣️','spoken':'🗣️','voice':'🗣️','say':'🗣️','said':'🗣️','hand':'✋','hands':'🙌','feet':'👣','walk':'🚶','run':'🏃','strength':'💪','strong':'💪','mighty':'💪','power':'⚡','powerful':'⚡','weak':'🥀','word':'📖','words':'📖','scripture':'📖','bible':'📖','book':'📖','law':'📜','write':'✍️','wrote':'✍️','written':'✍️','sword':'⚔️','war':'⚔️','battle':'⚔️','fight':'⚔️','enemy':'⚔️','shield':'🛡️','armour':'🛡️','armor':'🛡️','victory':'🏆','win':'🏆','gold':'🪙','silver':'🪙','money':'💰','rich':'💰','riches':'💰','wealth':'💰','poor':'🤲','gift':'🎁','house':'🏠','home':'🏠','door':'🚪','key':'🔑','gate':'🚪','city':'🏙️','road':'🛤️','way':'🛤️','journey':'🛤️','path':'🛤️','ship':'⛵','boat':'⛵','music':'🎶','song':'🎶','sing':'🎶','singing':'🎶','dance':'💃','trumpet':'🎺','harp':'🎶','build':'🏗️','foundation':'🧱','work':'💼','job':'💼','school':'🎓','learn':'📚','study':'📚','phone':'📱'};
+let _EMOL=null;
+const _EMORX=/\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic}|\p{Emoji_Modifier})*/gu;
+function _emoLearn(){ const L=new Map(); try{ for(const bk in DATA)for(const c in DATA[bk])for(const v in DATA[bk][c])(DATA[bk][c][v]||[]).forEach(nt=>{ const t=nt&&nt.text; if(!t||!/\p{Extended_Pictographic}/u.test(t)) return;
+    let m; _EMORX.lastIndex=0; while((m=_EMORX.exec(t))){ const w=t.slice(Math.max(0,m.index-30),m.index).match(/([A-Za-z][A-Za-z'’]*)[^A-Za-z.!?\n]{0,3}$/); if(!w) continue;
+      const k=w[1].toLowerCase(); let mm=L.get(k); if(!mm){ mm=new Map(); L.set(k,mm); } mm.set(m[0],(mm.get(m[0])||0)+1); } }); }catch(e){} return L; }
+function _emoForms(w){ const f=[w]; const add=x=>{ if(x&&x.length>2&&!f.includes(x)) f.push(x); };
+  add(w.replace(/'s$/,'')); add(w.replace(/s$/,'')); add(w.replace(/es$/,'')); add(w.replace(/ed$/,'')); add(w.replace(/d$/,'')); add(w.replace(/ing$/,'')); add(w.replace(/ing$/,'e')); add(w.replace(/ies$/,'y')); return f; }
+function _emoSuggest(ta,ctx){ try{ if(document.body.classList.contains('legacy')) return [];
+  const v=ta.value; let w=ctx.pre;
+  if(!w){ const m=v.slice(0,ctx.start).match(/([A-Za-z][A-Za-z'’]*)([^A-Za-z.!?\n]*)$/); if(!m||/\p{Extended_Pictographic}/u.test(m[2])||m[2].length>2) return []; w=m[1]; }
+  w=w.toLowerCase().replace(/’/g,"'"); if(w.length<2) return [];
+  if(!_EMOL) _EMOL=_emoLearn(); const out=[], seen=new Set();
+  const put=e=>{ const k=e.replace(/\uFE0F/g,''); if(!e||seen.has(k)) return; seen.add(k); out.push(/[\uFE0F\u200D]/.test(e)||/\p{Emoji_Presentation}/u.test(e)?e:e+'\uFE0F'); };   /* ☠ and ☠️ are one — always shown in colour */
+  for(const f of _emoForms(w)){ const mm=_EMOL.get(f); if(mm) [...mm.entries()].sort((a,b)=>b[1]-a[1]).forEach(([e])=>put(e)); }
+  for(const f of _emoForms(w)){ const s=_EMO[f]; if(s) s.split(' ').forEach(put); if(s) break; }
+  return out.slice(0,3); }catch(e){ return []; } }
+function _emoPick(btn){ const bar=btn.parentElement, ta=bar&&bar._ta; if(!ta) return; const e=btn.textContent;
+  const v=ta.value, c=ta.selectionStart; const sp=(c>0&&!/\s/.test(v[c-1]))?' ':'';
+  ta.value=v.slice(0,c)+sp+e+v.slice(c); const pos=c+sp.length+e.length; ta.focus(); ta.setSelectionRange(pos,pos);
+  _EMOL=null; ta.dispatchEvent(new Event('input',{bubbles:true})); _predUpdate(ta); }
 function _predBarFor(ta){ if(!ta) return null; if(ta.id==='edText') return document.getElementById('edPred');
   const b=ta.parentElement&&ta.parentElement.querySelector('.predbar'); return b; }
 function _predUpdate(ta){ try{ const bar=_predBarFor(ta); if(!bar) return;
   const ctx=_pmContext(ta); if(!ctx||(!ctx.pre&&!ctx.prev)){ bar.innerHTML=''; bar.classList.remove('on'); return; }
+  const emo=_emoSuggest(ta,ctx);
   let sug=_pmSuggest(ctx.pre,ctx.prev);
   if(ctx.pre&&/^[A-Z]/.test(ctx.pre)) sug=sug.map(w=>w.charAt(0).toUpperCase()+w.slice(1));
   else if(!ctx.pre){ const before=ta.value.slice(0,ctx.start); if(/(^|[.!?]\s+|\n\s*)$/.test(before)) sug=sug.map(w=>w.charAt(0).toUpperCase()+w.slice(1)); }
-  if(!sug.length){ bar.innerHTML=''; bar.classList.remove('on'); return; }
-  bar.innerHTML=sug.map(w=>`<button type="button" onmousedown="event.preventDefault()" onclick="event.stopPropagation();_predPick(this)">${escHTML(w)}</button>`).join('');
+  if(!sug.length&&!emo.length){ bar.innerHTML=''; bar.classList.remove('on'); return; }
+  if(emo.length&&sug.length>2) sug=sug.slice(0,2);   /* room for the emojis on a phone */
+  bar.innerHTML=sug.map(w=>`<button type="button" onmousedown="event.preventDefault()" onclick="event.stopPropagation();_predPick(this)">${escHTML(w)}</button>`).join('')
+    +(emo.length?(sug.length?'<span class="pb-sep"></span>':'')+emo.map(x=>`<button type="button" class="emo" title="Add ${x}" onmousedown="event.preventDefault()" onclick="event.stopPropagation();_emoPick(this)">${x}</button>`).join(''):'');
   bar._ta=ta; bar.classList.add('on'); }catch(e){} }
 function _predPick(btn){ const bar=btn.parentElement, ta=bar&&bar._ta; if(!ta) return; const ctx=_pmContext(ta); if(!ctx) return;
   const w=btn.textContent, v=ta.value; const after=v.slice(ctx.caret); const sp=/^\s/.test(after)?'':' ';
