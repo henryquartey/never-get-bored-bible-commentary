@@ -1770,7 +1770,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.99', date:'3 Nov 2026'};
+const BUILD={v:'1.2.100', date:'4 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3535,6 +3535,10 @@ function _appMenuHTML(withChapter,inSheet){
     <span class="mi">${ic}</span><div><div class="mt">${t}</div><div class="md">${d}</div></div>
     ${soon?'<span class="soon">Coming soon</span>':'<span class="chev">›</span>'}</div>`;
   const head=t=>`<div class="mhead">${t}</div>`;
+  /* 1.2.100: Turn chapters by sits under Text size (4 Nov 2026) */
+  const _turnRow=`<div class="mitem mstay mturn"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v17M7.5 8 12 3.5 16.5 8M7.5 16l4.5 4.5 4.5-4.5"/></svg></span><div style="flex:1;min-width:0"><div class="mt">Turn chapters by</div>
+      <div class="tm-turn">${[['scroll','Scroll'],['swipe','Swipe'],['both','Both']].map(([k,l])=>`<button data-m="${k}" class="${_turnMode()===k?'on':''}" onclick="event.stopPropagation();_tmTurn('${k}')">${l}</button>`).join('')}</div>
+      <div class="md" id="tmTurnHint">${_turnHint(_turnMode())}</div></div></div>`;
   let h='';
   if(withChapter){ const B=window.BOOKS[state.book]||{name:''}, here=B.name+' '+state.chapter, n=(window._chapNoted||[]).length;
     const hasAudio=!!(window.AUDIO_KJV||window.AUDIO_KOKORO), np=narrPref();
@@ -3543,6 +3547,7 @@ function _appMenuHTML(withChapter,inSheet){
       "commentaryMenu({stopPropagation(){},currentTarget:document.getElementById('tbMore')},true)");
     h+=`<div class="mitem mstay"><span class="mi">${ICONS.chapter}</span><div style="flex:1;min-width:0"><div class="mt">Text size</div>
       <div class="tm-turn"><button onclick="event.stopPropagation();_tmFont(-0.08)" aria-label="Smaller text">A−</button><button id="tmFs" class="ms-pct" tabindex="-1">${_fsPct()}%</button><button onclick="event.stopPropagation();_tmFont(0.08)" aria-label="Larger text"><b>A+</b></button></div></div></div>`;
+    h+=_turnRow;
     h+=item(ICONS.swap,'Compare translations',state.compare?'On — with '+escHTML(state.compare):'Read two translations side by side','toggleCompare()');
     if(hasAudio){ h+=item(ICONS.headphones,'Listen with',escHTML(_tmVoiceLabel()),'_tmVoiceToggle()',false,true);
       h+=`<div id="tmVoice" class="ms-voice" style="display:none">
@@ -3561,9 +3566,7 @@ function _appMenuHTML(withChapter,inSheet){
   if(BLOG_URL) h+=item(ICONS.pen,'Blog','Reflections and essays from Nii Okai',`window.open(BLOG_URL,'_blank','noopener')`);
   h+=head('Reading settings');
   h+=item(_themeGlyph(),'Appearance',_themeDesc(),'appearanceMenu()');
-  h+=`<div class="mitem mstay mturn"><span class="mi">${ICONS.chapter}</span><div style="flex:1;min-width:0"><div class="mt">Turn chapters by</div>
-      <div class="tm-turn">${[['scroll','Scroll'],['swipe','Swipe'],['both','Both']].map(([k,l])=>`<button data-m="${k}" class="${_turnMode()===k?'on':''}" onclick="event.stopPropagation();_tmTurn('${k}')">${l}</button>`).join('')}</div>
-      <div class="md" id="tmTurnHint">${_turnHint(_turnMode())}</div></div></div>`;
+  if(!withChapter) h+=_turnRow;
   h+=_abMenuRow();
   h+=head('Your notes');
   h+=item('💾','Back up or restore','Save your notes to a file, or bring them back in','backupMenu()');
