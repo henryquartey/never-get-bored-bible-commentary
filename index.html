@@ -1770,7 +1770,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.100', date:'4 Nov 2026'};
+const BUILD={v:'1.2.101', date:'5 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -4639,6 +4639,8 @@ function renderMine(){
   buildBookList();
 }
 function jumpTo(name,ch,v,opts){
+  { const bi=window.BOOKS.findIndex(b=>b.name===name);   /* 1.2.101: a reference elsewhere leaves the plan day; the Plans tab still resumes it */
+    if(state.plan&&!(state.view==='read'&&state.book===bi&&state.chapter===ch)) state.plan=null; }
   state.book=window.BOOKS.findIndex(b=>b.name===name); state.chapter=ch; state.view='read';
   setViewTabs(); savePrefs();
   ensureVersion(state.version,()=>{ renderRead(); setTimeout(()=>{const el=document.getElementById('v'+v);
