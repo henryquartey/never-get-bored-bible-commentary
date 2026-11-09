@@ -925,6 +925,16 @@ body:not(.legacy)[data-view="read"] .readnav .rn-listen.rn-ico .rn-dots{font-siz
 .ga-share{font-size:12.5px;color:var(--soft);margin:12px 0 10px;border-top:1px solid var(--line);padding-top:12px}
 .ga-share b{color:var(--ink)} .ga-link{background:none;border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:2px 10px;font:600 12px var(--sans);cursor:pointer;margin-left:4px}
 .ga-done{width:100%}
+/* 1.2.105: a heading that says what the box is, and big numbered steps */
+.ga-h{font:700 24px/1.2 var(--serif);margin:0 0 8px;color:var(--ink)}
+.ga-app{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--soft);margin:0 0 16px}
+.ga-app img{border-radius:8px} .ga-app b{color:var(--ink);font-weight:600}
+.ga-steps2{list-style:none;counter-reset:ga;margin:0 0 6px;padding:0}
+.ga-steps2 li{counter-increment:ga;display:flex;align-items:center;gap:12px;font-size:16.5px;line-height:1.35;padding:7px 0}
+.ga-steps2 li::before{content:counter(ga);flex:0 0 30px;height:30px;border-radius:50%;background:var(--ink);color:var(--bg);font:700 15px/30px var(--sans);text-align:center}
+.ga-k{display:inline-block;font-size:18px;line-height:1;padding:0 3px}
+.ga-tip{font-size:13px;color:var(--soft);margin:4px 0 10px;line-height:1.45}
+.ga-wide{width:100%;margin-top:6px}
 .donepill{font-size:11px;background:var(--accent);color:var(--on-accent);border-radius:20px;padding:1px 9px;font-weight:700;vertical-align:middle}
 /* plan context bar in the reader */
 .planctx{background:var(--accent-soft);border:1px solid var(--note-line);border-radius:10px;padding:10px 14px;margin:0 0 16px;font-size:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -1789,7 +1799,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.104', date:'9 Nov 2026'};
+const BUILD={v:'1.2.105', date:'9 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -6587,39 +6597,52 @@ function _devKind(){ const ua=navigator.userAgent||'';
   if(/Macintosh/.test(ua)&&/Safari/.test(ua)&&!/Chrome|Chromium|Edg\//.test(ua)) return 'mac-safari';
   return 'desktop'; }
 const _GA_SHARE='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v6.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>';
-function _gaBody(){ const k=_devKind();
-  const copy=`<button class="btn" onclick="_gaCopy()">Copy the link</button>`;
-  if(_bip&&(k==='android'||k==='desktop')) return `<p class="ga-p">One tap and it sits on your ${k==='android'?'home screen':'computer'} like any other app.</p>
-    <button class="btn primary ga-big" onclick="_gaPrompt()">Install the app</button>`;
-  if(k==='ios-safari') return `<ol class="ga-steps"><li>Tap the <b>Share</b> button ${_GA_SHARE} (at the bottom of Safari, or under <b>⋯</b>)</li><li>Scroll down and tap <b>Add to Home Screen</b></li><li>Tap <b>Add</b> — the app appears on your home screen</li></ol>`;
-  if(k==='ios-other') return `<ol class="ga-steps"><li>Tap the <b>Share</b> button ${_GA_SHARE} (top right, next to the address)</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b></li></ol><p class="ga-p soft">If you don’t see it, open this page in <b>Safari</b> and tap Get the app there.</p>${copy}`;
-  if(k==='ios-inapp'||k==='and-inapp') return `<p class="ga-p">This page is open inside another app, which can’t install apps.</p><ol class="ga-steps"><li>Tap <b>⋯</b> or <b>⋮</b> and choose <b>Open in ${k==='ios-inapp'?'Safari':'Chrome / browser'}</b></li><li>Tap <b>Get the app</b> again there</li></ol>${copy}`;
-  if(k==='android') return `<ol class="ga-steps"><li>Tap the menu <b>⋮</b> at the top right of Chrome</li><li>Tap <b>Install app</b> (or <b>Add to Home screen</b>), then <b>Install</b></li></ol>`;
-  if(k==='mac-safari') return `<ol class="ga-steps"><li>In the menu bar choose <b>File → Add to Dock</b></li><li>Click <b>Add</b> — it opens in its own window from the Dock</li></ol>`;
-  return `<ol class="ga-steps"><li>Click the small <b>install</b> icon at the right end of the address bar</li><li>Or menu <b>⋮</b> → <b>Cast, save and share</b> → <b>Install page as app…</b></li></ol>`; }
+/* what the box says: a heading + up to three short steps (9 Nov 2026, 1.2.105) */
+const _GA_DOTS='<b class="ga-k">⋮</b>';
+function _gaInstalled(){ try{ return localStorage.getItem('nok_installed')==='1'||!!window._gaRel; }catch(e){ return !!window._gaRel; } }
+function _gaSteps(a,tip){ return `<ol class="ga-steps2">${a.map(t=>`<li><span>${t}</span></li>`).join('')}</ol>${tip?`<p class="ga-tip">${tip}</p>`:''}`; }
+function _gaView(){ const k=_devKind(), mob=/^(ios|and)/.test(k)||k==='android';
+  const copy=`<button class="btn ga-wide" onclick="_gaCopy()">Copy the link</button>`;
+  if(_gaInstalled()) return {h:'You already have the app', b:mob
+    ?`<p class="ga-p">Open <b>Bible Journal N.O</b> from your home screen.</p>`
+    :`<p class="ga-p">Click <b>Open in app</b> at the right of the address bar — or open <b>Nii Okai’s Bible Journal</b> from your Applications or Dock.</p>`};
+  if(_bip&&(k==='android'||k==='desktop')) return {h:'Install the app', b:`<button class="btn primary ga-big" onclick="_gaPrompt()">Install now</button><p class="ga-tip">Then tap <b>Install</b> in the box that appears. Takes a few seconds.</p>`};
+  if(k==='ios-safari') return {h:'Install the app', b:_gaSteps([`Tap <b>Share</b> ${_GA_SHARE}`,`Tap <b>Add to Home Screen</b>`,`Tap <b>Add</b>`],'Share is in the bar at the bottom of Safari (or under <b>⋯</b>). Scroll down the list if you don’t see Add to Home Screen.')};
+  if(k==='ios-other') return {h:'Install the app', b:_gaSteps([`Tap <b>Share</b> ${_GA_SHARE} at the top right`,`Tap <b>Add to Home Screen</b>`,`Tap <b>Add</b>`],'Not there? Open this page in <b>Safari</b> and tap Get the app again.')+copy};
+  if(k==='ios-inapp'||k==='and-inapp') return {h:`Open this in ${k==='ios-inapp'?'Safari':'Chrome'} first`, b:`<p class="ga-p">You’re inside another app, which can’t install apps.</p>`+_gaSteps([`Tap <b>⋯</b> or ${_GA_DOTS}`,`Tap <b>Open in ${k==='ios-inapp'?'Safari':'Chrome'}</b>`,`Tap <b>Get the app</b> again`])+copy};
+  if(k==='android') return {h:'Install the app', b:_gaSteps([`Tap ${_GA_DOTS} at the top right`,`Tap <b>Add to Home screen</b> (or <b>Install app</b>)`,`Tap <b>Install</b>`])};
+  if(k==='mac-safari') return {h:'Install the app', b:_gaSteps([`Click <b>File</b> in the menu bar`,`Click <b>Add to Dock</b>`,`Click <b>Add</b>`])};
+  return {h:'Install the app', b:_gaSteps([`Click ${_GA_DOTS} at the top right of Chrome`,`Click <b>Cast, save and share</b>`,`Click <b>Install page as app</b>, then <b>Install</b>`],'Edge: ⋯ → Apps → Install this site as an app.')}; }
+function _gaBody(){ return _gaView().b; }
+function _gaPaint(){ const v=_gaView(); const h=document.getElementById('gaH'), b=document.getElementById('gaBody'); if(h) h.textContent=v.h; if(b) b.innerHTML=v.b; }
 function installApp2(fromLink){
   if(_isStandalone()){ toast('You are already using the app'); return; }
   if(_bip&&!fromLink){ _gaPrompt(); return; }
   const old=document.getElementById('getapp'); if(old) old.remove();
   const ov=document.createElement('div'); ov.id='getapp'; ov.className='ga-ov';
   ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
-  ov.innerHTML=`<div class="ga-card" role="dialog" aria-label="Get the app">
-    <div class="ga-head"><img src="icon-192.png" alt="" width="52" height="52"><div><b>Nii Okai’s Bible Journal</b><span>Free · no account needed · works offline</span></div></div>
-    <div id="gaBody">${_gaBody()}</div>
+  const v=_gaView();
+  ov.innerHTML=`<div class="ga-card" role="dialog" aria-labelledby="gaH">
+    <h2 class="ga-h" id="gaH">${v.h}</h2>
+    <div class="ga-app"><img src="icon-192.png" alt="" width="34" height="34"><span><b>Nii Okai’s Bible Journal</b> · free · works offline</span></div>
+    <div id="gaBody">${v.b}</div>
     <p class="ga-share">Share the app: <b>bible.getwordwisdom.com/app</b> <button class="ga-link" onclick="_gaCopy()">Copy</button></p>
     <button class="btn ga-done" onclick="document.getElementById('getapp').remove()">Not now</button></div>`;
   document.body.appendChild(ov); }
 function _gaPrompt(){ if(!_bip){ installApp2(true); return; } const p=_bip; _bip=null; p.prompt();
   try{ p.userChoice.then(c=>{ const o=document.getElementById('getapp'); if(o) o.remove(); if(c&&c.outcome==='accepted') _gaDone(); }); }catch(e){} }
-function _gaDone(){ try{ localStorage.setItem('nok_getapp_x',String(Date.now()+3650*864e5)); }catch(e){}
+function _gaDone(){ try{ localStorage.setItem('nok_getapp_x',String(Date.now()+3650*864e5)); localStorage.setItem('nok_installed','1'); }catch(e){}
   const c=document.getElementById('gaCard'); if(c) c.remove(); toast('Installed — look for Nii Okai’s Bible Journal on your home screen'); }
 function _gaCopy(){ try{ _clip(GETAPP_URL,'Link copied — paste it in a message'); }catch(e){ try{ navigator.clipboard.writeText(GETAPP_URL); toast('Link copied'); }catch(e2){} } }
 function _gaHide(){ try{ localStorage.setItem('nok_getapp_x',String(Date.now()+30*864e5)); }catch(e){} const c=document.getElementById('gaCard'); if(c) c.remove(); }
-function _getAppCard(){ if(document.body.classList.contains('legacy')||_isStandalone()) return '';
+function _getAppCard(){ if(document.body.classList.contains('legacy')||_isStandalone()||_gaInstalled()) return '';
   try{ if(+localStorage.getItem('nok_getapp_x')>Date.now()) return ''; }catch(e){}
   return `<div class="hcard ga-home" id="gaCard" role="button" tabindex="0" aria-label="Get the app" onclick="installApp2(false)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();installApp2(false)}"><img src="icon-192.png" alt="" width="44" height="44"><div class="ga-t"><b>Get the app</b><span>Free · on your home screen · works offline</span></div>
     <button class="btn primary" onclick="event.stopPropagation();installApp2(false)">Get it</button><button class="ga-x" aria-label="Not now" title="Not now" onclick="event.stopPropagation();_gaHide()" onkeydown="event.stopPropagation()">✕</button></div>`; }
-window.addEventListener('beforeinstallprompt',()=>{ setTimeout(()=>{ const b=document.getElementById('gaBody'); if(b) b.innerHTML=_gaBody(); },0); });
+window.addEventListener('beforeinstallprompt',()=>{ setTimeout(_gaPaint,0); });
+/* remember that the app is installed on this browser, so the box and the Home card stop offering it (9 Nov 2026) */
+try{ if(_isStandalone()) localStorage.setItem('nok_installed','1'); }catch(e){}
+try{ if(navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(a=>{ if(a&&a.length){ window._gaRel=true; const c=document.getElementById('gaCard'); if(c) c.remove(); _gaPaint(); } }).catch(()=>{}); }catch(e){}
 window.addEventListener('appinstalled',()=>{ _gaDone(); const o=document.getElementById('getapp'); if(o) o.remove(); });
 if(/[?&]install\b/.test(location.search)) setTimeout(()=>{ if(document.body.classList.contains('legacy')) installApp(); else installApp2(true);
   try{ history.replaceState(null,'',location.pathname+location.search.replace(/([?&])install\b(=[^&]*)?&?/,'$1').replace(/[?&]$/,'')+location.hash); }catch(e){} },700);

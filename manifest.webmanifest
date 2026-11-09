@@ -32,5 +32,11 @@
       "type": "image/png",
       "purpose": "any"
     }
+  ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://bible.getwordwisdom.com/manifest.webmanifest"
+    }
   ]
 }
