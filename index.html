@@ -912,7 +912,9 @@ body:not(.legacy)[data-view="read"] .readnav .rn-listen.rn-ico .rn-dots{font-siz
 .ga-home .ga-t{flex:1;min-width:0;display:flex;flex-direction:column;font-family:var(--sans)}
 .ga-home .ga-t b{font-size:15px;color:var(--ink)} .ga-home .ga-t span{font-size:12.5px;color:var(--soft)}
 .ga-home .btn{flex:0 0 auto;padding:8px 16px;border-radius:20px}
-.ga-home .ga-x{background:none;border:0;color:var(--soft);font-size:15px;padding:4px 2px;cursor:pointer}
+.ga-home .ga-x{background:none;border:0;color:var(--soft);font-size:15px;padding:12px 10px;margin:-10px -8px -10px -4px;cursor:pointer}
+.ga-home{cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease,opacity .12s ease}
+.ga-home:active{transform:scale(.985);opacity:.92}
 .ga-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;display:flex;align-items:flex-end;justify-content:center;padding:16px}
 @media(min-width:700px){.ga-ov{align-items:center}}
 .ga-card{background:var(--panel);color:var(--ink);border-radius:20px;max-width:430px;width:100%;padding:22px;font-family:var(--sans);box-shadow:0 20px 60px rgba(0,0,0,.4);max-height:88vh;overflow:auto}
@@ -1787,7 +1789,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.103', date:'9 Nov 2026'};
+const BUILD={v:'1.2.104', date:'9 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -6615,8 +6617,8 @@ function _gaCopy(){ try{ _clip(GETAPP_URL,'Link copied — paste it in a message
 function _gaHide(){ try{ localStorage.setItem('nok_getapp_x',String(Date.now()+30*864e5)); }catch(e){} const c=document.getElementById('gaCard'); if(c) c.remove(); }
 function _getAppCard(){ if(document.body.classList.contains('legacy')||_isStandalone()) return '';
   try{ if(+localStorage.getItem('nok_getapp_x')>Date.now()) return ''; }catch(e){}
-  return `<div class="hcard ga-home" id="gaCard"><img src="icon-192.png" alt="" width="44" height="44"><div class="ga-t"><b>Get the app</b><span>Free · on your home screen · works offline</span></div>
-    <button class="btn primary" onclick="installApp2(false)">Get it</button><button class="ga-x" aria-label="Not now" title="Not now" onclick="_gaHide()">✕</button></div>`; }
+  return `<div class="hcard ga-home" id="gaCard" role="button" tabindex="0" aria-label="Get the app" onclick="installApp2(false)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();installApp2(false)}"><img src="icon-192.png" alt="" width="44" height="44"><div class="ga-t"><b>Get the app</b><span>Free · on your home screen · works offline</span></div>
+    <button class="btn primary" onclick="event.stopPropagation();installApp2(false)">Get it</button><button class="ga-x" aria-label="Not now" title="Not now" onclick="event.stopPropagation();_gaHide()" onkeydown="event.stopPropagation()">✕</button></div>`; }
 window.addEventListener('beforeinstallprompt',()=>{ setTimeout(()=>{ const b=document.getElementById('gaBody'); if(b) b.innerHTML=_gaBody(); },0); });
 window.addEventListener('appinstalled',()=>{ _gaDone(); const o=document.getElementById('getapp'); if(o) o.remove(); });
 if(/[?&]install\b/.test(location.search)) setTimeout(()=>{ if(document.body.classList.contains('legacy')) installApp(); else installApp2(true);
