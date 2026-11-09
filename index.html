@@ -1799,7 +1799,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.105', date:'9 Nov 2026'};
+const BUILD={v:'1.2.106', date:'9 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -7951,12 +7951,20 @@ async function _updCheck(){ try{
   const r=await fetch('index.html',{method:'HEAD',cache:'no-store'}); if(!r.ok) return;
   const t=r.headers.get('etag')||r.headers.get('last-modified'); if(!t) return;
   if(_updTag===null){ _updTag=t; return; }
-  if(t!==_updTag&&!_updShown){ _updShown=true; _showUpdBar(); }
+  if(t!==_updTag&&!_updShown){ if(!document.body.classList.contains('legacy')) _updTag=t; _updShown=true; _showUpdBar(); }
 }catch(e){} }
-async function _showUpdBar(){ if(document.getElementById('updbar')) return;
-  let vtxt='A new version is available';
+/* 1.2.106: compare two version numbers like 1.2.105 and 1.2.106 */
+function _updCmp(a,b){ const A=String(a).split('.').map(Number), B=String(b).split('.').map(Number);
+  for(let i=0;i<3;i++){ if((A[i]||0)!==(B[i]||0)) return (A[i]||0)-(B[i]||0); } return 0; }
+let _updBusy=false;
+async function _showUpdBar(){ if(document.getElementById('updbar')||_updBusy) return;
+  let vtxt='A new version is available', latest=null; _updBusy=true;
   try{ const t=await (await fetch('index.html',{cache:'no-store'})).text();
-    const m=t.match(/BUILD=\{v:'([\d.]+)'/); if(m) vtxt='Version '+m[1]+' is available'; }catch(e){}
+    const m=t.match(/BUILD=\{v:'([\d.]+)'/); if(m){ latest=m[1]; vtxt='Version '+m[1]+' is available'; } }catch(e){}
+  _updBusy=false;
+  /* new look: only a real new version earns the bar — not notes saved from the app, a notes publish or a cache-label bump */
+  if(!document.body.classList.contains('legacy')&&(!latest||_updCmp(latest,BUILD.v)<=0)){ _updShown=false; return; }
+  if(document.getElementById('updbar')) return;
   const b=document.createElement('div'); b.className='updbar'; b.id='updbar';
   b.innerHTML='✨ '+vtxt
     +'<button class="upd-btn" onclick="_doUpdate()">Update</button>'
