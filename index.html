@@ -935,6 +935,7 @@ body:not(.legacy)[data-view="read"] .readnav .rn-listen.rn-ico .rn-dots{font-siz
 .ga-k{display:inline-block;font-size:18px;line-height:1;padding:0 3px}
 .ga-tip{font-size:13px;color:var(--soft);margin:4px 0 10px;line-height:1.45}
 .ga-wide{width:100%;margin-top:6px}
+.ga-more{display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:28px;padding:0 8px;border-radius:14px;border:1px solid var(--line);background:var(--bg);font:700 13px/1 var(--sans);letter-spacing:1px;margin:0 2px;vertical-align:middle}
 .ga-wa{font-size:13.5px;line-height:1.45;margin:8px 0 6px;padding:10px 12px;border-radius:12px;background:var(--line);color:var(--ink)}
 .donepill{font-size:11px;background:var(--accent);color:var(--on-accent);border-radius:20px;padding:1px 9px;font-weight:700;vertical-align:middle}
 /* plan context bar in the reader */
@@ -1800,7 +1801,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.107', date:'9 Nov 2026'};
+const BUILD={v:'1.2.108', date:'9 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -6601,7 +6602,10 @@ const _GA_SHARE='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" str
 /* what the box says: a heading + up to three short steps (9 Nov 2026, 1.2.105) */
 const _GA_DOTS='<b class="ga-k">⋮</b>';
 function _gaInstalled(){ try{ return localStorage.getItem('nok_installed')==='1'||!!window._gaRel; }catch(e){ return !!window._gaRel; } }
-const _GA_WA_IOS='<p class="ga-wa"><b>Don’t see Add to Home Screen?</b> You may be inside WhatsApp. Tap <b>Open in Safari</b> (the compass, or under <b>⋯</b>) first, then tap <b>Get the app</b> again.</p>';
+const _GA_WA_IOS='<p class="ga-wa"><b>Don’t see Share or Add to Home Screen?</b> You may be inside WhatsApp. Tap <b>Open in Safari</b> first, then tap <b>Get the app</b> again.</p>';
+const _GA_MORE='<span class="ga-more" aria-label="the three-dots button">•••</span>';
+/* Safari 26 and later (its version is in the browser's identification even though iOS reports itself as 18) */
+function _iosSafariVer(){ const m=(navigator.userAgent||'').match(/Version\/(\d+)/); return m?+m[1]:0; }
 const _GA_WA_AND='<p class="ga-wa"><b>Don’t see Add to Home screen?</b> You may be inside WhatsApp. Tap <b>⋮</b> → <b>Open in Chrome</b> first, then tap <b>Get the app</b> again.</p>';
 function _gaSteps(a,tip){ return `<ol class="ga-steps2">${a.map(t=>`<li><span>${t}</span></li>`).join('')}</ol>${tip?`<p class="ga-tip">${tip}</p>`:''}`; }
 function _gaView(){ const k=_devKind(), mob=/^(ios|and)/.test(k)||k==='android';
@@ -6610,7 +6614,9 @@ function _gaView(){ const k=_devKind(), mob=/^(ios|and)/.test(k)||k==='android';
     ?`<p class="ga-p">Open <b>Bible Journal N.O</b> from your home screen.</p>`
     :`<p class="ga-p">Click <b>Open in app</b> at the right of the address bar — or open <b>Nii Okai’s Bible Journal</b> from your Applications or Dock.</p>`};
   if(_bip&&(k==='android'||k==='desktop')) return {h:'Install the app', b:`<button class="btn primary ga-big" onclick="_gaPrompt()">Install now</button><p class="ga-tip">Then tap <b>Install</b> in the box that appears. Takes a few seconds.</p>`};
-  if(k==='ios-safari') return {h:'Install the app', b:_gaSteps([`Tap <b>Share</b> ${_GA_SHARE}`,`Tap <b>Add to Home Screen</b>`,`Tap <b>Add</b>`],'Share is in the bar at the bottom of Safari (or under <b>⋯</b>). Scroll down the list to find Add to Home Screen.')+_GA_WA_IOS};
+  if(k==='ios-safari') return _iosSafariVer()>=26
+    ? {h:'Install the app', b:_gaSteps([`Tap ${_GA_MORE} at the bottom right`,`Tap <b>Share</b> ${_GA_SHARE}`,`Tap <b>Add to Home Screen</b>, then <b>Add</b>`],'If Add to Home Screen isn’t in the first list, scroll down or tap <b>More</b>.')+_GA_WA_IOS}
+    : {h:'Install the app', b:_gaSteps([`Tap <b>Share</b> ${_GA_SHARE} in the bar at the bottom`,`Tap <b>Add to Home Screen</b>`,`Tap <b>Add</b>`],'Scroll down the list to find Add to Home Screen.')+_GA_WA_IOS};
   if(k==='ios-other') return {h:'Install the app', b:_gaSteps([`Tap <b>Share</b> ${_GA_SHARE} at the top right`,`Tap <b>Add to Home Screen</b>`,`Tap <b>Add</b>`],'Not there? Open this page in <b>Safari</b> and tap Get the app again.')+copy};
   if(k==='ios-inapp'||k==='and-inapp') return {h:`Open this in ${k==='ios-inapp'?'Safari':'Chrome'} first`, b:`<p class="ga-p">You’re inside another app, which can’t install apps.</p>`+_gaSteps([`Tap <b>⋯</b> or ${_GA_DOTS}`,`Tap <b>Open in ${k==='ios-inapp'?'Safari':'Chrome'}</b>`,`Tap <b>Get the app</b> again`])+copy};
   if(k==='android') return {h:'Install the app', b:_gaSteps([`Tap ${_GA_DOTS} at the top right`,`Tap <b>Add to Home screen</b> (or <b>Install app</b>)`,`Tap <b>Install</b>`])+_GA_WA_AND};
