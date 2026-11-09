@@ -906,6 +906,23 @@ body:not(.legacy)[data-view="read"] .readnav.planmode .rn-s{font-size:9.5px;line
 body:not(.legacy)[data-view="read"] .readnav .rn-listen.rn-ico{flex:0 0 58px;padding:0!important;display:flex;align-items:center;justify-content:center}
 body:not(.legacy)[data-view="read"] .readnav .rn-listen.rn-ico svg{width:20px;height:20px;margin:0}
 body:not(.legacy)[data-view="read"] .readnav .rn-listen.rn-ico .rn-dots{font-size:18px;line-height:1}
+/* Get the app (9 Nov 2026) */
+.ga-home{display:flex;align-items:center;gap:12px;padding:12px 14px!important}
+.ga-home img{border-radius:11px;flex:0 0 auto}
+.ga-home .ga-t{flex:1;min-width:0;display:flex;flex-direction:column;font-family:var(--sans)}
+.ga-home .ga-t b{font-size:15px;color:var(--ink)} .ga-home .ga-t span{font-size:12.5px;color:var(--soft)}
+.ga-home .btn{flex:0 0 auto;padding:8px 16px;border-radius:20px}
+.ga-home .ga-x{background:none;border:0;color:var(--soft);font-size:15px;padding:4px 2px;cursor:pointer}
+.ga-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;display:flex;align-items:flex-end;justify-content:center;padding:16px}
+@media(min-width:700px){.ga-ov{align-items:center}}
+.ga-card{background:var(--panel);color:var(--ink);border-radius:20px;max-width:430px;width:100%;padding:22px;font-family:var(--sans);box-shadow:0 20px 60px rgba(0,0,0,.4);max-height:88vh;overflow:auto}
+.ga-head{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+.ga-head img{border-radius:12px} .ga-head b{display:block;font-family:var(--serif);font-size:19px} .ga-head span{font-size:13px;color:var(--soft)}
+.ga-steps{margin:0 0 12px;padding-left:22px;line-height:1.8;font-size:15px} .ga-p{margin:0 0 12px;font-size:15px}
+.ga-big{width:100%;padding:13px!important;font-size:16px!important;margin-bottom:6px}
+.ga-share{font-size:12.5px;color:var(--soft);margin:12px 0 10px;border-top:1px solid var(--line);padding-top:12px}
+.ga-share b{color:var(--ink)} .ga-link{background:none;border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:2px 10px;font:600 12px var(--sans);cursor:pointer;margin-left:4px}
+.ga-done{width:100%}
 .donepill{font-size:11px;background:var(--accent);color:var(--on-accent);border-radius:20px;padding:1px 9px;font-weight:700;vertical-align:middle}
 /* plan context bar in the reader */
 .planctx{background:var(--accent-soft);border:1px solid var(--note-line);border-radius:10px;padding:10px 14px;margin:0 0 16px;font-size:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -1770,7 +1787,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.102', date:'5 Nov 2026'};
+const BUILD={v:'1.2.103', date:'9 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -3152,6 +3169,7 @@ function renderHome(){
       <div class="hrow">${btn}<button class="btn" onclick="setView('plan')">See the plan</button></div></div>`; })() : '';
   const html=`<div class="page homefeed">
     ${greetingHTML()}
+    ${_getAppCard()}
     <div class="hcard hero">
       <div class="hk">NEVER GET BORED</div>
       <h2>Nii Okai’s Bible Journal</h2>
@@ -3576,7 +3594,7 @@ function _appMenuHTML(withChapter,inSheet){
   h+=head('The app');
   h+=item('👋','The welcome','Nii Okai’s invitation — read or listen to it again any time','showWelcomeAgain()');
   h+=item('✎','Your name',(()=>{ const nm=readerName(); return nm?('The app greets you as “'+escHTML(nm)+'” — tap to change it'):'Tell the app what to call you when you open it'; })(),'nameMenu()');
-  h+=item('📲','Install the App','Put it on your home screen — opens full-screen, works offline','installApp()');
+  h+=item('📲','Get the app','Free — on your home screen, opens full-screen, works offline','installApp()');
   h+=item('🔄','Check for Updates',`You are on version ${BUILD.v} — tap to look for a newer one`,'checkForUpdates()');
   if(isOwner()){ h+=head('Owner tools');
     h+=`<div class="mitem" id="goLiveItem" onclick="${close}goLive()"><span class="mi">🚀</span><div><div class="mt">Go live</div><div class="md" id="goLiveDesc">Checking whether anything is waiting…</div></div><span class="chev">›</span></div>`;
@@ -6531,6 +6549,7 @@ function _applyLookNow(){ try{
 let _bip=null;
 window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); _bip=e; });
 function installApp(){
+  if(!document.body.classList.contains('legacy')) return installApp2(false);
   const standalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone;
   if(standalone){ toast('You are already using the installed app'); return; }
   if(_bip){ _bip.prompt(); _bip.userChoice.finally(()=>{_bip=null;}); return; }
@@ -6552,7 +6571,56 @@ function installApp(){
     <p style="color:var(--soft);font-size:13px;margin:0 0 14px">Once installed it opens full-screen from your home screen and works completely offline — Scripture, commentary and your notes.</p>
     <button class="btn primary" style="width:100%" onclick="document.getElementById('instov').remove()">Done</button></div>`;
   document.body.appendChild(ov); }
-if(/[?&]install\b/.test(location.search)) setTimeout(installApp,700);
+/* ---------- Get the app (9 Nov 2026, new UI; Legacy keeps installApp as it was) ----------
+   One button that does the right thing on each device: Android / Chrome / Edge → the device's own Install box;
+   iPhone Safari → 3 picture steps (Apple allows no one-tap install); inside another app's browser → "open in Safari / your
+   browser first" with a copy-link button; already installed → nothing shown. Short link to share: bible.getwordwisdom.com/app */
+const GETAPP_URL='https://bible.getwordwisdom.com/app';
+function _isStandalone(){ try{ return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true; }catch(e){ return false; } }
+function _devKind(){ const ua=navigator.userAgent||'';
+  const ios=/iphone|ipad|ipod/i.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  const inapp=/FBAN|FBAV|Instagram|Line\/|WhatsApp|Snapchat|TikTok|Twitter|LinkedInApp|; wv\)/i.test(ua);
+  if(ios) return inapp?'ios-inapp':(/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua)?'ios-other':'ios-safari');
+  if(/android/i.test(ua)) return inapp?'and-inapp':'android';
+  if(/Macintosh/.test(ua)&&/Safari/.test(ua)&&!/Chrome|Chromium|Edg\//.test(ua)) return 'mac-safari';
+  return 'desktop'; }
+const _GA_SHARE='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v6.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>';
+function _gaBody(){ const k=_devKind();
+  const copy=`<button class="btn" onclick="_gaCopy()">Copy the link</button>`;
+  if(_bip&&(k==='android'||k==='desktop')) return `<p class="ga-p">One tap and it sits on your ${k==='android'?'home screen':'computer'} like any other app.</p>
+    <button class="btn primary ga-big" onclick="_gaPrompt()">Install the app</button>`;
+  if(k==='ios-safari') return `<ol class="ga-steps"><li>Tap the <b>Share</b> button ${_GA_SHARE} (at the bottom of Safari, or under <b>⋯</b>)</li><li>Scroll down and tap <b>Add to Home Screen</b></li><li>Tap <b>Add</b> — the app appears on your home screen</li></ol>`;
+  if(k==='ios-other') return `<ol class="ga-steps"><li>Tap the <b>Share</b> button ${_GA_SHARE} (top right, next to the address)</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b></li></ol><p class="ga-p soft">If you don’t see it, open this page in <b>Safari</b> and tap Get the app there.</p>${copy}`;
+  if(k==='ios-inapp'||k==='and-inapp') return `<p class="ga-p">This page is open inside another app, which can’t install apps.</p><ol class="ga-steps"><li>Tap <b>⋯</b> or <b>⋮</b> and choose <b>Open in ${k==='ios-inapp'?'Safari':'Chrome / browser'}</b></li><li>Tap <b>Get the app</b> again there</li></ol>${copy}`;
+  if(k==='android') return `<ol class="ga-steps"><li>Tap the menu <b>⋮</b> at the top right of Chrome</li><li>Tap <b>Install app</b> (or <b>Add to Home screen</b>), then <b>Install</b></li></ol>`;
+  if(k==='mac-safari') return `<ol class="ga-steps"><li>In the menu bar choose <b>File → Add to Dock</b></li><li>Click <b>Add</b> — it opens in its own window from the Dock</li></ol>`;
+  return `<ol class="ga-steps"><li>Click the small <b>install</b> icon at the right end of the address bar</li><li>Or menu <b>⋮</b> → <b>Cast, save and share</b> → <b>Install page as app…</b></li></ol>`; }
+function installApp2(fromLink){
+  if(_isStandalone()){ toast('You are already using the app'); return; }
+  if(_bip&&!fromLink){ _gaPrompt(); return; }
+  const old=document.getElementById('getapp'); if(old) old.remove();
+  const ov=document.createElement('div'); ov.id='getapp'; ov.className='ga-ov';
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  ov.innerHTML=`<div class="ga-card" role="dialog" aria-label="Get the app">
+    <div class="ga-head"><img src="icon-192.png" alt="" width="52" height="52"><div><b>Nii Okai’s Bible Journal</b><span>Free · no account needed · works offline</span></div></div>
+    <div id="gaBody">${_gaBody()}</div>
+    <p class="ga-share">Share the app: <b>bible.getwordwisdom.com/app</b> <button class="ga-link" onclick="_gaCopy()">Copy</button></p>
+    <button class="btn ga-done" onclick="document.getElementById('getapp').remove()">Not now</button></div>`;
+  document.body.appendChild(ov); }
+function _gaPrompt(){ if(!_bip){ installApp2(true); return; } const p=_bip; _bip=null; p.prompt();
+  try{ p.userChoice.then(c=>{ const o=document.getElementById('getapp'); if(o) o.remove(); if(c&&c.outcome==='accepted') _gaDone(); }); }catch(e){} }
+function _gaDone(){ try{ localStorage.setItem('nok_getapp_x',String(Date.now()+3650*864e5)); }catch(e){}
+  const c=document.getElementById('gaCard'); if(c) c.remove(); toast('Installed — look for Nii Okai’s Bible Journal on your home screen'); }
+function _gaCopy(){ try{ _clip(GETAPP_URL,'Link copied — paste it in a message'); }catch(e){ try{ navigator.clipboard.writeText(GETAPP_URL); toast('Link copied'); }catch(e2){} } }
+function _gaHide(){ try{ localStorage.setItem('nok_getapp_x',String(Date.now()+30*864e5)); }catch(e){} const c=document.getElementById('gaCard'); if(c) c.remove(); }
+function _getAppCard(){ if(document.body.classList.contains('legacy')||_isStandalone()) return '';
+  try{ if(+localStorage.getItem('nok_getapp_x')>Date.now()) return ''; }catch(e){}
+  return `<div class="hcard ga-home" id="gaCard"><img src="icon-192.png" alt="" width="44" height="44"><div class="ga-t"><b>Get the app</b><span>Free · on your home screen · works offline</span></div>
+    <button class="btn primary" onclick="installApp2(false)">Get it</button><button class="ga-x" aria-label="Not now" title="Not now" onclick="_gaHide()">✕</button></div>`; }
+window.addEventListener('beforeinstallprompt',()=>{ setTimeout(()=>{ const b=document.getElementById('gaBody'); if(b) b.innerHTML=_gaBody(); },0); });
+window.addEventListener('appinstalled',()=>{ _gaDone(); const o=document.getElementById('getapp'); if(o) o.remove(); });
+if(/[?&]install\b/.test(location.search)) setTimeout(()=>{ if(document.body.classList.contains('legacy')) installApp(); else installApp2(true);
+  try{ history.replaceState(null,'',location.pathname+location.search.replace(/([?&])install\b(=[^&]*)?&?/,'$1').replace(/[?&]$/,'')+location.hash); }catch(e){} },700);
 document.addEventListener('mouseup',e=>{ if(IS_TOUCH) return; if(e.target&&e.target.closest&&e.target.closest('#selmenu')) return; onReaderSelect(); });
 /* on touch: any tap outside a popup closes it (iOS doesn't always fire document click) */
 document.addEventListener('touchstart',e=>{ const t=e.target;
