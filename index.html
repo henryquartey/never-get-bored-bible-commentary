@@ -326,6 +326,9 @@ html[data-theme="dark"] .vp-sw.on::after{background:var(--on-accent)}
 .audbar .ab-ic{background:transparent;border:none;color:var(--ink);width:38px;height:38px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto}
 .audbar .ab-ic .nico{display:inline-flex;width:24px;height:24px}.audbar .ab-ic .nico svg{width:24px;height:24px}
 .audbar .ab-ic:hover{background:var(--accent-soft)}
+.audbar .ab-x{width:32px;color:var(--soft)}.audbar .ab-x .nico,.audbar .ab-x .nico svg{width:18px;height:18px}
+@media (max-width:440px){ body:not(.legacy) .audbar .ab-voice span:not(.ab-av){display:none} body:not(.legacy) .audbar .ab-voice{padding:5px 8px 5px 6px;gap:3px}
+  body:not(.legacy) .audbar .ab-row{gap:4px} body:not(.legacy) .audbar .ab-time{min-width:0} }
 .audbar .ab-play{background:var(--accent);color:var(--on-accent);border:none;width:46px;height:46px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;margin:0 4px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 .audbar .ab-play .nico{display:inline-flex;width:24px;height:24px}.audbar .ab-play .nico svg{width:24px;height:24px}
 .audbar .ab-time{font-size:11px;color:var(--soft);font-variant-numeric:tabular-nums;flex:0 0 auto;min-width:74px;text-align:right}
@@ -345,6 +348,8 @@ html[data-theme="dark"] .vp-sw.on::after{background:var(--on-accent)}
 body:not(.legacy) .fabnotes{background:var(--ink);color:var(--panel);border-color:var(--ink);box-shadow:0 6px 18px rgba(0,0,0,.18)}
 body:not(.legacy) .fabnotes.off{background:var(--panel);color:var(--ink);border-color:var(--line)}
 body:not([data-view="read"]) .fabnotes{display:none}
+body:not(.legacy)[data-view="read"] .fabnotes{translate:0 calc(-1 * var(--abH,0px))}
+body.chrome-off:not(.legacy)[data-view="read"] .fabnotes{translate:none}
 .readprog{height:3px;background:var(--line);display:none;flex:0 0 auto}
 .readprog .fill{height:100%;width:0;background:var(--accent);transition:width .15s linear}
 .readnav .rn-armed{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
@@ -462,7 +467,7 @@ body:not(.legacy) .overlay.kb .modal .mf{padding:10px 18px;margin-top:8px}
  body:not(.legacy) #overlay.kb .modal .mh .vtext{max-height:52px}
  body:not(.legacy) #overlay .modal .mb{display:flex;flex-direction:column;padding:6px 16px calc(env(safe-area-inset-bottom,0px) + 10px);overscroll-behavior:contain}
  body:not(.legacy) #overlay.kb .modal .mb{padding-bottom:6px}
- body:not(.legacy) #overlay .modal textarea{flex:1 1 auto;min-height:120px;resize:none;background:var(--panel)}
+ body:not(.legacy) #overlay .modal textarea{flex:1 1 auto;min-height:120px;resize:none;background:var(--panel);overscroll-behavior:contain}
  body:not(.legacy) #overlay.kb .modal textarea{min-height:72px}
  body:not(.legacy) #overlay.kb .ed-opts .ed-hint{display:none}
  body:not(.legacy):has(#overlay.show) #reader{overflow:hidden}
@@ -1801,7 +1806,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.108', date:'9 Nov 2026'};
+const BUILD={v:'1.2.113', date:'21 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -2925,9 +2930,16 @@ function _audRender(){ const bar=document.getElementById('audbar'), nt=document.
         <button class="ab-ic" onclick="audSkip(30)" title="Forward 30 seconds">${ICONS.fwd30}</button>
       </span>
       <span class="ab-time${AUD.loading||AUD.buffering?' ab-buf':''}" id="abTime">${status}</span>
-      <button class="ab-ic" onclick="audMore(event)" title="More">${ICONS.dots}</button>
+      <button class="ab-ic" onclick="audMore(event)" title="More">${ICONS.dots}</button>${document.body.classList.contains('legacy')?'':`
+      <button class="ab-ic ab-x" onclick="_audClose(event)" title="Close the player — your place is kept" aria-label="Close the player">${ICONS.close}</button>`}
     </div>
     ${following?`<div class="ab-follow-row">Narrator is now in <b>${escHTML(AUD.book)} ${AUD.here}</b>${nextIsNextChapter?` <button class="ab-follow" onclick="nextChapter()">Follow →</button>`:''}</div>`:''}`; }
+/* 1.2.113: lift the commentary button by the player's height while the player shows (new look) */
+function _abLift(){ try{ const bar=document.getElementById('audbar'); const h=(!document.body.classList.contains('legacy')&&bar&&bar.style.display!=='none')?bar.offsetHeight:0;
+  document.body.style.setProperty('--abH',(h?h+4:0)+'px'); }catch(e){} }
+{ const _ar0=_audRender; _audRender=function(){ const r=_ar0.apply(this,arguments); _abLift(); return r; }; }
+/* 1.2.113: ✕ — stop and close the player, keep the place (the next Listen carries on from here) */
+function _audClose(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation(); closeVerseMenu(); stopReadAloud(); toast('Player closed — Listen carries on from here next time'); }
 /* ⋯ on the player: the rarely-needed things live here so the bar stays clean */
 function audMore(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
   const ex=document.getElementById('vmenu'); if(ex&&ex.dataset.vfor==='audmore'){ closeVerseMenu(); return; }
@@ -2937,7 +2949,7 @@ function audMore(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
   let h=`<div class="vm-sec">${escHTML(AUD.book)} ${AUD.ch} · ${human?'read by '+escHTML(info.reader||'Michael Armenta')+' · LibriVox, public domain':'Studio voice · '+escHTML(studioVoiceName(AUD.voice))+' · Kokoro'}</div>`;
   if(estimated||info.fixed) h+=`<button onclick="closeVerseMenu();${info.fixed?'audUnmark()':'audMarkStart()'}">${ICONS.pin} ${info.fixed?'Back to the estimated chapter start':'The narrator is starting this chapter now'}</button>`;
   if(estimated) h+=`<div style="padding:2px 12px 8px;font-size:11.5px;color:var(--soft);line-height:1.4">Start and highlight are estimated for this chapter — nudge with the 15 / 30 buttons, or use a verse’s sheet to say “narrator is here”.</div>`;
-  h+=`<button onclick="closeVerseMenu();stopReadAloud(true)">${ICONS.stop} Stop and start again at verse 1</button>`;
+  h+=`<button onclick="closeVerseMenu();stopReadAloud(true)">${ICONS.stop} ${document.body.classList.contains('legacy')?'Stop and start again at verse 1':'Start again from verse 1'}</button>`;
   m.innerHTML=h; document.body.appendChild(m);
   const b=ev&&(ev.currentTarget||ev.target); const r=b?b.getBoundingClientRect():{top:window.innerHeight-120,bottom:window.innerHeight-90,left:window.innerWidth-60,width:0};
   const mw=m.offsetWidth, mh=m.offsetHeight; let top=r.top-mh-8; if(top<8) top=r.bottom+8;
@@ -4751,7 +4763,7 @@ function showDayComplete(dayNum, nextDay){
 function continueToNext(day){ closeDayComplete(); planRead(day,0); }
 function closeDayComplete(){ const ov=document.getElementById('completeOv'); if(ov) ov.classList.remove('show'); }
 function setViewTabs(){ let v=state.view; if(v==='read'&&state.plan) v='plan';
-  if(state.view!=='search'&&window._srArmed&&!document.body.classList.contains('legacy')){ window._srArmed=false; window._srRet=null;
+  if(state.view!=='search'&&window._srArmed&&!document.body.classList.contains('legacy')){ _srKeepNow(); window._srArmed=false; window._srRet=null;
     const tb=document.querySelector('.topbar'); if(tb) tb.classList.remove('searching');
     const sb=document.getElementById('search'); if(sb){ sb.value=''; if(document.activeElement===sb) sb.blur(); } }
   document.body.dataset.view=state.view;
@@ -4809,6 +4821,7 @@ function tbSearch(){ const tb=document.querySelector('.topbar');
   if(!document.body.classList.contains('legacy')){                 /* New UI (1.2.81): open the search screen itself */
     if(state.view==='search'){ exitSearch(); return; }
     const si=document.getElementById('search'); tb.classList.add('searching');
+    if(!si.value.trim()&&_srKept()){ _srOpen(); return; }   /* 1.2.109: your last search comes back; tap the box to type a new one */
     try{ si.focus(); }catch(e){}                      /* inside the tap → iPhone shows the keyboard */
     if(state.view!=='search') _srOpen();
     setTimeout(()=>{ if(document.activeElement!==si) si.focus(); },60); return; }
@@ -5062,6 +5075,7 @@ function inlineEditNote(el,name,ch,v,id){
   if(!document.body.classList.contains('legacy')){ try{   /* tidy layout (16 Oct 2026) */
     const bar=el.querySelector('.inline-bar'), pb=el.querySelector('.predbar'), hint=bar.querySelector('.inline-hint');
     const row=document.createElement('div'); row.className='il-row2'; pb.before(row); row.appendChild(pb); row.appendChild(hint);
+    hint.textContent=window.matchMedia('(hover:hover) and (pointer:fine)').matches?('Saves as you type · '+(/Mac/.test(navigator.platform)?'⌘':'Ctrl')+' Enter closes'):'Saves as you type';
     const cols=bar.querySelector('.inline-colours'); if(cols){ const l=cols.querySelector('.lbl'); if(l) l.remove(); cols.title='Colour this note — it also highlights the verse'; }
     const done=bar.querySelector('.btn.primary'), cancel=bar.querySelector('.btn:not(.primary)');
     const sp=document.createElement('span'); sp.className='il-sp'; bar.appendChild(sp); bar.appendChild(cancel); bar.appendChild(done);
@@ -5072,7 +5086,8 @@ function inlineEditNote(el,name,ch,v,id){
     [...el.childNodes].forEach(n=>{ if(n.nodeType===3&&!n.textContent.trim()) n.remove(); }); }catch(e){} }
   const t=el.querySelector('textarea'); t.value=cur; t.onclick=e=>e.stopPropagation();
   t.dataset.nid=id; t.dataset.book=name; t.dataset.ch=String(ch); t.dataset.v=String(v); t.dataset.orig=cur;
-  t.onkeydown=e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); el.querySelector('.inline-bar .primary').click(); }
+  t.onkeydown=e=>{ const leg=document.body.classList.contains('legacy');   /* 1.2.112: new look — Enter makes a new line; ⌘/Ctrl+Enter closes */
+    if(e.key==='Enter'&&!e.shiftKey&&(leg||e.metaKey||e.ctrlKey)){ e.preventDefault(); el.querySelector('.inline-bar .primary').click(); }
     else if(e.key==='Escape'){ e.preventDefault(); el.querySelector('.inline-bar .primary').click(); } };
   try{ const cc=(v!=='0')?hlGet(name,ch,v):''; el.querySelectorAll('.inline-colours .sw').forEach(b=>
     b.classList.toggle('on',(b.dataset.c||'')===(cc||''))); }catch(e){}
@@ -5113,7 +5128,9 @@ function saveInline(btn,name,ch,v,id){ const ta=btn.closest('.body').querySelect
 /* ---------- Autosave (12 Oct 2026): notes save themselves as you type, so nothing is lost if the page redraws ---------- */
 let _ilTimer=null;
 function _ilAuto(e){ const ta=e.target; try{ const u=ta.parentElement.querySelector('.il-undo'); if(u) u.style.display=(ta.value.trim()!==String(ta.dataset.orig||'').trim())?'':'none'; }catch(x){} _ilHint(ta,'Saving…'); clearTimeout(_ilTimer); _ilTimer=setTimeout(()=>_ilFlush(ta),700); }
-function _ilHint(ta,msg){ try{ const h=ta.parentElement.querySelector('.inline-hint'); if(h) h.textContent=msg+' · Enter closes'; }catch(e){} }
+function _ilHint(ta,msg){ try{ const h=ta.parentElement.querySelector('.inline-hint'); if(!h) return;
+  if(document.body.classList.contains('legacy')){ h.textContent=msg+' · Enter closes'; return; }
+  h.textContent=msg+(window.matchMedia('(hover:hover) and (pointer:fine)').matches?(' · '+(/Mac/.test(navigator.platform)?'⌘':'Ctrl')+' Enter closes'):''); }catch(e){} }
 /* write the in-place editor's words into the note now (quietly — no redraw, no toast) */
 function _ilFlush(ta,force){ try{ if(!ta||!ta.isConnected||!ta.classList.contains('inline-ed')||ta.dataset.retired) return false;
   clearTimeout(_ilTimer); _ilTimer=null;
@@ -5368,17 +5385,31 @@ function _predPick(btn){ const bar=btn.parentElement, ta=bar&&bar._ta; if(!ta) r
   ta.dispatchEvent(new Event('input',{bubbles:true})); _predUpdate(ta); }
 /* 1.2.99: in the full-screen note, a drag only moves what can really scroll (your words, the strip) — never the screen itself */
 (function(){ const ov=document.getElementById('overlay'); if(!ov) return;
+  /* 1.2.111: a drag goes through only while the thing under the finger can still scroll THAT way — at its top or bottom
+     the drag stops, so iOS never hands it on to the page behind (no Bible text sliding, no screen panning) */
+  let X0=0, Y0=0;
+  ov.addEventListener('touchstart',e=>{ const t=e.touches&&e.touches[0]; if(t){ X0=t.clientX; Y0=t.clientY; } },{passive:true});
   ov.addEventListener('touchmove',e=>{ try{ if(document.body.classList.contains('legacy')||!window.matchMedia('(max-width:640px)').matches) return;
+    if(e.touches&&e.touches.length>1) return;                       /* pinch: leave it to the phone */
+    const t=e.touches&&e.touches[0]; const dx=t?t.clientX-X0:0, dy=t?t.clientY-Y0:0; const side=Math.abs(dx)>Math.abs(dy);
+    if(t){ X0=t.clientX; Y0=t.clientY; }                            /* judge each step of the drag, not just its start */
     for(let el=e.target; el&&el!==ov; el=el.parentElement){ const cs=getComputedStyle(el);
-      if(/(auto|scroll)/.test(cs.overflowY)&&el.scrollHeight>el.clientHeight+1) return;
-      if(/(auto|scroll)/.test(cs.overflowX)&&el.scrollWidth>el.clientWidth+1) return; }
+      if(side){ if(/(auto|scroll)/.test(cs.overflowX)&&el.scrollWidth>el.clientWidth+1){
+          if((dx>0&&el.scrollLeft>0)||(dx<0&&el.scrollLeft+el.clientWidth<el.scrollWidth-1)) return; } continue; }
+      const sy=/(auto|scroll)/.test(cs.overflowY)||el.tagName==='TEXTAREA';
+      if(sy&&el.scrollHeight>el.clientHeight+1){
+        if((dy>0&&el.scrollTop>0)||(dy<0&&el.scrollTop+el.clientHeight<el.scrollHeight-1)) return; } }
     e.preventDefault(); }catch(x){} },{passive:false}); })();
 function _kbFit(){ try{ const ov=document.getElementById('overlay'), vv=window.visualViewport; if(!ov||!vv) return;
-  const clear=()=>{ if(ov.classList.contains('kb')){ ov.classList.remove('kb'); ov.style.top=ov.style.height=ov.style.bottom=''; } };
+  const md=ov.querySelector('.modal'), phone=window.matchMedia('(max-width:640px)').matches;
+  const clear=()=>{ if(ov.classList.contains('kb')){ ov.classList.remove('kb'); ov.style.top=ov.style.height=ov.style.bottom=''; if(md) md.style.height=md.style.maxHeight=''; } };
   const legacy=document.body.classList.contains('legacy'), kb=window.innerHeight-vv.height>120, a=document.activeElement;
   if(legacy||!kb){ clear(); return; }
   const bottom=vv.offsetTop+vv.height;
-  if(ov.classList.contains('show')){ ov.classList.add('kb'); ov.style.top=vv.offsetTop+'px'; ov.style.bottom='auto'; ov.style.height=vv.height+'px';
+  if(ov.classList.contains('show')){ ov.classList.add('kb'); ov.style.top=vv.offsetTop+'px';
+    /* 1.2.110 phone: the screen reaches the bottom (nothing behind shows through the keyboard); the note itself fits above the keyboard */
+    if(phone&&md){ ov.style.bottom='0'; ov.style.height='auto'; md.style.height=md.style.maxHeight=vv.height+'px'; }
+    else { ov.style.bottom='auto'; ov.style.height=vv.height+'px'; if(md) md.style.height=md.style.maxHeight=''; }
     const ta=document.getElementById('edText'), bar=document.getElementById('edPred'), mb=ta&&ta.closest('.mb');
     if(mb&&bar&&a===ta){ const mr=mb.getBoundingClientRect(), br=bar.getBoundingClientRect(); if(br.bottom>mr.bottom-4) mb.scrollTop+=br.bottom-mr.bottom+6; } return; }
   clear();
@@ -6778,8 +6809,19 @@ function _srRef(r){ const m=r.match(/^(.*?) (\d+):(\d+)$/); return m?{bk:m[1],ch
 function _srVerse(ver,bk,ch,v){ const b=((window.BIBLE||{})[ver]||{})[bk]; return b?(((b[String(ch)]||{})[String(v)])||''):''; }
 /* Leaving a search: empty the box, let go of the keyboard and return to the chapter. Without
    this there was no way back out of the results on a phone. (22 Sep 2026) */
+/* 1.2.109: the last search is kept (words, place in the list, filters, Show more) so coming back to Search shows it again */
+function _srKeepNow(){ if(document.body.classList.contains('legacy')) return;
+  const b=document.getElementById('search'), q=b?b.value.trim():''; if(q.length<2) return;
+  const rd=document.getElementById('reader'), C=window._sr2ctx;
+  const K={q, y:rd?rd.scrollTop:0, shown:(C&&C.q===q)?C.shown:0, f:window._sr2f||null};
+  window._srKeep=K; try{ sessionStorage.setItem('nok_sr_keep',JSON.stringify(K)); }catch(e){} }
+function _srKept(){ if(window._srKeep) return window._srKeep;
+  try{ const K=JSON.parse(sessionStorage.getItem('nok_sr_keep')||'null'); if(K&&typeof K.q==='string'&&K.q.length>=2) return (window._srKeep=K); }catch(e){}
+  return null; }
+function _srForget(){ window._srKeep=null; try{ sessionStorage.removeItem('nok_sr_keep'); }catch(e){} }
 function exitSearch(){
   const b=document.getElementById('search');
+  if(state.view==='search') _srKeepNow();
   if(b){ b.value=''; b.blur(); }
   clearTimeout(searchTimer); window._sr2f=null;
   const tb=document.querySelector('.topbar'); if(tb) tb.classList.remove('searching');
@@ -6839,7 +6881,19 @@ function _srOpen(){
     window._srRet={b:state.book,c:state.chapter,y:rd?rd.scrollTop:0,w:window.scrollY,plan:!!state.plan}; }
   window._srArmed=true;
   const b=document.getElementById('search'); const q=b?b.value.trim():'';
-  if(q.length>=2) _sr2(q); else _srEmpty(); }
+  if(q.length>=2){ _sr2(q); return; }
+  const K=_srKept();
+  if(K&&b){ b.value=K.q; window._sr2f=K.f||null;
+    if(window._sr2ctx&&window._sr2ctx.q===K.q&&K.shown) window._sr2ctx.shown=K.shown; else if(K.shown) window._sr2ctx={q:K.q,shown:K.shown};
+    _sr2(K.q,true); window._srBack=true;
+    const rd=document.getElementById('reader'); const go=()=>{ if(rd&&state.view==='search') rd.scrollTop=K.y||0; };
+    go(); requestAnimationFrame(go); setTimeout(go,120); setTimeout(go,350);
+    if(document.activeElement===b){ window._srBack=false; try{ b.setSelectionRange(0,b.value.length); }catch(x){} }   /* Mac: clicked straight into the box */
+    return; }
+  _srEmpty(); }
+/* after a search comes back, the first tap in the box selects the old words, so typing starts a new search */
+document.addEventListener('focusin',e=>{ if(!window._srBack||!e.target||e.target.id!=='search') return; window._srBack=false;
+  const t=e.target; setTimeout(()=>{ try{ t.setSelectionRange(0,t.value.length); }catch(x){ try{ t.select(); }catch(y){} } },0); });
 function _srEmpty(){
   if(document.body.classList.contains('legacy')) return;
   state.view='search'; setViewTabs();
@@ -6866,7 +6920,7 @@ function _srBackToPlace(){ const R=window._srRet; window._srRet=null; if(!R) ret
   requestAnimationFrame(go); setTimeout(go,120); setTimeout(go,350); }
 function _sr2(q,keep){
   const _qraw=String(q||''); q=_qraw.trim();
-  if(q.length<2){ if(state.view==='search'||window._srArmed) _srEmpty(); return; }
+  if(q.length<2){ if(state.view==='search'||window._srArmed){ _srForget(); window._srBack=false; _srEmpty(); } return; }
   const rd=document.getElementById('reader'); const sy=keep?{r:rd.scrollTop,w:window.scrollY}:null;
   const prevShown=keep&&window._sr2ctx&&window._sr2ctx.q===q?window._sr2ctx.shown:0;
   state.view='search'; setViewTabs();
