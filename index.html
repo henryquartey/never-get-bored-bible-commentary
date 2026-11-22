@@ -326,6 +326,10 @@ html[data-theme="dark"] .vp-sw.on::after{background:var(--on-accent)}
 .audbar .ab-ic{background:transparent;border:none;color:var(--ink);width:38px;height:38px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto}
 .audbar .ab-ic .nico{display:inline-flex;width:24px;height:24px}.audbar .ab-ic .nico svg{width:24px;height:24px}
 .audbar .ab-ic:hover{background:var(--accent-soft)}
+.nptr{margin:6px 0 10px;padding:8px 12px;border-left:3px solid var(--note-line,var(--line));border-radius:8px;background:var(--panel);
+  color:var(--soft);font-size:14px;line-height:1.4;cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nptr:hover,.nptr:active{color:var(--ink)} .nptr .nptr-t{opacity:.85}
+.note.nptr-hit{box-shadow:0 0 0 2px var(--note-line,var(--accent));transition:box-shadow .3s}
 .audbar .ab-x{width:32px;color:var(--soft)}.audbar .ab-x .nico,.audbar .ab-x .nico svg{width:18px;height:18px}
 @media (max-width:440px){ body:not(.legacy) .audbar .ab-voice span:not(.ab-av){display:none} body:not(.legacy) .audbar .ab-voice{padding:5px 8px 5px 6px;gap:3px}
   body:not(.legacy) .audbar .ab-row{gap:4px} body:not(.legacy) .audbar .ab-time{min-width:0} }
@@ -1806,7 +1810,7 @@ body:not(.legacy) .ptitle.acr{font-style:normal;font-weight:700;letter-spacing:.
 /* ---------- State ---------- */
 const LS_KEY='henry_bible_commentary_v1';
 const LS_PREFS='henry_bible_prefs_v1';
-const BUILD={v:'1.2.114', date:'22 Nov 2026'};
+const BUILD={v:'1.2.115', date:'22 Nov 2026'};
 var _themeMode='auto';   // 'auto' follows the device · 'light' · 'dark'
 const BLOG_URL='https://www.getwordwisdom.com/';
 const OWNER_KEY='niiokai';
@@ -4508,6 +4512,7 @@ function _privMarkHTML(text,name,ch,v,i,r){ const ps=_privFor(name,ch,v,i).filte
   return out+escNote(rest); }
 function modernNoteHTML(name,ch,v,r,i){
   if(r&&r._x) return '';
+  { const gid=(r.s||[]).find(id=>_grpKey(id)); if(gid){ const p=_grpPtrHTML(name,ch,v,gid,r.m); if(p) return p; } }
   const _privWhole=_privFor(name,ch,v,i).some(function(q){ return q.w; });
   const ref=((r.s||[]).map(id=>_grpRef(name,ch,id)).find(Boolean))||`${name} ${ch}:${v}`;
   /* Hand-edited entries keep their drafts in `d`; patched ones look the original up by id. */
@@ -4549,6 +4554,7 @@ function modernNoteHTML(name,ch,v,r,i){
     </details></div>`;
 }
 function noteHTML(nt,name,ch,v,label){
+  if(v!=='0'&&typeof _grpPtrHTML==='function'&&!document.body.classList.contains('legacy')){ const p=_grpPtrHTML(name,ch,v,nt.id,nt.text); if(p) return p; }
   const d=nt.date?new Date(nt.date).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'';
   const ref=v==='0'?`${name} ${ch}`:((typeof _grpRef==='function'&&_grpRef(name,ch,nt.id))||`${name} ${ch}:${v}`);
   const seedV=(((window.COMMENTARY_SEED||{})[name]||{})[String(ch)]||{})[String(v)];
@@ -4941,6 +4947,16 @@ function _grpNew(book,ch,vs,text){ const k='g'+Math.random().toString(36).slice(
   vs.forEach(v=>{ const c=DATA[book][String(ch)]; c[String(v)]=c[String(v)]||[]; const nt={id:k+'_'+v,text:text,date:now,src:'user'}; c[String(v)].push(nt); if(!first) first=nt; });
   return first; }
 function _grpVerses(){ return editing&&editing.vs&&editing.vs.length>1?editing.vs:null; }
+/* 1.2.115: the last verse of the run of neighbouring verses this copy sits in (null when it IS the last, or not linked) */
+function _grpRunEnd(book,ch,v,id){ const sb=_grpSibs(book,ch,id); if(sb.length<2) return null;
+  const vs=sb.map(x=>+x.v); let i=vs.indexOf(+v); if(i<0) return null; let j=i; while(j+1<vs.length&&vs[j+1]===vs[j]+1) j++;
+  return j>i?String(vs[j]):null; }
+function _grpPtrHTML(book,ch,v,id,text){ const end=_grpRunEnd(book,ch,v,id); if(!end) return null;
+  const ref=_grpRef(book,ch,id)||(book+' '+ch+':'+v), t=String(text||'').replace(/\s+/g,' ').trim(), tz=t.length>70?t.slice(0,70).replace(/\s+\S*$/,'')+'…':t;
+  return `<div class="nptr" role="button" tabindex="0" onclick="_grpJump(this,'${esc(book)}',${ch},'${end}')" title="Go to the note">↓ Note on ${escHTML(ref)}${tz?` <span class="nptr-t">· ${escHTML(tz)}</span>`:''}</div>`; }
+function _grpJump(el,book,ch,end){ try{ const root=(el.closest&&(el.closest('.dayblk')||el.closest('#reader')))||document;
+  const t=root.querySelector('.note[data-ch="'+ch+'"][data-v="'+end+'"]')||root.querySelector('#nw'+end)||document.getElementById('v'+end); if(!t) return;
+  t.scrollIntoView({behavior:'smooth',block:'center'}); t.classList.add('nptr-hit'); setTimeout(()=>t.classList.remove('nptr-hit'),1400); }catch(e){} }
 function openEditor(name,ch,v,vs){
   _ilRetire(null);
   closeSelMenu&&closeSelMenu(); closeVerseMenu&&closeVerseMenu();
